@@ -4,7 +4,7 @@ A privacy-first fall detector for senior-care rooms, built on a Jetson Orin Nano
 person lying down from geometry alone, with no images. Two webcams with a stock RF-DETR detector, run locally on the
 device, were shown in an offline evaluation to see the poses a single scan plane misses. A proprietary V-JEPA stage
 (not in this repository) is where a fall gets confirmed. This repository holds the LIDAR detector, the tools that test it against real recordings, and
-the field evidence behind every design decision, including the results that failed.
+the field evidence behind its design decisions, including the results that failed.
 
 > **Status:** research prototype, measured on one subject in one room. Not a medical device, not cleared by any
 > regulator, and not to be relied on to detect falls. Apache-2.0, patent pending (see [NOTICE](NOTICE)).
@@ -30,7 +30,9 @@ tests answered part of it:
   such trials were missed ([floor trials](docs/field-tests/2026-09-27-floor-mount-grid.md)). That is what the cameras
   are for.
 - **Escalation failed.** Stillness never accumulated past 3.4 s, and one track went silent after its single WARN.
-  Both are now fixed behind configuration keys and proven on replays, not yet switched on on the device.
+  Both have fixes behind default-off configuration keys: the incident hold is shown on a replay of `floor-trials-1`,
+  windowed stillness and the speed gate are unit-tested, and the pre-declared replay bars that decide the switch
+  (plan v4 step 9) have not been run. The device still runs the legacy detector.
 
 ## System architecture
 
@@ -101,18 +103,23 @@ results, not recall estimates.
 | F | **end-on, head toward the sensor**, 0.83 m | 0.22 m | **none: missed** |
 | W | standing and walking | | **0 false alarms** |
 
-1,129 of the 1,132 events were OBSERVE: stillness never exceeded 3.4 s although each lie-down was held for about 30 s,
-so the WARN rules almost never fired.
+1,131 of the 1,132 events were OBSERVE; the one WARN is segment C's. Stillness never exceeded 3.4 s although each
+lie-down was held for about 30 s, so the WARN rules almost never fired. (The field document says 1,129; its erratum
+gives the recount.)
 
-### Detector fixes, proven on replay (not yet enabled on the device)
+### Detector fixes, tested offline (not yet enabled on the device)
 
-| Fix | Evidence | Record |
+| Fix | Evidence (kind) | Record |
 |---|---|---|
-| Incident hold instead of the one-WARN latch | replaying `floor-trials-1`, segment C holds WARN to 193 s; every other segment unchanged | [DR-07](docs/DECISIONS.md#dr-07) |
-| Windowed stillness (0.25 m over 1.5 s) | 12 stillness tests, incl. a boundary test that fails without the epsilon | [DR-09](docs/DECISIONS.md#dr-09) |
-| `min_range_m` 0.3, shipped with it | without it, the fixed config turns a 6 cm clutter track into a WARN at 24 s | [DR-09](docs/DECISIONS.md#dr-09) |
-| Per-track time base and speed gate | 4.6 m/s "motion" on 09-25 was association jumps | [DR-08](docs/DECISIONS.md#dr-08) |
-| All of the above behind legacy defaults | default config byte-identical to before on all 7 bags | [DR-06](docs/DECISIONS.md#dr-06) |
+| Incident hold instead of the one-WARN latch | **replay** of `floor-trials-1`: segment C holds WARN to 193 s; every other segment unchanged | [DR-07](docs/DECISIONS.md#dr-07) |
+| Windowed stillness (0.25 m over 1.5 s) | **unit tests**: 12 stillness tests, incl. a boundary test that fails without the epsilon | [DR-09](docs/DECISIONS.md#dr-09) |
+| `min_range_m` 0.3, shipped with it | **replay**: without it, the fixed config turns a 6 cm clutter track into a WARN at 24 s | [DR-09](docs/DECISIONS.md#dr-09) |
+| Per-track time base and speed gate | **unit tests** (`test_tracker.py`); motivated by the 4.6 m/s "motion" on 09-25, which was association jumps | [DR-08](docs/DECISIONS.md#dr-08) |
+| All of the above behind legacy defaults | **replay**: default config byte-identical to before on all 7 bags | [DR-06](docs/DECISIONS.md#dr-06) |
+
+No replay with the fixed configuration has yet been scored against the pre-declared bars that decide the switch
+(plan v4 step 9: WARN in every lying segment, 0 WARN in every empty-room segment). Spike memory (plan v4 step 8) is
+not implemented, so with windowed stillness only the 4 s sustained path can raise WARN ([DR-09](docs/DECISIONS.md#dr-09)).
 
 ### Stock RF-DETR on the LIDAR's blind spot (pre-declared, run on the Jetson)
 
@@ -133,11 +140,13 @@ disturbs `/scan` under load was not measured. Everything above, with the audit's
 
 ## Decisions
 
-Seventeen decision records, each with context, options, evidence and consequences:
-[docs/DECISIONS.md](docs/DECISIONS.md). The ones that shape the system:
+Eighteen decision records (DR-00 to DR-17), each with its context, the options on record (or a note that none were
+written down), evidence and consequences: [docs/DECISIONS.md](docs/DECISIONS.md). DR-00 lists what was inherited from
+the 2026-04 snapshot without a recorded rationale. The ones that shape the system:
 
 | Decision | Status |
 |---|---|
+| Inherited baseline: 2D LIDAR, DBSCAN + a hand-tuned heuristic, rationale not recorded ([DR-00](docs/DECISIONS.md#dr-00)) | inherited; every threshold treated as a hypothesis |
 | Scan plane at floor level, not counter height ([DR-02](docs/DECISIONS.md#dr-02)) | accepted; 3D sensor question open |
 | Replay harness over a ROS-free core; fixes behind default-legacy keys ([DR-04](docs/DECISIONS.md#dr-04), [DR-06](docs/DECISIONS.md#dr-06)) | implemented |
 | Two webcams + stock RF-DETR for the blind spots, inference on the device only ([DR-10](docs/DECISIONS.md#dr-10), [DR-11](docs/DECISIONS.md#dr-11)) | accepted |
@@ -163,7 +172,7 @@ Seventeen decision records, each with context, options, evidence and consequence
 ├── foxglove/guardian.json        Foxglove layout used during capture
 ├── demos/                        mobile-app UI concept (fictional data)
 ├── docs/
-│   ├── DECISIONS.md              17 decision records
+│   ├── DECISIONS.md              18 decision records (DR-00 to DR-17)
 │   ├── ARCHITECTURE.md           components, data flow, topics, parameters, exposure
 │   ├── PROCESS.md                how evaluations are run
 │   ├── DEVELOPMENT-LOG.md        commit-by-commit evidence from the private history
@@ -209,7 +218,16 @@ $PY $H/replay_detector.py replay  /tmp/fixture.mcap --params $H/params/2026-09-2
 # the fixes, switched on for this run only
 $PY $H/replay_detector.py replay  /tmp/fixture.mcap \
     --set fall.hold_incident=true --set tracker.still_window_s=1.5 --set min_range_m=0.3
+# ends with "totals: {1: 78, 2: 118}"
 ```
+
+Track `#2` in both runs is the fixture's deliberate 6 cm collinear line (`ext=0.06 el=1000000.0`,
+[`synthetic_scene.py:148`](src/prevera_perception/prevera_perception/synthetic_scene.py)). Its minor axis is zero, and a
+degenerate cluster counts as horizontal with no size check while `fall.degenerate_requires_extent` is false, the
+default ([ARCHITECTURE.md, section 2](docs/ARCHITECTURE.md#2-the-detector-one-scan-at-a-time)). It raises the legacy
+run's WARN at 8.0 s and 80 of the 118 WARN lines with the fixes on, because the incident hold re-emits a held WARN on
+every horizontal scan. The person (`#1`) warns at 9.0 s in the legacy run (spike path) and from 12.2 s with the fixes
+on (sustained path; spike memory is not implemented).
 
 The same commands take a real `ros2 bag record -s mcap` directory. The other verbs (`extract`, `diff`, `divergence`,
 `transitions`) compare a replay with what the live node published: [tools/bag_analysis/README.md](tools/bag_analysis/README.md).
@@ -245,8 +263,9 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 
 - **One subject, one room, one session per result.** Frames within a segment are near-duplicates; treat each
   segment as roughly one trial.
-- **The Jetson runs the legacy detector.** The fixes are proven on replay only; enabling them (plan v4 step 9) needs the
-  pre-declared bars: WARN in every lying segment, and 0 WARN in every empty-room segment.
+- **The Jetson runs the legacy detector.** The fixes are tested offline only (unit tests, and replays of the hold and
+  of `min_range_m`); enabling them (plan v4 step 9) needs the pre-declared bars: WARN in every lying segment, and
+  0 WARN in every empty-room segment.
 - **A single 2D plane cannot see a person lying end-on.** The cameras cover it in the trials above; fusion is not built.
 - **Furniture feet look like a lying person** at floor level (elongated and still). It raised no alarm so far, but
   it is the main false-alarm risk once stillness works.

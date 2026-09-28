@@ -69,9 +69,11 @@ flowchart TD
   upd --> pts["points: foreground, finite,<br/>min_range_m ≤ r ≤ max_range_m"]
   pts --> clu["DBSCAN (eps 0.12 m, min_samples 4)<br/>+ PCA: major axis, elongation"]
   clu --> trk["tracker: nearest centroid within 0.5 m<br/>velocity history, stillness<br/>[per-track dt, speed gate, windowed stillness: DR-08, DR-09]"]
-  trk --> hz{"looks horizontal?<br/>elongation ≥ 3.5 and major axis ≥ 0.8 m"}
+  trk --> deg{"minor axis < 1 mm?<br/>(elongation = inf)"}
+  deg -- "no" --> hz{"looks horizontal?<br/>elongation ≥ 3.5 and major axis ≥ 0.8 m"}
   hz -- "no" --> none(["no event"])
   hz -- "yes" --> spike{"peak speed ≥ 0.8 m/s<br/>and still > 0.5 s?"}
+  deg -- "yes: horizontal at any length<br/>while fall.degenerate_requires_extent = false" --> spike
   spike -- "yes" --> warn1(["WARN, conf = min(1, 0.5 + 0.1 × still_s)"])
   spike -- "no" --> sus{"still ≥ 4.0 s?"}
   sus -- "yes" --> warn2(["WARN, conf 0.6"])
@@ -79,8 +81,17 @@ flowchart TD
 ```
 
 Values shown are the ones in [`fall_detector.yaml`](../src/prevera_bringup/config/fall_detector.yaml), the config the
-Jetson runs. The heuristic is in `evaluate()` in
+Jetson runs. The heuristic is in `looks_horizontal()` and `evaluate()` in
 [`detector_core.py`](../src/prevera_perception/prevera_perception/detector_core.py).
+
+The degenerate branch matters in practice. When every point of a cluster lies on one line, its minor axis is below
+1 mm and [`clustering.py`](../src/prevera_perception/prevera_perception/clustering.py) reports infinite elongation.
+With `fall.degenerate_requires_extent` false (the default, and what the Jetson runs, because the node does not declare
+it; section 4) such a cluster counts as horizontal whatever its length, so a clutter track a few centimetres long can
+raise OBSERVE and, once still, WARN. The 6 cm clutter track that reached WARN at 24 s in the fixed-config replay of
+`floor-trials-1` (DR-09) can only have passed through this branch, since it is far shorter than 0.8 m; so does track
+`#2` in the README's fixture replay. Setting the option to true applies the 0.8 m length check to degenerate clusters
+too; plan v4 step 9 decides it by a pre-declared rule.
 
 ### What happens after a WARN
 

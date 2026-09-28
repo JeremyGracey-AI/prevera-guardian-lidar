@@ -112,3 +112,7 @@ tables and findings are unchanged. Commit hashes, branch names and PR numbers re
 not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
 numbers cited into this document from other documents refer to it as published: this note sits at the end so
 they hold.
+
+**Erratum (2026-09-27, found in the publication review).** Finding 2's count is wrong as written. A recount of the
+recorded `/fall_events` in `floor-trials-1` (`replay_detector.py extract --settle-s 0`) gives 1,132 events: 1,131 at
+level 1 and 1 at level 2, which is segment C's WARN at 165.3 s in the table above. Finding 2 is left as recorded.
