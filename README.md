@@ -184,6 +184,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
+├── tools/roboflow/               time-on-floor Workflow (the camera half of D0), runnable on the device
 ├── tools/git-hooks/pre-push      the structural push gate
 ├── jetson/                       bring-up and run scripts, camera views, scan and track probes
 ├── foxglove/guardian.json        Foxglove layout used during capture
@@ -292,8 +293,8 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 - **The camera views are unauthenticated.** Since 2026-09-28 they bind the loopback address by default and are
   opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes them to
   the network on purpose, for a trusted bench only.
-- **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`),
-  raw recordings, extracted frames and model outputs.
+- **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`;
+  [`tools/roboflow/`](tools/roboflow/) is its public stand-in), raw recordings, extracted frames and model outputs.
 
 ## Roadmap
 
