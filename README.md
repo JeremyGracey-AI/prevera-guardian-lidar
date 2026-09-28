@@ -18,8 +18,8 @@ From the [RF-DETR results](docs/field-tests/2026-09-27-rfdetr-results.md); every
 
 ## The problem
 
-A fall detector in a resident's room has to notice a person on the floor without filming them. A 2D LIDAR sees
-shapes, not faces: a person standing is a small round slice, a person on the floor is a long thin one. The open
+A fall detector in a resident's room has to notice a person on the floor, and images of them should not leave the
+room. A 2D LIDAR sees shapes, not faces: a person standing is a small round slice, a person on the floor is a long thin one. The open
 questions were whether that signal survives a real room, and what to add where it does not. Three days of field
 tests answered part of it:
 
@@ -29,10 +29,11 @@ tests answered part of it:
 - **End-on is a blind spot.** Lying along the beam, the plane sees only the soles or the head (0.22 to 0.33 m), and both
   such trials were missed ([floor trials](docs/field-tests/2026-09-27-floor-mount-grid.md)). That is what the cameras
   are for.
-- **Escalation failed.** Stillness never accumulated past 3.4 s, and one track went silent after its single WARN.
-  Both have fixes behind default-off configuration keys: the incident hold is shown on a replay of `floor-trials-1`,
-  windowed stillness and the speed gate are unit-tested, and the pre-declared replay bars that decide the switch
-  (plan v4 step 9) have not been run. The device still runs the legacy detector.
+- **Escalation failed live; offline, the fixed config reaches WARN.** Stillness never accumulated past 3.4 s, and
+  one track went silent after its single WARN. Both have fixes behind default-off configuration keys. Replayed on `floor-trials-1`
+  with them on, all four lie-downs the LIDAR can see reach WARN 0.7 to 4.0 s after onset (3.3 to 6.5 s on stillness
+  alone), and walking and standing raise nothing ([fixed-config replay](docs/field-tests/2026-09-27-fixed-config-replay.md)). The pre-declared bars that decide
+  the switch (plan v4 step 9) have not been run, and the device still runs the legacy detector.
 
 ## System architecture
 
@@ -116,10 +117,13 @@ gives the recount.)
 | `min_range_m` 0.3, shipped with it | **replay**: without it, the fixed config turns a 6 cm clutter track into a WARN at 24 s | [DR-09](docs/DECISIONS.md#dr-09) |
 | Per-track time base and speed gate | **unit tests** (`test_tracker.py`); motivated by the 4.6 m/s "motion" on 09-25, which was association jumps | [DR-08](docs/DECISIONS.md#dr-08) |
 | All of the above behind legacy defaults | **replay**: default config byte-identical to before on all 7 bags | [DR-06](docs/DECISIONS.md#dr-06) |
+| All of the above, switched on together | **replay** of `floor-trials-1`: WARN 0.7 to 4.0 s after onset in A, C, D and E; 0 events walking or standing | [results](docs/field-tests/2026-09-27-fixed-config-replay.md) |
 
-No replay with the fixed configuration has yet been scored against the pre-declared bars that decide the switch
-(plan v4 step 9: WARN in every lying segment, 0 WARN in every empty-room segment). Spike memory (plan v4 step 8) is
-not implemented, so with windowed stillness only the 4 s sustained path can raise WARN ([DR-09](docs/DECISIONS.md#dr-09)).
+That replay is not the step-9 scoring that decides the switch (WARN in every lying segment, 0 WARN in every
+empty-room segment, scored against label files that do not exist yet). Its early WARNs come from the spike rule,
+which fires once the 1.5 s stillness window has filled, in three of the four lie-downs on centroid jitter, and a
+known false WARN (sitting in a chair, 09-26) persists. An earlier version of this README said that
+rule could not fire without spike memory (plan v4 step 8); the replay disproves it ([caveats](docs/field-tests/2026-09-27-fixed-config-replay.md#caveats)).
 
 ### Stock RF-DETR on the LIDAR's blind spot (pre-declared, run on the Jetson)
 
@@ -140,8 +144,8 @@ disturbs `/scan` under load was not measured. Everything above, with the audit's
 
 ## Decisions
 
-Eighteen decision records (DR-00 to DR-17), each with its context, the options on record (or a note that none were
-written down), evidence and consequences: [docs/DECISIONS.md](docs/DECISIONS.md). DR-00 lists what was inherited from
+Eighteen decision records (DR-00 to DR-17), each with its status, the options on record (or a note that none were
+written down) and its evidence; the open ones say what comes next: [docs/DECISIONS.md](docs/DECISIONS.md). DR-00 lists what was inherited from
 the 2026-04 snapshot without a recorded rationale. The ones that shape the system:
 
 | Decision | Status |
@@ -263,9 +267,10 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 
 - **One subject, one room, one session per result.** Frames within a segment are near-duplicates; treat each
   segment as roughly one trial.
-- **The Jetson runs the legacy detector.** The fixes are tested offline only (unit tests, and replays of the hold and
-  of `min_range_m`); enabling them (plan v4 step 9) needs the pre-declared bars: WARN in every lying segment, and
-  0 WARN in every empty-room segment.
+- **The Jetson runs the legacy detector.** The fixes are tested offline only (unit tests, and replays of seven
+  bags); enabling them (plan v4 step 9) needs the pre-declared bars: WARN in every lying segment, and 0 WARN in every
+  empty-room segment. The fixed config's fastest WARNs mostly depend on centroid jitter; on stillness alone, WARN comes 3.3
+  to 6.5 s after onset.
 - **A single 2D plane cannot see a person lying end-on.** The cameras cover it in the trials above; fusion is not built.
 - **Furniture feet look like a lying person** at floor level (elongated and still). It raised no alarm so far, but
   it is the main false-alarm risk once stillness works.
@@ -287,6 +292,8 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
    capture egress.
 5. Measure the LIDAR-to-camera extrinsics and update the URDF; labelled trials with more subjects, ranges and rooms.
 6. Revisit the 3D-sensor question with those numbers.
+7. The goal after detection: fall-risk prediction, flagging rising risk before a fall. Not built; nothing in this
+   repository predicts falls.
 
 ## Licence
 

@@ -85,3 +85,8 @@ The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jets
 
 Upstream, the same day: [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) (open), one line that
 sets `TRITON_CACHE_DIR` in the Jetson 6.2.0 image; see [DECISIONS.md, DR-12](DECISIONS.md#dr-12).
+
+Written up after the fact: the evidence run behind `36ca654` replayed all seven bags under the legacy, fixed and
+fixed + hold configs. Its `floor-trials-1` result (WARN 0.7 to 4.0 s after onset in the four visible lie-downs, none
+walking or standing) and the correction it forces in DR-09 are in the
+[fixed-config replay](field-tests/2026-09-27-fixed-config-replay.md).

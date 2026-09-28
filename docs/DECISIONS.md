@@ -256,7 +256,8 @@ flowchart LR
 - **Evidence:** [`tracker.py`](../src/prevera_perception/prevera_perception/tracker.py),
   [`test_tracker.py`](../src/prevera_perception/test/test_tracker.py).
 - **Consequences:** a track's published `age_s` grows by the whole gap on reacquisition; a fall whose centroid jumps more
-  than 0.3 m between two scans spawns a new track, which leaves it only the 4 s sustained path (plan v4, section 6).
+  than 0.3 m between two scans spawns a new track, so only the speeds the new track itself records count toward
+  the spike rule (plan v4, section 6); in the replay those were still enough to fire it ([fixed-config replay](field-tests/2026-09-27-fixed-config-replay.md)).
 
 <a id="dr-09"></a>
 ## DR-09 · Windowed stillness, shipped together with `min_range_m` 0.3
@@ -278,10 +279,14 @@ flowchart LR
   6 cm camera/counter-edge clutter track reaches a sustained WARN at 24 s under the fixed config, before anyone lies down
   ([execution notes](plans/replay-harness-plan-v4-open-gaps.md)).
 - **Evidence:** [`test_stillness.py`](../src/prevera_perception/test/test_stillness.py) (the plan's seven scenarios
-  plus a boundary test that fails if the epsilon is dropped from either comparison).
+  plus a boundary test that fails if the epsilon is dropped from either comparison), and a
+  [replay of `floor-trials-1`](field-tests/2026-09-27-fixed-config-replay.md) with every fix on: WARN 0.7 to 4.0 s after onset in the four visible
+  lie-downs, 3.3 to 6.5 s on stillness alone, 0 events walking or standing.
 - **Consequences:** any static held-foreground cluster can now accrue stillness, so the flip carries a hard bar: 0 WARN
   in every empty-room segment before deployment ([plan v4, step 9, R5](plans/replay-harness-plan-v4.md)). Without spike
-  memory (step 8, not implemented) the spike-then-still path cannot fire, so only the 4 s sustained path does.
+  memory (step 8, not implemented) the spike rule still fires once the window has filled, on any speed of at least
+  0.8 m/s still among the track's last 10 matched updates: centroid jitter in three `floor-trials-1` lie-downs, the
+  going-down motion in the fourth. This record first said it could not fire; the [replay](field-tests/2026-09-27-fixed-config-replay.md#caveats) corrected that.
 
 <a id="dr-10"></a>
 ## DR-10 · Add two webcams and a stock camera detector for the LIDAR's blind spots
