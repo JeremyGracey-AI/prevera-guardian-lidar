@@ -3,8 +3,8 @@ Copyright 2026 Jeremy Gracey / PREVERA
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Patent pending. The fall-detection methods described in this repository are the
-subject of a pending US patent application.
+Patent pending. Aspects of the PREVERA GUARDIAN+AI system, including the proprietary
+V-JEPA verification stage, are the subject of a pending US patent application.
 
 The V-JEPA verification stage referred to in this repository is proprietary and is
 not included. src/prevera_perception/prevera_perception/vjepa_bridge.py contains
