@@ -1,0 +1,104 @@
+   0.0  (no person-like track; 1 tracks total)
+   2.1  (no person-like track; 1 tracks total)
+   4.4  (no person-like track; 1 tracks total)
+   6.4  (no person-like track; 1 tracks total)
+   8.4  (no person-like track; 1 tracks total)
+  10.5  (no person-like track; 1 tracks total)
+  12.5  (no person-like track; 1 tracks total)
+  14.6  (no person-like track; 1 tracks total)
+  16.6  (no person-like track; 1 tracks total)
+  18.7  (no person-like track; 1 tracks total)
+  20.7  (no person-like track; 1 tracks total)
+  22.7  (no person-like track; 1 tracks total)
+  23.3  id=2   x= -0.59 y= -3.16 r= 3.22 bearing= -100.6deg ext=1.06 still=0
+  23.9  id=2   x= -0.42 y= -2.76 r= 2.79 bearing=  -98.6deg ext=1.51 still=0
+  24.4  id=3   x= +0.15 y= -3.29 r= 3.29 bearing=  -87.4deg ext=0.24 still=0
+  24.9  id=4   x= -0.03 y= -2.51 r= 2.51 bearing=  -90.6deg ext=0.19 still=0
+  25.5  id=4   x= -0.03 y= -2.51 r= 2.51 bearing=  -90.6deg ext=0.19 still=0
+  27.6  (no person-like track; 1 tracks total)
+  28.4  id=5   x= -1.06 y= -1.49 r= 1.83 bearing= -125.4deg ext=0.10 still=0
+  29.0  id=8   x= -0.04 y= -1.23 r= 1.23 bearing=  -91.9deg ext=0.71 still=0
+  29.6  id=8   x= -0.02 y= -1.28 r= 1.28 bearing=  -90.8deg ext=0.32 still=0
+  30.1  id=8   x= -0.02 y= -1.28 r= 1.28 bearing=  -90.8deg ext=0.32 still=0
+  30.6  id=8   x= -0.02 y= -1.28 r= 1.28 bearing=  -90.8deg ext=0.32 still=0
+  32.7  id=9   x= -0.12 y= -1.41 r= 1.42 bearing=  -94.9deg ext=0.18 still=0
+  33.3  id=9   x= -0.12 y= -1.41 r= 1.42 bearing=  -94.9deg ext=0.18 still=0
+  33.8  id=9   x= -0.12 y= -1.41 r= 1.42 bearing=  -94.9deg ext=0.18 still=0
+  35.9  (no person-like track; 1 tracks total)
+  38.0  (no person-like track; 1 tracks total)
+  39.4  id=10  x= -0.29 y= -1.47 r= 1.50 bearing= -101.4deg ext=0.25 still=0
+  40.0  id=10  x= -0.06 y= -1.76 r= 1.76 bearing=  -91.9deg ext=0.51 still=0
+  40.5  id=11  x= +0.08 y= -1.72 r= 1.72 bearing=  -87.4deg ext=0.34 still=0
+  41.1  id=11  x= -0.05 y= -1.79 r= 1.79 bearing=  -91.6deg ext=0.72 still=1
+  41.7  id=11  x= -0.03 y= -1.76 r= 1.76 bearing=  -91.1deg ext=0.64 still=0
+  42.2  id=10  x= -0.24 y= -1.63 r= 1.64 bearing=  -98.5deg ext=1.20 still=0
+  42.8  id=10  x= -0.26 y= -1.74 r= 1.76 bearing=  -98.4deg ext=1.05 still=0
+  43.4  id=10  x= -0.26 y= -1.74 r= 1.76 bearing=  -98.4deg ext=1.05 still=0
+  44.0  id=10  x= -0.26 y= -1.74 r= 1.76 bearing=  -98.4deg ext=1.05 still=0
+  46.1  (no person-like track; 1 tracks total)
+  46.9  id=14  x= -0.37 y= -1.97 r= 2.01 bearing= -100.6deg ext=0.09 still=0
+  47.4  id=14  x= -0.07 y= -1.37 r= 1.37 bearing=  -92.7deg ext=0.74 still=0
+  48.0  id=14  x= -0.06 y= -1.74 r= 1.74 bearing=  -92.1deg ext=0.29 still=0
+  48.5  id=14  x= -0.06 y= -1.74 r= 1.74 bearing=  -92.1deg ext=0.29 still=0
+  49.1  id=14  x= -0.06 y= -1.74 r= 1.74 bearing=  -92.1deg ext=0.29 still=0
+  51.1  (no person-like track; 1 tracks total)
+  53.2  (no person-like track; 1 tracks total)
+  55.3  (no person-like track; 1 tracks total)
+  57.4  (no person-like track; 1 tracks total)
+  58.0  id=17  x= -0.24 y= -1.44 r= 1.46 bearing=  -99.6deg ext=0.35 still=0
+  58.6  id=18  x= -0.04 y= -1.37 r= 1.37 bearing=  -91.8deg ext=0.71 still=1
+  59.1  id=18  x= +0.00 y= -1.36 r= 1.36 bearing=  -89.8deg ext=0.68 still=0
+  59.7  id=18  x= +0.10 y= -1.37 r= 1.37 bearing=  -85.7deg ext=0.45 still=0
+  60.3  id=18  x= +0.08 y= -1.38 r= 1.38 bearing=  -86.8deg ext=0.48 still=0
+  60.8  id=18  x= -0.20 y= -1.35 r= 1.36 bearing=  -98.6deg ext=1.11 still=0
+  61.4  id=17  x= -0.48 y= -1.19 r= 1.28 bearing= -112.0deg ext=0.59 still=0
+  62.0  id=18  x= -0.06 y= -1.24 r= 1.24 bearing=  -93.0deg ext=0.65 still=0
+  62.6  id=18  x= -0.06 y= -1.24 r= 1.24 bearing=  -93.0deg ext=0.65 still=0
+  64.7  (no person-like track; 1 tracks total)
+  66.3  id=20  x= -1.07 y= -1.26 r= 1.65 bearing= -130.4deg ext=0.09 still=0
+  66.8  id=22  x= -0.06 y= -1.13 r= 1.14 bearing=  -93.0deg ext=0.71 still=0
+  67.4  id=22  x= -0.39 y= -1.25 r= 1.31 bearing= -107.3deg ext=1.28 still=0
+  67.9  id=22  x= -0.39 y= -1.25 r= 1.31 bearing= -107.3deg ext=1.28 still=0
+  68.5  id=22  x= -0.39 y= -1.25 r= 1.31 bearing= -107.3deg ext=1.28 still=0
+  69.1  id=20  x= -1.03 y= -1.29 r= 1.65 bearing= -128.4deg ext=0.12 still=0
+  71.1  (no person-like track; 1 tracks total)
+  73.1  (no person-like track; 1 tracks total)
+  73.7  id=23  x= -1.03 y= -1.71 r= 2.00 bearing= -121.2deg ext=0.16 still=0
+  74.2  id=24  x= -0.04 y= -1.49 r= 1.49 bearing=  -91.5deg ext=0.73 still=0
+  74.8  id=24  x= -0.38 y= -1.66 r= 1.70 bearing= -103.0deg ext=1.41 still=0
+  75.4  id=24  x= -0.38 y= -1.66 r= 1.70 bearing= -103.0deg ext=1.41 still=0
+  75.9  id=26  x= -1.01 y= -1.70 r= 1.98 bearing= -120.7deg ext=0.16 still=0
+  78.0  (no person-like track; 1 tracks total)
+  78.5  id=27  x= -0.76 y= -1.33 r= 1.53 bearing= -119.8deg ext=0.60 still=0
+  79.1  id=28  x= -0.07 y= -1.33 r= 1.33 bearing=  -92.9deg ext=0.72 still=0
+  79.7  id=28  x= -0.07 y= -1.33 r= 1.33 bearing=  -92.9deg ext=0.72 still=0
+  80.2  id=28  x= -0.07 y= -1.33 r= 1.33 bearing=  -92.9deg ext=0.72 still=0
+  82.3  (no person-like track; 1 tracks total)
+  84.3  (no person-like track; 1 tracks total)
+  86.4  (no person-like track; 1 tracks total)
+  88.5  (no person-like track; 1 tracks total)
+  90.5  (no person-like track; 1 tracks total)
+  92.6  (no person-like track; 1 tracks total)
+  94.7  (no person-like track; 1 tracks total)
+  96.8  (no person-like track; 1 tracks total)
+  98.8  (no person-like track; 1 tracks total)
+ 100.9  (no person-like track; 1 tracks total)
+ 102.9  (no person-like track; 1 tracks total)
+ 103.4  id=30  x= -0.12 y= -3.22 r= 3.22 bearing=  -92.1deg ext=0.14 still=0
+ 104.0  id=30  x= -0.34 y= -3.54 r= 3.56 bearing=  -95.5deg ext=1.32 still=0
+ 104.6  id=30  x= -0.51 y= -3.78 r= 3.82 bearing=  -97.6deg ext=1.52 still=0
+ 105.2  id=31  x= -1.03 y= -3.74 r= 3.88 bearing= -105.4deg ext=0.48 still=0
+ 105.7  id=30  x= -0.18 y= -3.80 r= 3.80 bearing=  -92.6deg ext=0.58 still=0
+ 106.2  id=31  x= -1.03 y= -3.74 r= 3.88 bearing= -105.4deg ext=0.48 still=0
+ 106.8  id=30  x= -0.16 y= -3.82 r= 3.82 bearing=  -92.4deg ext=0.69 still=0
+ 107.4  id=30  x= -0.01 y= -3.85 r= 3.85 bearing=  -90.1deg ext=0.31 still=0
+ 107.9  id=30  x= -0.06 y= -3.90 r= 3.90 bearing=  -90.9deg ext=0.50 still=0
+ 108.4  id=32  x= -0.47 y= -4.04 r= 4.07 bearing=  -96.6deg ext=0.28 still=0
+ 109.0  id=30  x= -0.06 y= -3.88 r= 3.88 bearing=  -90.9deg ext=0.27 still=1
+ 109.6  id=30  x= -0.06 y= -3.88 r= 3.88 bearing=  -90.9deg ext=0.27 still=1
+ 111.6  (no person-like track; 1 tracks total)
+ 113.7  (no person-like track; 1 tracks total)
+ 115.8  (no person-like track; 1 tracks total)
+ 117.9  (no person-like track; 1 tracks total)
+SUMMARY walk: n=278 mean_y=-1.63 y_min=-3.61 y_max=-1.13 x_range=[-1.12,+0.44]
+SUMMARY stand (last 10 s): n=65 x=-0.36 y=-3.78 range=3.80 bearing=-95.4deg

@@ -1,0 +1,202 @@
+{
+ "about": "Path-scrubbed extract of keypoints-score.json and the run metadata of keypoints-results.json (both written by tools/bag_analysis/rfdetr_keypoints.py). The raw per-frame results and the frames are field data and are not published. Nothing here is recomputed; values are copied.",
+ "plan": "docs/field-tests/2026-09-27-rfdetr-keypoints-plan.md",
+ "plan_commit": "2bab6532e45bac5e0a3580645ad4ac61929f1b87",
+ "verdict": "RUN INVALID (definition 9); K1-K3 not scored",
+ "validity": {
+  "a_md5_ok": true,
+  "b_no_partial_load_warning": true,
+  "c_all_instances_person_class0": false,
+  "c_violation_count": 4882,
+  "valid": false
+ },
+ "validity_c_first_violations": [
+  [
+   "A-028s-c920.jpg",
+   1,
+   "person"
+  ],
+  [
+   "A-028s-brio.jpg",
+   1,
+   "person"
+  ],
+  [
+   "A-028s-brio.jpg",
+   1,
+   "person"
+  ]
+ ],
+ "schema_check": {
+  "verdict": "cannot be read",
+  "frames": {
+   "W/brio": {
+    "verdict": "cannot be read",
+    "reason": "no selected frame has a scored instance"
+   },
+   "A/c920": {
+    "verdict": "cannot be read",
+    "reason": "no selected frame has a scored instance"
+   }
+  },
+  "frozen_mapping": null
+ },
+ "report_only": {
+  "instances_per_frame": {
+   "A/c920": {
+    "frames": 12,
+    "frames_with_any_instance_ge_0.1": 12,
+    "frames_with_any_instance_fused_ge_0.3": 12,
+    "median_instances_per_frame_ge_0.1": 1.5,
+    "median_instances_per_frame_fused_ge_0.3": 1.0,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "A/brio": {
+    "frames": 12,
+    "frames_with_any_instance_ge_0.1": 12,
+    "frames_with_any_instance_fused_ge_0.3": 12,
+    "median_instances_per_frame_ge_0.1": 1.0,
+    "median_instances_per_frame_fused_ge_0.3": 1.0,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "B/c920": {
+    "frames": 33,
+    "frames_with_any_instance_ge_0.1": 33,
+    "frames_with_any_instance_fused_ge_0.3": 33,
+    "median_instances_per_frame_ge_0.1": 5,
+    "median_instances_per_frame_fused_ge_0.3": 1,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "B/brio": {
+    "frames": 33,
+    "frames_with_any_instance_ge_0.1": 33,
+    "frames_with_any_instance_fused_ge_0.3": 32,
+    "median_instances_per_frame_ge_0.1": 7,
+    "median_instances_per_frame_fused_ge_0.3": 1,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "F/c920": {
+    "frames": 30,
+    "frames_with_any_instance_ge_0.1": 30,
+    "frames_with_any_instance_fused_ge_0.3": 30,
+    "median_instances_per_frame_ge_0.1": 36.5,
+    "median_instances_per_frame_fused_ge_0.3": 2.0,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "F/brio": {
+    "frames": 30,
+    "frames_with_any_instance_ge_0.1": 2,
+    "frames_with_any_instance_fused_ge_0.3": 0,
+    "median_instances_per_frame_ge_0.1": 0.0,
+    "median_instances_per_frame_fused_ge_0.3": 0.0,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "W/c920": {
+    "frames": 30,
+    "frames_with_any_instance_ge_0.1": 30,
+    "frames_with_any_instance_fused_ge_0.3": 30,
+    "median_instances_per_frame_ge_0.1": 41.0,
+    "median_instances_per_frame_fused_ge_0.3": 1.0,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   },
+   "W/brio": {
+    "frames": 30,
+    "frames_with_any_instance_ge_0.1": 25,
+    "frames_with_any_instance_fused_ge_0.3": 23,
+    "median_instances_per_frame_ge_0.1": 78.5,
+    "median_instances_per_frame_fused_ge_0.3": 3.0,
+    "class_ids_returned": [
+     1
+    ],
+    "class_names_returned": [
+     "person"
+    ]
+   }
+  },
+  "cpu_time": {
+   "note": "wall time around model.predict on this Mac, CPU, device='cpu'; not a device latency",
+   "torch_num_threads": 20,
+   "first_frame_s": 2.1639,
+   "median_excl_first_s": 0.14,
+   "min_s": 0.1354,
+   "max_s": 2.1639,
+   "raw_pass_median_s": 0.139
+  },
+  "raw_pass": {
+   "constructed_with": "RFDETRKeypointPreview(device='cpu', postprocess_trace_alpha=0.0)",
+   "postprocess.trace_alpha_observed": 0.0,
+   "run": true
+  }
+ },
+ "run": {
+  "started_utc": "2026-09-28T00:44:31.607009+00:00",
+  "finished_utc": "2026-09-28T00:45:35.345917+00:00",
+  "host": {
+   "machine": "arm64",
+   "python": "3.11.15"
+  },
+  "packages": {
+   "rfdetr": "1.11.0",
+   "supervision": "0.30.5",
+   "torch": "2.14.0",
+   "torchvision": "0.29.0",
+   "transformers": "5.17.0",
+   "pillow": "12.3.0",
+   "numpy": "2.4.6"
+  },
+  "device": "cpu",
+  "model": {
+   "class": "rfdetr.RFDETRKeypointPreview",
+   "size": "rfdetr-keypoint-preview",
+   "constructed_with": "RFDETRKeypointPreview(device='cpu')",
+   "resolution": 576,
+   "load_s": 1.11,
+   "postprocess_trace_alpha_pass1": 0.2
+  },
+  "checkpoint": {
+   "bytes": 163696618,
+   "md5": "6de511943ee85a547d4c5cb527daf0eb",
+   "md5_expected": "6de511943ee85a547d4c5cb527daf0eb",
+   "md5_ok": true
+  },
+  "frame_count": 210,
+  "keypoint_names_source": "assumed COCO-17 (rfdetr 1.11.0 exposes no index-to-name mapping for the pretrained preview)",
+  "egress": "frames read from local disk only; no frame sent anywhere; no Roboflow API key used",
+  "predict_call": "model.predict(PIL.Image.open(f).convert('RGB'), threshold=0.1)"
+ }
+}
