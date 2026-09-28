@@ -2,9 +2,9 @@
   "version": "1.0",
   "inputs": [
     {"type": "WorkflowImage", "name": "image"},
-    {"type": "WorkflowParameter", "name": "model_id", "default_value": "fall_detection-johan-jsi2o/1"},
+    {"type": "WorkflowParameter", "name": "model_id", "default_value": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18"},
     {"type": "WorkflowParameter", "name": "confidence", "default_value": 0.5},
-    {"type": "WorkflowParameter", "name": "down_classes", "default_value": ["lying", "fall", "person-fall", "fallen"]},
+    {"type": "WorkflowParameter", "name": "down_classes", "default_value": ["lying", "fall"]},
     {"type": "WorkflowParameter", "name": "floor_zone", "default_value": [[0, 300], [1280, 300], [1280, 720], [0, 720]]},
     {"type": "WorkflowParameter", "name": "warn_after_s", "default_value": 4.0}
   ],
@@ -17,28 +17,9 @@
       "confidence": "$inputs.confidence"
     },
     {
-      "type": "roboflow_core/trackers_bytetrack@v1",
-      "name": "tracker",
-      "image": "$inputs.image",
-      "detections": "$steps.detector.predictions",
-      "track_activation_threshold": "$inputs.confidence",
-      "lost_track_buffer": 30,
-      "minimum_consecutive_frames": 2
-    },
-    {
-      "type": "roboflow_core/track_class_lock@v1",
-      "name": "class_lock",
-      "image": "$inputs.image",
-      "detections": "$steps.tracker.tracked_detections",
-      "min_votes": 5,
-      "vote_confidence": "$inputs.confidence",
-      "lead_margin": 2,
-      "switch_after": 15
-    },
-    {
       "type": "roboflow_core/detections_filter@v1",
       "name": "down_only",
-      "predictions": "$steps.class_lock.tracked_detections",
+      "predictions": "$steps.detector.predictions",
       "operations": [
         {
           "type": "DetectionsFilter",
@@ -62,10 +43,20 @@
       "operations_parameters": {"down_classes": "$inputs.down_classes"}
     },
     {
+      "type": "roboflow_core/trackers_bytetrack@v1",
+      "name": "tracker",
+      "image": "$inputs.image",
+      "detections": "$steps.down_only.predictions",
+      "track_activation_threshold": "$inputs.confidence",
+      "high_conf_det_threshold": "$inputs.confidence",
+      "lost_track_buffer": 10,
+      "minimum_consecutive_frames": 2
+    },
+    {
       "type": "roboflow_core/time_in_zone@v3",
       "name": "time_on_floor",
       "image": "$inputs.image",
-      "detections": "$steps.down_only.predictions",
+      "detections": "$steps.tracker.tracked_detections",
       "zone": "$inputs.floor_zone",
       "triggering_anchor": "CENTER",
       "remove_out_of_zone_detections": true,

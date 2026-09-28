@@ -30,7 +30,7 @@ def test_workflow_spec_is_well_formed():
     inputs = {i["name"] for i in spec["inputs"]}
     steps = {s["name"] for s in spec["steps"]}
     assert {"image", "model_id", "confidence", "down_classes", "floor_zone", "warn_after_s"} <= inputs
-    assert {"detector", "tracker", "class_lock", "down_only", "time_on_floor", "down_too_long"} <= steps
+    assert {"detector", "down_only", "tracker", "time_on_floor", "down_too_long"} <= steps
     for ref in _refs(spec):
         m = REF.match(ref)
         assert m, f"malformed selector {ref!r}"
@@ -52,3 +52,35 @@ def test_warn_threshold_matches_the_lidar_sustained_rule():
     spec = json.loads(SPEC.read_text())
     warn = {i["name"]: i for i in spec["inputs"]}["warn_after_s"]["default_value"]
     assert warn == 4.0, "keep warn_after_s equal to fall.sustained_down_s (4.0 s) or update the README"
+
+
+# --- review finding I3: the timer must only ever see down poses, on tracks that die when the person gets up ---
+def _steps():
+    spec = json.loads(SPEC.read_text())
+    return spec, {s["name"]: s for s in spec["steps"]}, {i["name"]: i for i in spec["inputs"]}
+
+
+def test_timer_is_fed_by_a_tracker_that_only_sees_down_poses():
+    spec, steps, _ = _steps()
+    timer = steps["time_on_floor"]
+    feeder = steps[timer["detections"].split(".")[1]]
+    assert feeder["type"].startswith("roboflow_core/trackers_bytetrack@"), "time_in_zone needs tracker ids"
+    assert feeder["detections"] == "$steps.down_only.predictions", "the tracker must run AFTER the down-class filter"
+    assert steps["down_only"]["predictions"] == "$steps.detector.predictions"
+    assert not any(s["type"].startswith("roboflow_core/track_class_lock") for s in spec["steps"]), \
+        "a class lock delays and holds the clock; it is not part of this workflow"
+
+
+def test_one_confidence_input_sets_every_threshold_that_gates_a_track():
+    _, steps, _ = _steps()
+    tracker = steps["tracker"]
+    assert tracker["track_activation_threshold"] == "$inputs.confidence"
+    assert tracker["high_conf_det_threshold"] == "$inputs.confidence"
+    assert tracker["lost_track_buffer"] <= 10, "a dead track must not carry its clock into the next lie-down"
+    assert steps["detector"]["confidence"] == "$inputs.confidence"
+
+
+def test_defaults_name_a_real_model_and_only_classes_the_plan_datasets_have():
+    _, _, inputs = _steps()
+    assert inputs["model_id"]["default_value"] == "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18"
+    assert set(inputs["down_classes"]["default_value"]) == {"lying", "fall"}

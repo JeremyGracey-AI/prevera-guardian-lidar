@@ -132,8 +132,9 @@ models' 108 to 127 ms.
   class split, and the [v2 rescore](2026-09-28-rfdetr-keypoints-plan-v2.md) is the next step for keypoints. Which
   runs first is Jeremy's call.
 - **D0** ([DR-14](../DECISIONS.md#dr-14)) gets its camera half as a runnable artefact: the
-  [time-on-floor Workflow](../../tools/roboflow/README.md) takes any of these models by id and returns seconds down
-  inside a floor polygon, the unit the LIDAR detector's stillness clock uses.
+  [time-on-floor Workflow](../../tools/roboflow/README.md) takes any of these models by id and returns seconds since
+  a down-pose track entered a floor polygon, the unit the LIDAR detector's stillness clock uses. Its clock is
+  specified and validated structurally; it has not been run on video.
 - **The bed.** `bed` labels the furniture, and the model never confused it with a lying person on 16 + 24
   instances. A person lying **in** the bed is a different question that this label set cannot ask; the Workflow's
   floor polygon is the mechanism that keeps in-bed lying out of the count until a dataset asks it.

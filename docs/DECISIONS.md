@@ -389,7 +389,8 @@ flowchart LR
   during the run to answer the co-load question. Any placement needs the LIDAR-to-camera extrinsics, which are not
   measured yet ([rig doc](hardware/rig-2026-09-26.md)). Since 2026-09-28 the camera side exists as a runnable
   artefact, the [time-on-floor Workflow](../tools/roboflow/README.md), which turns any pose-as-class model into
-  seconds down inside a floor polygon, the unit the LIDAR detector's stillness clock uses.
+  seconds since a down-pose track entered a floor polygon, the unit the LIDAR detector's stillness clock uses. Its
+  clock has been validated structurally, not on video.
 
 <a id="dr-15"></a>
 ## DR-15 · Publish the LIDAR path; keep the V-JEPA verification stage proprietary
