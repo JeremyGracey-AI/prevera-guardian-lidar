@@ -1,0 +1,16 @@
+# PREVERA GUARDIAN+AI - RPLIDAR C1 stable device node
+#
+# The RPLIDAR C1 uses an FTDI or CP210x USB-UART bridge. This rule
+# creates a stable /dev/rplidar symlink regardless of which /dev/ttyUSB*
+# the kernel happens to assign, and grants dialout group access.
+#
+# Install with:   sudo cp 99-rplidar.rules /etc/udev/rules.d/
+# Reload with:    sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# CP210x (Slamtec's USB adapter uses this chip on most units)
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", \
+    MODE:="0666", GROUP:="dialout", SYMLINK+="rplidar"
+
+# CH340 variant (some third-party adapter boards)
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", \
+    MODE:="0666", GROUP:="dialout", SYMLINK+="rplidar"

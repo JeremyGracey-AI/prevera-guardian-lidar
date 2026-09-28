@@ -1,0 +1,30 @@
+fall_detector:
+  ros__parameters:
+    frame_id: laser
+    min_range_m: 0.05
+    max_range_m: 10.0
+
+    background:
+      window_size: 40
+      warmup_scans: 30
+      foreground_margin_m: 0.15
+      hold_foreground: true      # keep a still person out of the background (see background.py)
+      max_hold_scans: 1200       # release a held beam after 2 min so moved furniture is learned
+      mask_dilation_beams: 2
+
+    cluster:
+      eps_m: 0.12
+      min_samples: 4
+      min_points_per_cluster: 6
+
+    tracker:
+      association_gate_m: 0.5
+      max_missed_scans: 15
+      velocity_window: 10
+      still_velocity_mps: 0.15
+
+    fall:
+      elongation_ratio: 3.5
+      major_axis_m: 0.8
+      velocity_spike_mps: 0.8
+      sustained_down_s: 4.0

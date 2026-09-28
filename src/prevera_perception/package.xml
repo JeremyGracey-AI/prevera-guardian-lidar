@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>prevera_perception</name>
+  <version>0.1.0</version>
+  <description>LIDAR-based fall detection for PREVERA GUARDIAN+AI. The V-JEPA verification stage is proprietary and not included; only its interface stub is.</description>
+
+  <maintainer email="jeremy.a.gracey@gmail.com">Jeremy Gracey</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>prevera_msgs</depend>
+  <depend>python3-numpy</depend>
+  <depend>python3-sklearn</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
