@@ -163,8 +163,8 @@ What it says, in the same terms as the 09-27 columns:
   setup is absent from every number here.
 - **`/scan`.** 47 before and after `e65db0`. The 29 before `00ba18` is a single reading taken between the runs,
   with no request in flight, thirty seconds after a 47; it is measurement jitter of the same kind as nano's 39 on
-  09-27, and 46 after the run. Whether inference disturbs `/scan` *during* a run is still not measured: no bag
-  was recorded and nothing was sampled mid-run.
+  09-27, and 46 after the run. What happens *during* a run was measured later the same evening; see "Co-load"
+  below.
 - **`first_call_s` is a cold pull for `e65db0`** (17.5 s: the container had just been started and the model was
   not in `/opt/nvme/inference-cache`), and pull plus load for `00ba18` (9.1 s). Those are the numbers a restart
   pays; on 09-27 the weights were already cached.
@@ -182,6 +182,32 @@ checks this); the LIDAR driver and fall detector were restarted at 22:51 UTC aft
 with 0 scans, and read 44 to 47 scans per 5 s before the runs; no camera capture process was running; the
 Jetson's ROS checkout was `fix/background-absorption @ 7b705c2`, not `main`. Egress was not captured, so "the server
 posts nothing but the model pull" is still the configuration's word, not a measurement.
+
+**Co-load (CL1, CL2; bars fixed in [the close-the-gaps plan](../plans/2026-09-28-close-the-gaps-plan.md), committed
+at 23:25 UTC, before the bags at 23:32).** Two 60-second bags of `/scan` and `/fall_events` (`ros2 bag record -s
+mcap`), LIDAR stack up, cameras off, container up with `e65db0` resident: one idle, one with the 580-frame
+`e65db0` run inside it from second 5 to second 53. Read with
+[`scan_rate.py`](../../tools/bag_analysis/scan_rate.py) from header stamps ([idle](2026-09-28-roboflow/coload-idle.json),
+[load](2026-09-28-roboflow/coload-e65db0.json); the runner's own figures for that run are in
+[`f5-coload-e65db0.json`](2026-09-28-roboflow/f5-coload-e65db0.json)):
+
+| Bag | `/scan` msgs | Span (s) | Rate (Hz) | Largest gap (s) | Gaps > 0.5 s | `/fall_events` |
+|---|---|---|---|---|---|---|
+| idle | 567 | 56.5 | 10.009 | 0.104 | 0 | 0 |
+| `e65db0` serving inside | 594 | 59.2 | 10.009 | 0.105 | 0 | 0 |
+
+- **CL1, count within ±10 % of idle: 594 against 567, +4.8 %, PASS.** The counts differ by the recorders' spans
+  (the first recorder took longer to subscribe); the rates are identical to three decimals.
+- **CL2, no gap over 0.5 s: 0 in both, PASS.** The largest gap under load is 0.105 s, one scan period plus a
+  millisecond, the same as idle.
+- Report only: the runner inside the recording measured 77.4 / 81.2 ms (median / p90), server 58.8 ms, 12.9 fps,
+  against 78.7 / 82.4 earlier: recording the bag cost the camera path nothing visible. `MemAvailable` 2601 → 2517 MB
+  with both children still resident and the recorder running. `/fall_events` stayed silent in both bags; nobody was
+  asked to be in the room and nothing is claimed about the detector's behaviour under load beyond that.
+
+So on this evening's evidence the camera path does not disturb the LIDAR path: the scan stream ran at 10.009 Hz
+with no dropout while the GPU served 580 frames at 12.9 fps. That is one run of one child on one Jetson with the
+cameras off; the claim in DR-11 is updated to that extent and no further.
 
 **For D0** the round trip to carry forward is **79 ms** (`e65db0`) or **125 ms** (`00ba18`) per frame, serial, one
 camera, cameras off, with about 2.8 GB of headroom with both resident, replacing the stock models' 108 to 127 ms.
@@ -215,10 +241,11 @@ camera, cameras off, with about 2.8 GB of headroom with both resident, replacing
   C the matrix at 0.40 stands in for 0.39 and 0.44.
 - **The device-sized candidate is not scored** under the plan's rule; its per-class numbers are at each class's
   own optimal threshold, as the platform reports them.
-- **F5 is serial, one camera, cameras off, and blind to co-load.** The Jetson figures in section 5 are one request
-  in flight at a time with no capture running; whether inference disturbs `/scan` or the fall detector during a run
-  was not sampled (no bag, no mid-run reading). Egress during the runs was not captured. The NAS latencies
-  elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict the device.
+- **F5 is serial, one camera, cameras off.** The Jetson figures in section 5 are one request in flight at a time
+  with no capture running. Co-load was measured once (CL1, CL2 in section 5): the scan stream held 10 Hz with no
+  dropout during one `e65db0` run; the detector's behaviour under load beyond a silent `/fall_events` is not
+  claimed. Egress during the runs was not captured. The NAS latencies elsewhere in this document are the
+  platform's AI1 and T4 targets, which section 5 shows do not predict the device.
 - **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
   against the original dataset's terms.
 - **Nothing here is a room result.** No frame from the test room was involved, by design.

@@ -1,0 +1,9 @@
+{
+ "bag": "coload-idle (60 s, /opt/nvme/bags/coload-idle on the Jetson)",
+ "count": 567,
+ "duration_s": 56.547,
+ "hz": 10.009382832729354,
+ "max_gap_s": 0.10372209548950195,
+ "gaps_over_0_5_s": 0,
+ "events": 0
+}

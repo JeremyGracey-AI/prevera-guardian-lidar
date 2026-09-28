@@ -328,7 +328,9 @@ flowchart LR
   was written after the last run; no egress capture). The evaluation plan's "frames never leave the device" was wrong as
   written, because frames were copied to the Mac for scoring; the results document corrects it and leaves the plan as
   committed. Next: send `disable_active_learning` in the request, record the container environment, capture egress
-  for one run. Whether inference disturbs `/scan` under load is not yet measured.
+  for one run. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
+  over 0.5 s while `e65db0` served 580 frames (CL1, CL2 PASS,
+  [fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)); one run, cameras off.
 
 <a id="dr-12"></a>
 ## DR-12 · Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`)

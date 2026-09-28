@@ -1,0 +1,9 @@
+{
+ "bag": "coload-e65db0 (60 s, the e65db0 runner from 5 s to 53 s, /opt/nvme/bags/coload-e65db0 on the Jetson)",
+ "count": 594,
+ "duration_s": 59.244,
+ "hz": 10.009405311913891,
+ "max_gap_s": 0.10460019111633301,
+ "gaps_over_0_5_s": 0,
+ "events": 0
+}
