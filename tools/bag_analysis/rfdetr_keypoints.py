@@ -23,6 +23,13 @@ Usage (from any directory; the frames and results files are field data and are n
     <venv>/bin/python rfdetr_keypoints.py check [--frames-dir DIR]
     python3 rfdetr_keypoints.py score [--frames-dir DIR]
 
+Rescore under plan v2 (docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md), which changes only how an
+instance is recognised as a person (by `class_name`, not `class_id` 0) and adds a package probe to validity:
+    <venv>/bin/python rfdetr_keypoints.py probe-classes [--frames-dir DIR]   # writes keypoints-class-probe.json
+    python3 rfdetr_keypoints.py check --plan v2 [--frames-dir DIR]           # keypoints-schema-check-v2.json
+    python3 rfdetr_keypoints.py score --plan v2 [--frames-dir DIR]           # keypoints-score-v2.json
+Without `--plan v2` every command behaves exactly as before (plan v1), so the invalid v1 verdict stays reproducible.
+
 Why the schema check is numeric and not a visual read by the agent: viewing a frame (or an overlay drawn on
 it) through a model tool would send frame pixels to a hosted API, which the run's rules forbid. The overlays
 are written to disk for a human to confirm. The numeric check covers the three gross faults the plan lists
@@ -87,6 +94,29 @@ RESULTS_NAME = "keypoints-results.json"
 PLAN_RESULTS_NAME = "results-rfdetr-keypoint-preview.json"   # the plan's name; symlinked to RESULTS_NAME
 CHECK_NAME = "keypoints-schema-check.json"
 SCORE_NAME = "keypoints-score.json"
+
+# ---------------------------------------------------------------- plan v2 (rescore; the person rule by name)
+PLAN_V2_FILE = "docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md"
+PLAN_V2_COMMIT = "2a505e544e0b29d3873602bd3ddd5166f29672e5"
+PROBE_NAME = "keypoints-class-probe.json"
+CHECK_NAME_V2 = "keypoints-schema-check-v2.json"
+SCORE_NAME_V2 = "keypoints-score-v2.json"
+PERSON_NAME = "person"
+PLAN = "v1"   # set once by main() from --plan; every rule below reads it, so the default is byte-for-byte v1
+
+
+def plan_files() -> tuple[str, str, str, str]:
+    """(plan file, plan commit, schema-check file, score file) for the plan in force."""
+    if PLAN == "v2":
+        return PLAN_V2_FILE, PLAN_V2_COMMIT, CHECK_NAME_V2, SCORE_NAME_V2
+    return PLAN_FILE, PLAN_COMMIT, CHECK_NAME, SCORE_NAME
+
+
+def is_person(inst) -> bool:
+    """Definition 2, cutoff clause. v1: `class_id` 0. v2: `class_name` 'person' (plan v2, the one change)."""
+    if PLAN == "v2":
+        return inst.get("class_name") == PERSON_NAME
+    return inst["class_id"] == 0
 
 
 # ---------------------------------------------------------------- frame selection (plan "Data")
@@ -355,8 +385,9 @@ def n_conf(inst) -> int:
 
 
 def scored_instance(frame):
-    """Def 2: person class_id 0 with fused detection_confidence >= 0.3; most confident keypoints, tie -> score."""
-    cands = [i for i in frame["instances"] if i["class_id"] == 0 and i["detection_confidence"] >= SCORE_CUTOFF]
+    """Def 2: the person class (`is_person`: v1 class_id 0, v2 class_name 'person') with fused
+    detection_confidence >= 0.3; most confident keypoints, tie -> score."""
+    cands = [i for i in frame["instances"] if is_person(i) and i["detection_confidence"] >= SCORE_CUTOFF]
     if not cands:
         return None
     return max(cands, key=lambda i: (n_conf(i), i["detection_confidence"]))
@@ -387,6 +418,112 @@ def torso_angle(inst):
 
 def load_results(frames_dir: Path) -> dict:
     return json.loads((frames_dir / RESULTS_NAME).read_text())
+
+
+# ---------------------------------------------------------------- plan v2 validity (definition 9, v2 form)
+def _mapping_person_ids(mapping) -> list[int]:
+    """Ids whose name is 'person' in a mapping given as {id: name}, {name: id}, or a list/tuple of names."""
+    ids: list[int] = []
+    if isinstance(mapping, dict):
+        for k, v in mapping.items():
+            if isinstance(v, str) and v.lower() == PERSON_NAME and isinstance(k, int):
+                ids.append(k)
+            elif isinstance(k, str) and k.lower() == PERSON_NAME and isinstance(v, int):
+                ids.append(v)
+    elif isinstance(mapping, (list, tuple)):
+        ids = [i for i, v in enumerate(mapping) if isinstance(v, str) and v.lower() == PERSON_NAME]
+    return sorted(set(ids))
+
+
+def validity_v2(meta: dict, frames: list[dict], frames_dir: Path) -> dict:
+    """Plan v2 definition 9: (a) and (b) as v1, re-read from the results file; (c1) every instance is named
+    'person'; (c2) every instance carries one and the same class_id; (c3) the package probe, when it exposes a
+    mapping, gives that same id for 'person'. Nothing here reads a keypoint."""
+    v1 = meta["validity"]
+    insts = [i for f in frames for i in f["instances"]]
+    not_person = [(f["file"], i["class_id"], i["class_name"]) for f in frames for i in f["instances"]
+                  if i.get("class_name") != PERSON_NAME]
+    ids = sorted({i["class_id"] for i in insts})
+    out = {
+        "plan": PLAN_V2_FILE, "plan_commit": PLAN_V2_COMMIT,
+        "a_md5_ok": bool(v1.get("a_md5_ok")),
+        "b_no_partial_load_warning": bool(v1.get("b_no_partial_load_warning")),
+        "instances": len(insts),
+        "c1_all_instances_named_person": not not_person,
+        "c1_violations": not_person[:50], "c1_violation_count": len(not_person),
+        "c2_single_class_id": len(ids) == 1,
+        "c2_class_ids_observed": ids,
+        "c2_class_id": ids[0] if len(ids) == 1 else None,
+    }
+    probe_path = frames_dir / PROBE_NAME
+    if not probe_path.exists():
+        out.update(c3_probe_found=False, c3_package_mapping_exposed=None, c3_person_ids_from_package=None,
+                   c3_ok=False, c3_reason=f"{PROBE_NAME} missing: run `probe-classes` in the run environment first")
+    else:
+        probe = json.loads(probe_path.read_text())
+        exposed = [m for m in probe.get("mappings", []) if m.get("person_ids")]
+        pkg_ids = sorted({pid for m in exposed for pid in m["person_ids"]})
+        out.update(c3_probe_found=True, c3_probe_utc=probe.get("probed_utc"),
+                   c3_package_mapping_exposed=bool(exposed), c3_person_ids_from_package=pkg_ids,
+                   c3_sources=[m.get("source") for m in exposed])
+        if not exposed:
+            out.update(c3_ok=True, c3_reason="package exposes no id-to-name mapping; (c3) rests on (c1) and (c2)")
+        elif len(pkg_ids) == 1 and out["c2_class_id"] == pkg_ids[0]:
+            out.update(c3_ok=True, c3_reason=f"package maps 'person' to {pkg_ids[0]}, the id every instance carries")
+        else:
+            out.update(c3_ok=False, c3_reason=f"package person id(s) {pkg_ids} != observed {out['c2_class_id']}")
+    out["valid"] = all(out[k] for k in ("a_md5_ok", "b_no_partial_load_warning", "c1_all_instances_named_person",
+                                        "c2_single_class_id", "c3_ok"))
+    return out
+
+
+def cmd_probe_classes(args) -> int:
+    """Plan v2 definition 9(c3): ask the package, in the run's environment, which id it maps to 'person'.
+    Loads the model exactly as the run did and records every id-to-name mapping it exposes. No inference."""
+    frames_dir = args.frames_dir
+    mappings = []
+
+    def record(source, obj):
+        if obj is None:
+            return
+        try:
+            if isinstance(obj, dict):
+                sample = {str(k): str(v) for k, v in list(obj.items())[:8]}
+            elif isinstance(obj, (list, tuple)):
+                sample = {str(i): str(v) for i, v in list(enumerate(obj))[:8]}
+            else:
+                return
+        except Exception as e:  # noqa: BLE001
+            mappings.append({"source": source, "error": repr(e)})
+            return
+        mappings.append({"source": source, "type": type(obj).__name__, "size": len(obj), "sample": sample,
+                         "person_ids": _mapping_person_ids(obj)})
+
+    try:
+        from rfdetr.util import coco_classes  # type: ignore
+        record("rfdetr.util.coco_classes.COCO_CLASSES", getattr(coco_classes, "COCO_CLASSES", None))
+    except Exception as e:  # noqa: BLE001
+        mappings.append({"source": "rfdetr.util.coco_classes.COCO_CLASSES", "error": repr(e)})
+    import rfdetr  # type: ignore
+    from rfdetr import RFDETRKeypointPreview  # type: ignore
+
+    model = RFDETRKeypointPreview(device="cpu")
+    for name, obj in (("model", model), ("model.model", getattr(model, "model", None)),
+                      ("model.model.model", getattr(getattr(model, "model", None), "model", None)),
+                      ("model.model.config", getattr(getattr(model, "model", None), "config", None)),
+                      ("model.model.args", getattr(getattr(model, "model", None), "args", None))):
+        for attr in ("class_names", "classes", "id2label", "names", "category_names", "label_names"):
+            record(f"{name}.{attr}", getattr(obj, attr, None) if obj is not None else None)
+    probe = {"plan": PLAN_V2_FILE, "plan_commit": PLAN_V2_COMMIT, "probed_utc": datetime.now(timezone.utc).isoformat(),
+             "rfdetr": getattr(rfdetr, "__version__", None), "python": platform.python_version(),
+             "constructed_with": "RFDETRKeypointPreview(device='cpu')", "inference_run": False,
+             "mappings": mappings,
+             "person_ids_exposed": sorted({pid for m in mappings for pid in m.get("person_ids", [])})}
+    (frames_dir / PROBE_NAME).write_text(json.dumps(probe, indent=1))
+    print(json.dumps({k: v for k, v in probe.items() if k != "mappings"}, indent=1))
+    for m in mappings:
+        print(f"  {m['source']}: {m.get('person_ids', m.get('error'))}")
+    return 0
 
 
 def ordered(frames, seg, cam):
@@ -455,11 +592,23 @@ def cmd_check(args) -> int:
     frames_dir = args.frames_dir
     data = load_results(frames_dir)
     frames = data["frames"]
-    out_dir = frames_dir / "kp-schema-check"
+    plan_file, plan_commit, check_name, _ = plan_files()
+    out_dir = frames_dir / ("kp-schema-check-v2" if PLAN == "v2" else "kp-schema-check")
     out_dir.mkdir(exist_ok=True)
-    result = {"plan_rule": "first selected W/brio and first selected A/c920 frame with a scored instance, "
+    result = {"plan": plan_file, "plan_commit": plan_commit,
+              "plan_rule": "first selected W/brio and first selected A/c920 frame with a scored instance, "
                            "time order; numeric ordering proxy (see module docstring)",
+              "instance_rule": "class_name == 'person'" if PLAN == "v2" else "class_id == 0",
               "names_under_test": data["meta"]["keypoint_names"], "frames": {}}
+    if PLAN == "v2":
+        # plan v2: validity comes first; the schema check is not read on an invalid run
+        result["validity"] = validity_v2(data["meta"], frames, frames_dir)
+        if not result["validity"]["valid"]:
+            result["verdict"] = "RUN INVALID (definition 9, v2); schema check not read"
+            result["frozen_mapping"] = None
+            (frames_dir / check_name).write_text(json.dumps(result, indent=1))
+            print(json.dumps(result, indent=1))
+            return 5
     verdicts = []
     for seg, cam, mode in (("W", "brio", "vertical"), ("A", "c920", "along-axis")):
         pick = next(((f, scored_instance(f)) for f in ordered(frames, seg, cam) if scored_instance(f)), None)
@@ -491,7 +640,7 @@ def cmd_check(args) -> int:
         result["verdict"] = "fail"
         result["frozen_mapping"] = None
     result["checked_utc"] = datetime.now(timezone.utc).isoformat()
-    (frames_dir / CHECK_NAME).write_text(json.dumps(result, indent=1))
+    (frames_dir / check_name).write_text(json.dumps(result, indent=1))
     print(json.dumps(result, indent=1))
     return 0 if result["verdict"] == "pass" else 4
 
@@ -561,17 +710,21 @@ def cmd_score(args) -> int:
     data = load_results(frames_dir)
     meta, frames = data["meta"], data["frames"]
     names = meta["keypoint_names"]
-    report = {"plan": PLAN_FILE, "plan_commit": PLAN_COMMIT, "results_file": str(frames_dir / RESULTS_NAME),
-              "validity": meta["validity"]}
+    plan_file, plan_commit, check_name, score_name = plan_files()
+    validity = validity_v2(meta, frames, frames_dir) if PLAN == "v2" else meta["validity"]
+    report = {"plan": plan_file, "plan_commit": plan_commit, "results_file": str(frames_dir / RESULTS_NAME),
+              "instance_rule": "class_name == 'person'" if PLAN == "v2" else "class_id == 0",
+              "validity": validity}
     report["report_only"] = _report_only(meta, frames)
-    if not meta["validity"]["valid"]:
-        report["verdict"] = "RUN INVALID (definition 9); K1-K3 not scored"
-        (frames_dir / SCORE_NAME).write_text(json.dumps(report, indent=1))
+    if not validity["valid"]:
+        report["verdict"] = f"RUN INVALID (definition 9{', v2' if PLAN == 'v2' else ''}); K1-K3 not scored"
+        (frames_dir / score_name).write_text(json.dumps(report, indent=1))
         print(json.dumps(report, indent=1))
         return 5
-    chk_path = frames_dir / CHECK_NAME
+    chk_path = frames_dir / check_name
     if not chk_path.exists():
-        print("schema check has not been run; run `check` first", file=sys.stderr)
+        print(f"schema check has not been run; run `check{' --plan v2' if PLAN == 'v2' else ''}` first",
+              file=sys.stderr)
         return 6
     chk = json.loads(chk_path.read_text())
     report["schema_check"] = {"verdict": chk["verdict"], "frozen_mapping": chk.get("frozen_mapping"),
@@ -580,7 +733,7 @@ def cmd_score(args) -> int:
                                          for k, v in chk["frames"].items()}}
     if chk["verdict"] != "pass":
         report["verdict"] = f"schema check {chk['verdict']}; K1-K3 not scored (definition 1)"
-        (frames_dir / SCORE_NAME).write_text(json.dumps(report, indent=1))
+        (frames_dir / score_name).write_text(json.dumps(report, indent=1))
         print(json.dumps(report, indent=1))
         return 7
 
@@ -595,7 +748,7 @@ def cmd_score(args) -> int:
                 per.append({
                     "t_s": f["t_s"],
                     "n_returned": len(f["instances"]),
-                    "n_scored_candidates": sum(1 for i in f["instances"] if i["class_id"] == 0
+                    "n_scored_candidates": sum(1 for i in f["instances"] if is_person(i)
                                                and i["detection_confidence"] >= SCORE_CUTOFF),
                     "scored": inst is not None,
                     "det_conf": inst["detection_confidence"] if inst else None,
@@ -688,7 +841,7 @@ def cmd_score(args) -> int:
     }
     report["overall"] = {"K1": report["K1"]["verdict"], "K2": k2_verdict, "K3": "report only"}
     report["scored_utc"] = datetime.now(timezone.utc).isoformat()
-    (frames_dir / SCORE_NAME).write_text(json.dumps(report, indent=1))
+    (frames_dir / score_name).write_text(json.dumps(report, indent=1))
     _print_report(report)
     return 0
 
@@ -714,16 +867,23 @@ def _print_report(r):
 
 
 def main() -> int:
+    global PLAN
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("run", "check", "score"):
+    for name in ("run", "check", "score", "probe-classes"):
         p = sub.add_parser(name)
         p.add_argument("--frames-dir", type=Path, default=DEFAULT_DIR)
         if name == "run":
             p.add_argument("--skip-raw-pass", action="store_true",
                            help="skip the report-only postprocess_trace_alpha=0.0 pass")
+        if name in ("check", "score"):
+            p.add_argument("--plan", choices=("v1", "v2"), default="v1",
+                           help="v1 (default): plan 2026-09-27, person = class_id 0. "
+                                "v2: plan 2026-09-28, person = class_name 'person' plus the package probe")
     args = ap.parse_args()
-    return {"run": cmd_run, "check": cmd_check, "score": cmd_score}[args.cmd](args)
+    PLAN = getattr(args, "plan", "v1")
+    return {"run": cmd_run, "check": cmd_check, "score": cmd_score,
+            "probe-classes": cmd_probe_classes}[args.cmd](args)
 
 
 if __name__ == "__main__":
