@@ -50,6 +50,26 @@
     </visual>
   </link>
 
+  <!-- Mast between the base plate (0.005 m thick) and the housing, drawn only when the scan window sits high
+       enough for one: the original 0.65 m rig had a 0.55 m mast on a 0.10 m base; the floor mount has none. Visual only. -->
+  <xacro:property name="mast_length" value="${lidar_mount_height - lidar_height / 2 - 0.005}"/>
+  <xacro:if value="${mast_length > 0.001}">
+    <link name="lidar_mast">
+      <visual>
+        <origin xyz="0 0 ${mast_length / 2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${mast_length}" radius="0.012"/>
+        </geometry>
+        <material name="prevera_steel"/>
+      </visual>
+    </link>
+    <joint name="base_to_mast" type="fixed">
+      <parent link="base_link"/>
+      <child  link="lidar_mast"/>
+      <origin xyz="0 0 0.005" rpy="0 0 0"/>
+    </joint>
+  </xacro:if>
+
   <!-- Frame the rplidar driver publishes scans in (must match 'frame_id' in rplidar_c1.yaml and fall_detector.yaml). -->
   <link name="laser"/>
 

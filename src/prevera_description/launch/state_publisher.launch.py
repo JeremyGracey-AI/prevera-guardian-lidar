@@ -21,6 +21,11 @@ def generate_launch_description() -> LaunchDescription:
             default_value="false",
             description="Use /clock from rosbag or simulation",
         ),
+        DeclareLaunchArgument(
+            "lidar_mount_height",
+            default_value="0.02",
+            description="Scan window height above the floor, metres; 0.65 draws the original mast rig",
+        ),
         Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",
@@ -28,7 +33,9 @@ def generate_launch_description() -> LaunchDescription:
             output="screen",
             parameters=[{
                 "use_sim_time": use_sim_time,
-                "robot_description": Command(["xacro ", str(xacro)]),
+                "robot_description": Command([
+                    "xacro ", str(xacro), " lidar_mount_height:=", LaunchConfiguration("lidar_mount_height"),
+                ]),
             }],
         ),
     ])
