@@ -1,16 +1,18 @@
 # Decision records
 
-Every design decision in this repository, with the finding that forced it, the options on record, what was decided,
-the evidence, and what it costs. Each record links to files in this repository. Where a number comes from a private
-commit message, the commit is summarised in [DEVELOPMENT-LOG.md](DEVELOPMENT-LOG.md). Where the alternatives were
-not written down at the time, the record says so.
+The design decisions behind this repository, each with the finding that forced it, the options on record, what was
+decided, the evidence, and what it costs. Each record links to files in this repository. Where a number comes from a
+private commit message, the commit is summarised in [DEVELOPMENT-LOG.md](DEVELOPMENT-LOG.md). Where the alternatives
+were not written down at the time, the record says so. [DR-00](#dr-00) lists the choices inherited from the 2026-04
+snapshot, whose rationale was never recorded; DR-01 to DR-17 were made from 2026-09-25 on.
 
 Two labels appear in the field-test documents: **D0** (where fusion runs) and **D1** (boxes or keypoints). They are
 [DR-14](#dr-14) and [DR-13](#dr-13) below.
 
 ## Decision map
 
-Findings from the field (left) forced each decision (right). Dashed boxes are still open.
+Findings from the field (left) forced each decision (right). Dashed boxes are still open. Dotted arrows from DR-00
+mark the first findings, which were measured on the inherited baseline.
 
 ```mermaid
 flowchart LR
@@ -32,6 +34,8 @@ flowchart LR
   dr15["DR-15 V-JEPA stage<br/>proprietary, black box"]
   f10["09-27: sqlite bags, warm-start<br/>bag, full disk"] --> dr16["DR-16 mcap, record first,<br/>split storage"]
   dr17["DR-17 governance"]
+  dr00["DR-00 inherited baseline<br/>2D LIDAR, DBSCAN, hand-tuned heuristic"] -.-> f1
+  dr00 -.-> f2
   classDef open stroke-dasharray: 5 5
   class dr13,dr14 open
 ```
@@ -40,6 +44,7 @@ flowchart LR
 
 | # | Decision | Status |
 |---|---|---|
+| [DR-00](#dr-00) | Inherited baseline: 2D LIDAR, Jetson + ROS 2, DBSCAN + PCA, hand-tuned heuristic | inherited 2026-04; rationale not recorded |
 | [DR-01](#dr-01) | Hold still foreground out of the background model | accepted, running on the Jetson |
 | [DR-02](#dr-02) | Put the scan plane at floor level (about 2 cm) | accepted; the 3D-sensor question stays open |
 | [DR-03](#dr-03) | Establish the scan frame empirically after every rig change | accepted |
@@ -59,6 +64,31 @@ flowchart LR
 | [DR-17](#dr-17) | Governance: scoped permissions, a structural push gate, pre-declared evaluations | accepted |
 
 ---
+
+<a id="dr-00"></a>
+## DR-00 · Inherited baseline (2026-04 snapshot)
+
+- **Status:** inherited, not re-decided. Every later record changes or gates a part of it.
+- **Context:** the workspace was recovered on 2026-09-16 from an archived snapshot dated 2026-04-23, the only
+  surviving copy ([development log](DEVELOPMENT-LOG.md), `1f42642`). No design notes came with it.
+- **Decision (inherited):** a 2D RPLIDAR C1 as the only sensor, on a Jetson Orin Nano with ROS 2 Humble; a per-beam
+  rolling-median background (40 scans); DBSCAN clustering (eps 0.12 m, min_samples 4) with a PCA shape; a nearest-centroid
+  tracker (0.5 m gate); and a hand-tuned geometric heuristic: elongation ≥ 3.5, major axis ≥ 0.8 m in the YAML (0.6 m
+  in the node), a velocity spike of 0.8 m/s followed by stillness, or 4.0 s of sustained stillness
+  ([`fall_detector.yaml`](../src/prevera_bringup/config/fall_detector.yaml),
+  [ARCHITECTURE.md, sections 2 and 4](ARCHITECTURE.md)). The message defines ALERT and CRITICAL for a verification
+  stage ([DR-15](#dr-15)); the URDF places the scan plane at 0.65 m ([DR-02](#dr-02)).
+- **Options on record:** none. Why a 2D sensor, why a hand-tuned heuristic rather than a learned classifier, and
+  where each threshold came from were not recorded. The one stated reason is the URDF's comment on the mount
+  height (0.55 m "catches waist on a standing adult, and produces an elongated silhouette for a person on the
+  floor", [`sentinel.urdf.xacro`](../src/prevera_description/urdf/sentinel.urdf.xacro)). On 09-25, at a mount height
+  that was not written down, a person lying on the floor added no returns at all ([DR-02](#dr-02)).
+- **Evidence:** none for the choices themselves. The field tests of 2026-09-25 to 27 are the first measurements of
+  this baseline. The deployed legacy detector (this baseline plus [DR-01](#dr-01)) stays reproducible through
+  [`legacy_reference.py`](../src/prevera_perception/test/legacy_reference.py) and
+  [`params/2026-09-25-live.yaml`](../tools/bag_analysis/params/2026-09-25-live.yaml).
+- **Consequences:** every threshold is treated as a hypothesis under test. Changes go behind keys whose default is
+  this behaviour ([DR-06](#dr-06)). The 2D-or-3D question is open ([DR-02](#dr-02)).
 
 <a id="dr-01"></a>
 ## DR-01 · Hold still foreground out of the background model
@@ -117,6 +147,9 @@ flowchart LR
   (a horizontal plane shows walls at real ranges and nothing at floor range); settle handedness with stands at known
   sides; keep `inverted: false` ([`rplidar_c1.yaml`](../src/prevera_bringup/config/rplidar_c1.yaml); the earlier
   `inverted: true` commit was reverted).
+- **Options on record:** setting the frame through the driver's `inverted:` flag was tried first (`5b394aa`) and
+  reverted (`3dc5010`), because the flag reverses the angle order and does not describe the mount
+  ([development log](DEVELOPMENT-LOG.md)). No other alternative was written down.
 - **Evidence:** calibration 2 settled forward = +y, camera-left = +x for the upright counter mount
   ([capture night](field-tests/2026-09-26-capture.md)); two stands on opposite sides settled the floor-mount frame
   (desk = −x, counter = +x, right-handed) ([2026-09-27](field-tests/2026-09-27-floor-mount-grid.md));
@@ -151,16 +184,23 @@ flowchart LR
 ## DR-05 · Enforce the Jetson's Python floor in the test suite
 
 - **Status:** accepted 2026-09-26.
-- **Context:** the Jetson runs Python 3.10 with apt numpy 1.x and scikit-learn from Ubuntu jammy; the development Mac
-  defaults to Python 3.14 and numpy 2.x. Code that passes on the Mac can fail on the device.
+- **Context:** the Jetson runs Python 3.10 (Ubuntu 22.04); the development Mac defaults to Python 3.14 and numpy 2.x,
+  so code that passes on the Mac can fail on the device. Which numpy and scikit-learn the running node imports is not
+  recorded yet (plan v4 open item r3, [open gaps](plans/replay-harness-plan-v4-open-gaps.md)).
+  [`09-ros2-humble.sh`](../jetson/09-ros2-humble.sh) installs the apt `python3-sklearn` (jammy ships scikit-learn
+  0.23.2 and numpy 1.21.5), and [`setup_jetson.sh`](../setup_jetson.sh) then installs `'numpy<2'` and scikit-learn
+  from pip into the user site, which takes precedence wherever it has been run.
+- **Options on record:** matching the device's scikit-learn on the Mac was tried and dropped: 0.23.2 has no
+  Python 3.10 wheel and a source build failed ([plan v4, section 1](plans/replay-harness-plan-v4.md)).
 - **Decision:** [`test_python_floor.py`](../src/prevera_perception/test/test_python_floor.py) fails unless Python is
   3.10 and numpy is 1.x (escape hatches `PREVERA_ALLOW_OTHER_PY=1`, `PREVERA_ALLOW_NUMPY2=1`), records the
   scikit-learn version, parses every `.py` in the package, tests and tools with `feature_version=(3, 10)`, and rejects
   `tomllib` and `typing.Self`. [`requirements.txt`](../tools/bag_analysis/requirements.txt) and
   [`setup_jetson.sh`](../setup_jetson.sh) pin `numpy<2`.
 - **Evidence:** [plan v4, section 1 "Python floor"](plans/replay-harness-plan-v4.md).
-- **Consequences:** scikit-learn parity with the device (0.23.2) is not reachable on the Mac, so DBSCAN-sensitive test
-  windows are asserted as windows, not exact stamps, until they run on the device (plan v4, section 6).
+- **Consequences:** scikit-learn parity with the device is not established (the device's version is unrecorded, and
+  0.23.2 cannot be installed on the Mac), so DBSCAN-sensitive test windows are asserted as windows, not exact stamps,
+  until they run on the device (plan v4, section 6).
 
 <a id="dr-06"></a>
 ## DR-06 · Every behaviour change behind a config key whose default is legacy
@@ -168,6 +208,9 @@ flowchart LR
 - **Status:** accepted. The config flip that turns the fixes on (plan v4 step 9) has not happened.
 - **Context:** the fixes had to be developed against recorded bags while the same code could still reproduce what the
   deployed detector did, and the Jetson must not change behaviour until a deliberate config commit.
+- **Options on record** ([plan v4, section 0](plans/replay-harness-plan-v4.md)): a string `stillness_mode` switch and an
+  auto-generated `declare_parameter` loop were rejected for numeric knobs with explicit declares and a parity test; a
+  count-based `velocity_window: 30` was rejected because it changes legacy output.
 - **Decision:** every new field defaults to `0` / `False` = legacy. Goldens are captured in their own commit before the
   change they guard. The YAML and the node stay untouched until step 9.
 - **Evidence:** [plan v4, section 0](plans/replay-harness-plan-v4.md) (the convention);
@@ -205,6 +248,8 @@ flowchart LR
   motion ([2026-09-25, finding 5](field-tests/2026-09-25-rplidar-fall-tests.md)). With one tracker-wide time step, a
   track reacquired after k missed scans also reads (k+1) times too fast, so a speed gate alone would reject every
   reacquisition ([plan v4, step 5](plans/replay-harness-plan-v4.md)).
+- **Options on record** ([plan v4, step 5](plans/replay-harness-plan-v4.md)): a speed gate on the tracker-wide time
+  step alone, rejected for the reason above; per-track time is bundled with the gate as its prerequisite.
 - **Decision:** measure each track's velocity, age and stillness from its own last-seen stamp; try candidate clusters in
   order of distance and take the first inside both the gate and the speed limit, else spawn; record why every new track
   was spawned (`Tracker.spawn_log`).
@@ -222,6 +267,11 @@ flowchart LR
   ([finding 2](field-tests/2026-09-25-rplidar-fall-tests.md)) and never above 3.4 s in `floor-trials-1` although each
   lie-down was held still for about 30 s, because `is_still` toggles every second or two
   ([2026-09-27, finding 2](field-tests/2026-09-27-floor-mount-grid.md)).
+- **Options on record** ([plan v4, section 0 and step 6](plans/replay-harness-plan-v4.md)): the legacy per-scan speed
+  test stays as the default; a displacement window was chosen over it. Within that design the plan rejects a
+  `still_since_s = still_since_s or ...` idiom (wrong at stamp 0.0) and a first-draft gap test that contradicted the
+  algorithm. Raising `min_range_m` above 0.3 stays open if the 0.3 to 0.4 m range band turns out to be populated
+  ([open gaps](plans/replay-harness-plan-v4-open-gaps.md), r1 and r3).
 - **Decision:** a track is still when its samples cover the last 1.5 s and every one lies within 0.25 m of its current
   centroid; stillness counts from the oldest retained sample. Boundary comparisons use a 1e-6 s epsilon because the two
   stamp sources differ in the last bits. `min_range_m` 0.3 ships in the same flip: replay shows that without it the
@@ -259,6 +309,8 @@ flowchart LR
 - **Status:** accepted; privacy verification incomplete.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
+- **Options on record:** a hosted inference API, rejected because frames would leave the room. No cost or latency
+  comparison was written down.
 - **Decision:** Roboflow Inference 1.7.2 (`roboflow-inference-server-jetson-6.2.0`) runs as a container on the Jetson,
   listening on `127.0.0.1:9001` only; the client posts frames only there.
 - **Evidence** ([results, sections 2 and 5](field-tests/2026-09-27-rfdetr-results.md)): the listener is loopback only;
@@ -298,11 +350,16 @@ flowchart LR
 - **Context:** detection condition C3 (the counter camera's box aspect separates lying from standing) failed for all
   three model sizes: median width/height 0.85 to 0.87 in B, 0.78 to 0.79 in D and E; W passes only because the frame cuts
   the person off at the top ([results, C3](field-tests/2026-09-27-rfdetr-results.md)).
+- **Options on record:** a box (a fall class or the box's shape) or keypoints, as defined above. The pre-declared plan
+  tested box shape first (C3) and named keypoints as the consequence if it failed.
 - **Decision so far:** the consequence declared before the run applies: box shape alone cannot carry D1, so keypoints
   are next. The keypoint check was [pre-declared](field-tests/2026-09-27-rfdetr-keypoints-plan.md) and run, and failed
   validity check 9(c): every instance came back as `class_id` 1, none as `class_id` 0, so K1 to K3 were not scored
   ([status](field-tests/2026-09-27-rfdetr-keypoints-status.md),
   [extract](field-tests/2026-09-27-rfdetr/keypoints-validity.json)).
+- **Evidence:** C3 per model and segment in the [results](field-tests/2026-09-27-rfdetr-results.md); the validity
+  failure in the [status note](field-tests/2026-09-27-rfdetr-keypoints-status.md) and its
+  [extract](field-tests/2026-09-27-rfdetr/keypoints-validity.json).
 - **Consequences:** a rescore plan that fixes the class rule and states what has already been seen; a counter-camera
   framing that shows the whole body (D and E are cut at the frame edges, W at the top).
 
@@ -311,6 +368,8 @@ flowchart LR
 
 - **Status:** open; nothing is built.
 - **Definition:** D0 is where LIDAR and camera evidence are combined.
+- **Options on record:** the candidate placements are in planning notes that are not published and are not described
+  here.
 - **Evidence so far:** the direct-call baseline is 108 to 127 ms per frame, of which 18 to 19 ms is HTTP and JSON, with
   about 2.6 GB of memory headroom, measured serially on one camera stream with the cameras off
   ([results, section 5](field-tests/2026-09-27-rfdetr-results.md)).
@@ -325,6 +384,7 @@ flowchart LR
 - **Context:** in the product design, WARN events escalate to a video verification stage built on V-JEPA, which is what
   would confirm a fall (ALERT, CRITICAL). That stage is proprietary and patent pending. The LIDAR path, the camera
   evaluation, the tools and the evidence are what this repository shows.
+- **Options on record:** none written down at the time.
 - **Decision:** V-JEPA appears only as a black box in the documents and diagrams.
   [`vjepa_bridge.py`](../src/prevera_perception/prevera_perception/vjepa_bridge.py) is an interface stub: two dataclasses
   (`FusionRequest`, `FusionResult`) and no logic. `FallEvent.vjepa_confidence` stays in the message and is
@@ -342,9 +402,13 @@ flowchart LR
   could not reproduce the live tracker's hidden state (track-level divergence compared 0 scans); the Mac's disk filled
   during a 6.9 GB copy and the partial file kept its final name. Two 720p30 camera streams write about 11 MB/s
   ([handoff 09-27, lesson 7](field-tests/HANDOFF-2026-09-27.md)).
+- **Options on record:** none written down at the time.
 - **Decision:** always `ros2 bag record -s mcap`; start the recorder first, then restart the detector on an empty room;
   keep full bags on the Jetson's NVMe and a size-checked workstation backup; keep LIDAR-only mcaps (`ros2 bag convert`,
   34 MB and 8 MB) on the Mac. Field data is never committed ([`.gitignore`](../.gitignore)).
+- **Evidence:** [2026-09-27, process lessons 1 to 3](field-tests/2026-09-27-floor-mount-grid.md): the conversion of
+  both sqlite bags (schemas intact), `divergence` comparing 0 scans on the warm-started bag, and the full Mac disk
+  (129 MB free) with a partial copy under its final name.
 - **Consequences:** the two existing sqlite bags were converted; the strict track-level replay bar becomes reachable
   for future recordings.
 
@@ -352,6 +416,8 @@ flowchart LR
 ## DR-17 · Governance: scoped permissions, a structural push gate, pre-declared evaluations
 
 - **Status:** accepted.
+- **Options on record:** a written "never push" rule was the control before the hook and was broken by agent runs;
+  no other alternative was written down.
 - **Scoped permissions:** the development agent may SSH to the Jetson; on the Jetson a sudoers drop-in allows
   password-less service control, `jetson_clocks`, `nvpmodel -q` and shutdown/reboot only, and plain `sudo -n true` is
   refused ([2026-09-27, lesson 6](field-tests/2026-09-27-floor-mount-grid.md)). Physical steps and every other `sudo`
@@ -363,5 +429,8 @@ flowchart LR
   move afterwards; audit findings are written beside unchanged verdicts; failures are reported as findings. The RF-DETR
   plan was committed at 16:38 and its results at 17:26; the keypoint plan at 17:36 and the run at 17:44
   ([development log](DEVELOPMENT-LOG.md)). See [PROCESS.md](PROCESS.md).
+- **Evidence:** run without the variable, the hook prints its block message and exits 1 (`sh tools/git-hooks/pre-push`,
+  checked 2026-09-27); the sudoers scope was checked by `sudo -n true` being refused (lesson 6 above); the plan and
+  result commit times are in the [development log](DEVELOPMENT-LOG.md).
 - **Consequences:** slower in places (the invalid keypoint run is not rescored informally), but every number in the
   repository traces to a document, a test or a script.

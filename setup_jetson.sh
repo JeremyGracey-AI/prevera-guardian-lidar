@@ -41,8 +41,8 @@ sudo apt-get install -y \
 
 # --------------------------------------------------------------- python deps
 say "Installing Python deps"
-# numpy stays on 1.x: the Jetson runs Python 3.10 with apt numpy/scikit-learn, and the test suite enforces
-# that floor (src/prevera_perception/test/test_python_floor.py; tools/bag_analysis/requirements.txt).
+# numpy stays on 1.x, the floor the test suite enforces (src/prevera_perception/test/test_python_floor.py;
+# tools/bag_analysis/requirements.txt). These user-site installs shadow the apt python3-sklearn from 09-ros2-humble.sh.
 pip3 install --user --upgrade 'numpy<2' scikit-learn
 
 # --------------------------------------------------------------- rosdep
