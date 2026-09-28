@@ -12,7 +12,7 @@ import argparse
 import json
 import re
 
-LINE = re.compile(r"^(?P<t>\d+\.\d+)\s+(?:\S+\s+(?:In|Out)\s+)?IP6?\s+(?P<src>[\w.:]+?)\.(?P<sp>\d+)\s+>\s+"
+LINE = re.compile(r"^(?P<t>\d+\.\d+)\s+(?:\S+\s+(?:In|Out|P|B|M)\s+)?IP6?\s+(?P<src>[\w.:]+?)\.(?P<sp>\d+)\s+>\s+"
                   r"(?P<dst>[\w.:]+?)\.(?P<dp>\d+):\s+(?:tcp\s+(?P<tcp>\d+)|UDP, length (?P<udp>\d+)|(?P<other>.*))$")
 
 

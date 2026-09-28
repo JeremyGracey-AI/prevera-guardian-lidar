@@ -38,3 +38,15 @@ def test_two_lan_prefixes_and_two_self_addresses_wired_and_wifi():
     s = egress_summary(lines, t0=0, t1=1e12, lan="192.168.4.,192.168.5.,192.168.6.,192.168.7.",
                        self_ip="192.168.4.60,192.168.4.39")
     assert s["out_bytes_non_lan"] == 750 and list(s["by_destination"]) == ["34.120.1.2:443"]
+
+
+def test_any_interface_direction_letters_parse_and_the_container_leg_does_not_count():
+    # tcpdump -i any (SLL2) prints In/Out and single letters P (passed up on a veth), B (broadcast), M (multicast)
+    lines = ["1790638883.708375 veth79bb483 P   IP 172.17.0.2.40018 > 151.101.65.195.443: tcp 100",
+             "1790638883.708400 enP8p1s0 Out IP 192.168.4.60.40018 > 151.101.65.195.443: tcp 100",
+             "1790638873.355456 enP8p1s0 B   IP 192.168.4.40.59384 > 192.168.7.255.13305: UDP, length 107",
+             "1790638877.750141 wlP1p1s0 M   IP 192.168.4.39.5353 > 224.0.0.251.5353: UDP, length 129"]
+    s = egress_summary(lines, t0=0, t1=1e12, lan="192.168.4.,192.168.5.,192.168.6.,192.168.7.",
+                       self_ip="192.168.4.60,192.168.4.39")
+    assert s["unparsed_lines"] == 0
+    assert s["out_bytes_non_lan"] == 100 and s["by_destination"] == {"151.101.65.195:443": 100}

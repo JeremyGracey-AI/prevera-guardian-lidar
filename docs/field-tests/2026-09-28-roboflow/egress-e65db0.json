@@ -1,0 +1,58 @@
+{
+ "capture": "tcpdump -i any -n 'not port 22 and not host 127.0.0.1' on the Jetson, 23:40 to 23:42 UTC 2026-09-28; text via tcpdump -r -n -q -tt; parsed by tools/jetson/egress_summary.py",
+ "runner": "f5_device_fit.py e65db0 --confidence 0.56, 580 frames, started_utc 2026-09-28T23:40:39Z, run_s 47.4, latency_ms_median 77.6",
+ "windows": {
+  "loop [started_utc, +run_s]": {
+   "t0": 1790638839.0,
+   "t1": 1790638886.4,
+   "out_bytes_non_lan": 285098,
+   "in_bytes_non_lan": 37682,
+   "by_destination": {
+    "151.101.65.195:443": 285098
+   },
+   "unparsed_lines": 77,
+   "lines": 14971
+  },
+  "whole run [t_start, t_end]": {
+   "t0": 1790638838.622,
+   "t1": 1790638887.346,
+   "out_bytes_non_lan": 285098,
+   "in_bytes_non_lan": 37682,
+   "by_destination": {
+    "151.101.65.195:443": 285098
+   },
+   "unparsed_lines": 77,
+   "lines": 14971
+  },
+  "whole capture": {
+   "out_bytes_non_lan": 295120,
+   "in_bytes_non_lan": 75614,
+   "by_destination": {
+    "151.101.65.195:443": 287535,
+    "151.101.1.195:443": 7585
+   },
+   "unparsed_lines": 77,
+   "lines": 14971
+  }
+ },
+ "outbound_bytes_to_151.101.65.195_by_second": {
+  "1790638873": 2437,
+  "1790638882": 2575,
+  "1790638883": 280086,
+  "1790638904": 2437
+ },
+ "dns_in_capture": {
+  "A? api.roboflow.com.": 48,
+  "A 151.101.65.195": 24,
+  "A 151.101.1.195": 24,
+  "A? connectivity-check.ubuntu.com.": 5
+ },
+ "sni_strings_in_pcap": {
+  "api.roboflow.com": 24
+ },
+ "usage_db_after_run": "/opt/nvme/inference-cache/cache/usage.db: table usage 0 rows, api_keys_plans 1 row (2026-09-27), file mtime 23:41 UTC",
+ "bars": {
+  "EG1 (< 200000 bytes outbound to non-LAN during the loop)": "FAIL: 285098",
+  "EG2 (every non-LAN destination is a Roboflow host)": "PASS: 151.101.65.195 and 151.101.1.195 are the capture's own DNS answers for api.roboflow.com"
+ }
+}

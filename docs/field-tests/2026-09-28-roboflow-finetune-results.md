@@ -209,6 +209,44 @@ So on this evening's evidence the camera path does not disturb the LIDAR path: t
 with no dropout while the GPU served 580 frames at 12.9 fps. That is one run of one child on one Jetson with the
 cameras off; the claim in DR-11 is updated to that extent and no further.
 
+**Egress (EG1, EG2; bars fixed in the same plan, committed before the capture).** Jeremy ran `tcpdump -i any -n
+'not port 22 and not host 127.0.0.1'` on the Jetson (`sudo`, his) from 23:40 to 23:42 UTC; inside it the agent ran the
+580-frame `e65db0` pass once more (23:40:39 UTC, 47.4 s, 77.6 ms median). The text dump is scored by
+[`egress_summary.py`](../../tools/jetson/egress_summary.py) over the Jetson's two addresses (wired `.60` on the
+default route, Wi-Fi `.39`); the container's own leg on `docker0` does not count, so every outbound byte is
+counted once ([extract](2026-09-28-roboflow/egress-e65db0.json), [runner figures](2026-09-28-roboflow/f5-egress-e65db0.json);
+the pcap stays on the Jetson at `/opt/nvme/reports/egress-e65db0.pcap`).
+
+| Window | Bytes out, non-LAN | Bytes in, non-LAN | Destinations |
+|---|---|---|---|
+| the 580-frame loop (47.4 s) | **285,098** | 37,682 | `151.101.65.195:443` only |
+| whole run (first call to last response) | 285,098 | 37,682 | same |
+| whole capture (about 2 min) | 295,120 | 75,614 | `151.101.65.195:443`, `151.101.1.195:443` |
+
+- **EG1, under 200,000 bytes outbound during the loop: 285,098, FAIL.** The bar stands as declared. What the
+  bytes are, from the capture: one upload of **280,086 bytes at 23:41:23 UTC** (44 s into the loop, 3 s before its
+  end) and three exchanges of about 2.4 KB (at loop +34 s, +43 s and 21 s after the loop). 580 frames of about
+  100 KB went to the container over loopback in that window, about 58 MB; the outbound total is 0.5 % of that and
+  arrives as one burst after most frames were served, not as 580 pieces. The shape is a usage report, not
+  frames: the container's persistent usage queue (`/opt/nvme/inference-cache/cache/usage.db`) held 0 rows after
+  the run and was written at 23:41, and Inference 1.7.2's collector posts its queue to
+  `api.roboflow.com/usage/inference` every 10 s (`inference/usage_tracking/config.py`: `flush_interval`). Its
+  records carry the hashed API key, model id, frame counts, fps, durations, hostname, device id and versions
+  (`collector.py`, the `APIKeyUsage` template), never image bytes. **The capture cannot read TLS, so this is the
+  code's word and the timing's, not a decrypted payload.**
+- **EG2, every non-LAN destination is a Roboflow host: PASS.** The capture holds 48 DNS queries for
+  `api.roboflow.com` answered with exactly the two addresses seen (`151.101.65.195`, `151.101.1.195`, Fastly), and
+  `api.roboflow.com` appears 24 times as TLS server name in the pcap. The five `connectivity-check.ubuntu.com`
+  lookups are the operating system's, and carried no bytes in any window.
+- **What EG1 found is that `TELEMETRY_OPT_OUT=True` does nothing in Inference 1.7.2.** `TelemetrySettings`
+  (`inference/usage_tracking/config.py`) has no opt-out field; the only knobs are the endpoint URL, the flush
+  interval and the queue. The container reported usage to Roboflow during every run of 09-27 and 09-28 while its
+  environment said otherwise. The 48 lookups in two minutes also say the server keeps a line to the API open
+  continuously, not only at model load. Candidate mitigations, none applied tonight because each changes what the
+  server does and needs its own test: `METRICS_COLLECTOR_BASE_URL` pointed at a local sink; `OFFLINE_MODE=True`
+  (`env.py` warns it leaves authentication and usage accounting undefined, and a workspace model may then refuse to
+  load); or an egress rule on the Jetson for the container's traffic. **Recorded in DR-11 as the open privacy item.**
+
 **For D0** the round trip to carry forward is **79 ms** (`e65db0`) or **125 ms** (`00ba18`) per frame, serial, one
 camera, cameras off, with about 2.8 GB of headroom with both resident, replacing the stock models' 108 to 127 ms.
 
@@ -244,8 +282,10 @@ camera, cameras off, with about 2.8 GB of headroom with both resident, replacing
 - **F5 is serial, one camera, cameras off.** The Jetson figures in section 5 are one request in flight at a time
   with no capture running. Co-load was measured once (CL1, CL2 in section 5): the scan stream held 10 Hz with no
   dropout during one `e65db0` run; the detector's behaviour under load beyond a silent `/fall_events` is not
-  claimed. Egress during the runs was not captured. The NAS latencies elsewhere in this document are the
-  platform's AI1 and T4 targets, which section 5 shows do not predict the device.
+  claimed. Egress was captured for one run (EG1 FAIL, EG2 PASS, section 5): the bytes that leave are shaped like
+  the usage report the server sends regardless of `TELEMETRY_OPT_OUT`, and TLS keeps their content unread. The NAS
+  latencies elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict
+  the device.
 - **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
   against the original dataset's terms.
 - **Nothing here is a room result.** No frame from the test room was involved, by design.

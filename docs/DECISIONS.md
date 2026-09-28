@@ -314,7 +314,8 @@ flowchart LR
 <a id="dr-11"></a>
 ## DR-11 · Run camera inference on the device, not on a hosted API
 
-- **Status:** accepted; privacy verification incomplete.
+- **Status:** accepted; privacy verification done once on 2026-09-28 and it found a gap: the container reports usage to
+  `api.roboflow.com` regardless of `TELEMETRY_OPT_OUT` (Inference 1.7.2 has no such setting). Open item, see below.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
 - **Options on record:** a hosted inference API, rejected because frames would leave the room. No cost or latency
@@ -324,11 +325,15 @@ flowchart LR
 - **Evidence** ([results, sections 2 and 5](field-tests/2026-09-27-rfdetr-results.md)): the listener is loopback only;
   median serial round trip 107.9 ms (nano, 9.3 fps) and 126.9 ms (base and medium, 7.9 fps) next to the running LIDAR
   driver and detector; lowest `MemAvailable` 2,584 MB with two models resident and the cameras stopped.
-- **Consequences and gaps:** that active learning and telemetry were off is reported, not verified (the usage database
-  was written after the last run; no egress capture). The evaluation plan's "frames never leave the device" was wrong as
-  written, because frames were copied to the Mac for scoring; the results document corrects it and leaves the plan as
-  committed. Next: send `disable_active_learning` in the request, record the container environment, capture egress
-  for one run. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
+- **Consequences and gaps:** on 2026-09-27 that active learning and telemetry were off was reported, not verified. On
+  2026-09-28 all three follow-ups ran ([fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)):
+  every request now carries `disable_active_learning: true` (the runner's test checks it); the container environment
+  is recorded there from `docker inspect`; and one run was captured with `tcpdump`. The capture (EG1 FAIL, EG2 PASS)
+  shows 285 KB leaving during 580 frames, all to `api.roboflow.com`, in one burst shaped and timed like the usage
+  collector's flush; frames (58 MB) did not leave. `TELEMETRY_OPT_OUT=True` is inert in 1.7.2, so **telemetry is not
+  off**; the mitigations to test are listed in that section. The evaluation plan's "frames never leave the device"
+  was wrong as written on 09-27 (frames were copied to the Mac for scoring); the results document corrects it and
+  leaves the plan as committed. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
   over 0.5 s while `e65db0` served 580 frames (CL1, CL2 PASS,
   [fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)); one run, cameras off.
 
