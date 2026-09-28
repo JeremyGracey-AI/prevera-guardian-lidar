@@ -180,7 +180,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 71 tests, goldens, legacy reference
+│   │   └── test/                 the test suite (96 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
@@ -290,9 +290,11 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   it is the main false-alarm risk once stillness works.
 - **Camera privacy is not fully verified.** Inference runs on the device and the client posts only to localhost, but
   whether the server's active learning and telemetry were off is reported, not verified.
-- **The camera views are unauthenticated.** Since 2026-09-28 they bind the loopback address by default and are
-  opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes them to
-  the network on purpose, for a trusted bench only.
+- **The camera views are unauthenticated.** Since 2026-09-28 the MJPEG views bind the loopback address by default
+  and are opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes
+  them on purpose, for a trusted bench only. The camera topic itself is still reachable on the LAN through
+  `foxglove_bridge` and `rosbridge`, which `guardian-up.sh` starts on all interfaces without authentication
+  ([ARCHITECTURE, section 7](docs/ARCHITECTURE.md#7-ports-and-exposure)).
 - **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`;
   [`tools/roboflow/`](tools/roboflow/) is its public stand-in), raw recordings, extracted frames and model outputs.
 

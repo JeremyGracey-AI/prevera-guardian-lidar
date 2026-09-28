@@ -171,7 +171,7 @@ models' 108 to 127 ms.
 ## Reproduce
 
 Forks, versions, training ids, model ids and evaluation ids are in the three extracts. Training and evaluation
-ran on Roboflow (Core plan, 2026-09-28); the NAS run is at
+ran on Roboflow on 2026-09-28; the NAS run is at
 `app.roboflow.com/jeremy-gracey/fall_detection-johan-jsi2o/nas-runs/1`, the evaluations at
 `.../fall_detection-johan-jsi2o/evaluation/1`, `.../fall-detection-urfd-vzgtq/evaluation/1` and
 `.../lying3-vcr6i/evaluation/1` (workspace login). Trained models are under Roboflow's Platform Model License

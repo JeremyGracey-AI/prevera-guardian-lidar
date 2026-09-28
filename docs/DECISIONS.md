@@ -77,11 +77,13 @@ flowchart LR
   in the node), a velocity spike of 0.8 m/s followed by stillness, or 4.0 s of sustained stillness
   ([`fall_detector.yaml`](../src/prevera_bringup/config/fall_detector.yaml),
   [ARCHITECTURE.md, sections 2 and 4](ARCHITECTURE.md)). The message defines ALERT and CRITICAL for a verification
-  stage ([DR-15](#dr-15)); the URDF places the scan plane at 0.65 m ([DR-02](#dr-02)).
+  stage ([DR-15](#dr-15)); the URDF placed the scan plane at 0.65 m until 2026-09-28 ([DR-02](#dr-02)).
 - **Options on record:** none. Why a 2D sensor, why a hand-tuned heuristic rather than a learned classifier, and
   where each threshold came from were not recorded. The one stated reason is the URDF's comment on the mount
   height (0.55 m "catches waist on a standing adult, and produces an elongated silhouette for a person on the
-  floor", [`sentinel.urdf.xacro`](../src/prevera_description/urdf/sentinel.urdf.xacro)). On 09-25, at a mount height
+  floor", the URDF's comment until 2026-09-28,
+  [`sentinel.urdf.xacro` at `45501c3`](https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/45501c3599d9af4d74272269841e0a88a9088ed4/src/prevera_description/urdf/sentinel.urdf.xacro)).
+  On 09-25, at a mount height
   that was not written down, a person lying on the floor added no returns at all ([DR-02](#dr-02)).
 - **Evidence:** none for the choices themselves. The field tests of 2026-09-25 to 27 are the first measurements of
   this baseline. The deployed legacy detector (this baseline plus [DR-01](#dr-01)) stays reproducible through
