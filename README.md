@@ -20,7 +20,7 @@ the field evidence behind its design decisions, including the results that faile
 | **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; room frames next); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
 | **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
 | **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; one-line fix, verified on this device. |
-| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 96 passed, 1 skipped ([quickstart](#quickstart)). |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 99 passed, 1 skipped ([quickstart](#quickstart)). |
 
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
@@ -180,13 +180,13 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 the test suite (96 passed, 1 skipped), goldens, legacy reference
+│   │   └── test/                 the test suite (99 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
 ├── tools/roboflow/               time-on-floor Workflow (the camera half of D0), runnable on the device
 ├── tools/git-hooks/pre-push      the structural push gate
-├── jetson/                       bring-up and run scripts, camera views, scan and track probes
+├── jetson/                       bring-up and run scripts, camera views, scan and track probes, the F5 runner
 ├── foxglove/guardian.json        Foxglove layout used during capture
 ├── demos/                        mobile-app UI concept (fictional data)
 ├── docs/
@@ -219,7 +219,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 96 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 99 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector

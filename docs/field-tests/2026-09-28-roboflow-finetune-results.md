@@ -43,8 +43,12 @@ have touched was read, and all are written down here, in the document written af
 - **Confusion matrices exist at 0.1 steps only.** The rule's thresholds are 0.75 (A), 0.39 (B) and 0.44 (C); the
   matrices are read at 0.70 and 0.80 (A, identical), 0.40 (B) and 0.40 (C). Per-class precision and recall are at
   the exact thresholds.
-- **NAS latency is measured on the platform's targets (AI1, T4), not on the Jetson.** F5 stays a device
-  measurement and was not run today (section 5).
+- **NAS latency is measured on the platform's targets (AI1, T4), not on the Jetson.** F5 is the device
+  measurement; it was run later the same day (section 5), after the first version of this document was committed.
+- **F5 ran over the C4 manifest, not "two test frames".** The first version of section 5 described F5 as a run on
+  two frames. The plan's wording is "measured the way section 5 of the RF-DETR results measured the stock models",
+  which is one request per frame of the `floor-trials-1` manifest (580 frames, both cameras), and that is what ran.
+  F5 has no bar, so the wording changed nothing scored; section 5 was rewritten with the numbers.
 
 ## 3. Arm A, scored
 
@@ -80,6 +84,7 @@ predicted):
 | **F1** lying separable | precision >= 0.90 and recall >= 0.90 | 1.000 / 1.000 | **PASS** |
 | **F2** lying not confused with upright | <= 5 % of 24 lying instances | 0 of 24 (0 %) | **PASS** |
 | **F3** bed (report only) | none | bed as lying 0, lying as bed 0 | reported |
+| **F5** device fit (report only) | none | `e65db0` 78.7 ms, `00ba18` 125.2 ms serial round trip on the Jetson; floor 2,799 MB with both resident (section 5) | reported |
 
 The model's errors are all on the upright side: 4 standing instances read as sitting and 1 missed. The platform's
 own recommendations for this evaluation say the same (missed standing 2, standing confused with sitting 3, at its
@@ -122,16 +127,64 @@ positives on background, and its weakest class is `sit` (precision 0.771), which
 false WARN on the LIDAR side. The gap between arm A and arm C is not scored; it says that the harder, larger
 dataset with a nano model lands around 0.91 / 0.95 on the down class. No bar applies to arms B and C.
 
-## 5. Not run: F5, device fit
+## 5. F5, device fit (report only)
 
-Nothing was measured on the Jetson today. To run F5 the way [section 5 of the stock RF-DETR results](2026-09-27-rfdetr-results.md#5-cost-on-the-device-c4-report-only)
-did: start the Inference container with the hardened command of [DR-11](../DECISIONS.md#dr-11) plus
-`-e TRITON_CACHE_DIR=/tmp/triton-cache` ([PR #3072](https://github.com/roboflow/inference/pull/3072)), request
-`fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0` and `...--00ba18` by model id on the two 1280x720 test
-frames used for C4, 3 warm-ups then the serial median and p90, `MemAvailable` before and minimum during, `/scan`
-counts before and after, with the LIDAR stack running and the cameras stopped. The frames stay on the device; the
-server posts nothing but the model pull. Until then, the round trip carried forward for D0 is still the stock
-models' 108 to 127 ms.
+Run on the Jetson at 22:54 to 22:58 UTC, the way [section 5 of the stock RF-DETR results](2026-09-27-rfdetr-results.md#5-cost-on-the-device-c4-report-only)
+measured the stock models: one request per frame of the `floor-trials-1` manifest (580 frames, both cameras,
+1280x720 JPEG), serially, one in flight, to `http://127.0.0.1:9001` and nowhere else; the first call timed on its
+own, then 3 untimed warm-ups; `MemAvailable` and jtop GPU % sampled every 0.5 s. Runner:
+[`jetson/f5_device_fit.py`](../../jetson/f5_device_fit.py) (in the repo, with a
+[test](../../src/prevera_perception/test/test_f5_device_fit.py) against a stub server that reads what it sends).
+Raw output, without frames or predictions: [`f5-e65db0.json`](2026-09-28-roboflow/f5-e65db0.json),
+[`f5-00ba18.json`](2026-09-28-roboflow/f5-00ba18.json), [`f5-smoke-e65db0.json`](2026-09-28-roboflow/f5-smoke-e65db0.json)
+(the 5-frame smoke test that pulled `e65db0`), [`f5-00ba18.log`](2026-09-28-roboflow/f5-00ba18.log).
+
+| Model | Input | Client latency median / p90 (ms) | Server processing median (ms) | Serial fps | `first_call_s` | `MemAvailable` before run → min (MB) | GPU max % (0.5 s samples) | `/scan` msgs per ~5 s, before → after |
+|---|---|---|---|---|---|---|---|---|
+| `...--e65db0`, recommended child, confidence 0.56 | 288x288 | **78.7 / 82.4** | 59.7 | 12.7 | 17.5 (smoke run: pull + load, cold cache); 0.1 once resident | 5214 → 3675 (smoke run, the load); 3705 → 3655 (full run) | 98.6 | 47 → 47 |
+| `...--00ba18`, the rule's pick, confidence 0.75 | 640x640 | **125.2 / 132.1** | 107.7 | 8.0 | 9.1 (pull + load, `e65db0` resident) | 3703 → 2799 (both resident) | 99.6 | 29 → 46 |
+| rfdetr-nano, stock, 2026-09-27 | not read | 107.9 / 114.6 | 88.4 | 9.3 | 2.4 (cached) | 3109 → 2866 | 99.3 | 39 → 43 |
+| rfdetr-base, stock, 2026-09-27 | 560x560 | 126.9 / 131.2 | 109.1 | 7.9 | 1.8 (cached) | 2916 → 2910 | 99.6 | 47 → 46 |
+| rfdetr-medium, stock, 2026-09-27 | 576x576 | 126.9 / 132.7 | 109.1 | 7.9 | 1.3 (cached) | 2992 → 2584 | 99.5 | not relayed |
+
+What it says, in the same terms as the 09-27 columns:
+
+- **The rule's pick costs what stock base and medium cost.** `00ba18` at 640x640 is 125.2 ms per frame, 107.7 ms
+  of it in the server; base and medium were 126.9 and 109.1. The recommended child is **27 % faster than stock
+  nano** (78.7 against 107.9 ms) at a 288x288 input. Client minus server is 19.0 and 17.5 ms, the same 18 to
+  19 ms of HTTP and JSON as on 09-27: the fixed cost of a 1280x720 JPEG round trip does not shrink with the model.
+- **The Jetson gap between the two children is 1.6x (client) to 1.8x (server), not the 4x (T4) or 6x (AI1)
+  the platform's latency targets show.** At these sizes the fixed decode, resize and transport cost dominates
+  on the Orin Nano. The platform's targets rank the children; they do not predict the device.
+- **Memory.** Loading `e65db0` into a fresh container took `MemAvailable` from 5214 to 3675 MB; the floor with both
+  children resident (`MAX_ACTIVE_MODELS=2`) is **2,799 MB**, next to the 2,584 MB floor of 09-27 with two stock
+  models. As on 09-27, only the minimum is usable; the server's own `vram_bytes` (605 MB for `e65db0`, 352 MB for
+  `00ba18`) is not consistent with it and is not used. Cameras were off, so the capture load of a production
+  setup is absent from every number here.
+- **`/scan`.** 47 before and after `e65db0`. The 29 before `00ba18` is a single reading taken between the runs,
+  with no request in flight, thirty seconds after a 47; it is measurement jitter of the same kind as nano's 39 on
+  09-27, and 46 after the run. Whether inference disturbs `/scan` *during* a run is still not measured: no bag
+  was recorded and nothing was sampled mid-run.
+- **`first_call_s` is a cold pull for `e65db0`** (17.5 s: the container had just been started and the model was
+  not in `/opt/nvme/inference-cache`), and pull plus load for `00ba18` (9.1 s). Those are the numbers a restart
+  pays; on 09-27 the weights were already cached.
+- **The model ran on every frame** (580 of 580 answered, 0 errors, for both; 514 and 501 frames returned at least
+  one box). That count is the only trace of the predictions: the runner discards them by design, because reading
+  what a fine-tuned model detects in room frames is a room result, and a room result needs its plan declared
+  first ([PROCESS](../PROCESS.md)). Nothing in this section is one.
+
+Conditions, recorded here because the 09-27 document could not read them: container started at about 22:50 UTC
+with the DR-11 hardened command, verified by `docker inspect` (`ReadonlyRootfs=true`, port binding
+`127.0.0.1:9001` only, `TRITON_CACHE_DIR=/tmp/triton-cache`, `MAX_ACTIVE_MODELS=2`, `ACTIVE_LEARNING_ENABLED=False`,
+`TELEMETRY_OPT_OUT=True`, key from `--env-file ~/.roboflow.env`, `--cap-drop=ALL --cap-add=NET_BIND_SERVICE`,
+`--security-opt=no-new-privileges`); every request carried `disable_active_learning: true` (the runner's test
+checks this); the LIDAR driver and fall detector were restarted at 22:51 UTC after a reboot had left the driver up
+with 0 scans, and read 44 to 47 scans per 5 s before the runs; no camera capture process was running; the
+Jetson's ROS checkout was `fix/background-absorption @ 7b705c2`, not `main`. Egress was not captured, so "the server
+posts nothing but the model pull" is still the configuration's word, not a measurement.
+
+**For D0** the round trip to carry forward is **79 ms** (`e65db0`) or **125 ms** (`00ba18`) per frame, serial, one
+camera, cameras off, with about 2.8 GB of headroom with both resident, replacing the stock models' 108 to 127 ms.
 
 ## 6. What this changes
 
@@ -162,13 +215,24 @@ models' 108 to 127 ms.
   C the matrix at 0.40 stands in for 0.39 and 0.44.
 - **The device-sized candidate is not scored** under the plan's rule; its per-class numbers are at each class's
   own optimal threshold, as the platform reports them.
-- **F5 was not run.** Nothing in this document is a Jetson latency or memory figure; the NAS latencies are the
-  platform's AI1 and T4 targets.
+- **F5 is serial, one camera, cameras off, and blind to co-load.** The Jetson figures in section 5 are one request
+  in flight at a time with no capture running; whether inference disturbs `/scan` or the fall detector during a run
+  was not sampled (no bag, no mid-run reading). Egress during the runs was not captured. The NAS latencies
+  elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict the device.
 - **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
   against the original dataset's terms.
 - **Nothing here is a room result.** No frame from the test room was involved, by design.
 
 ## Reproduce
+
+F5, on the Jetson, with the container up under the DR-11 command (section 5 lists the verified environment) and
+the LIDAR stack running (`~/guardian-status.sh` shows driver 1, detector 1, about 50 scans per 5 s):
+
+```bash
+set -a; . ~/.roboflow.env; set +a          # ROBOFLOW_API_KEY into the environment, never on a command line
+python3 jetson/f5_device_fit.py jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0 --confidence 0.56
+python3 jetson/f5_device_fit.py jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18 --confidence 0.75
+```
 
 Forks, versions, training ids, model ids and evaluation ids are in the three extracts. Training and evaluation
 ran on Roboflow on 2026-09-28; the NAS run is at
