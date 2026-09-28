@@ -9,6 +9,19 @@ the field evidence behind its design decisions, including the results that faile
 > **Status:** research prototype, measured on one subject in one room. Not a medical device, not cleared by any
 > regulator, and not to be relied on to detect falls. Apache-2.0, patent pending (see [NOTICE](NOTICE)).
 
+[![tests](https://github.com/JeremyGracey-AI/prevera-guardian-lidar/actions/workflows/tests.yml/badge.svg)](https://github.com/JeremyGracey-AI/prevera-guardian-lidar/actions/workflows/tests.yml)
+
+**At a glance**
+
+| | |
+|---|---|
+| **Works** | A floor-level 2D LIDAR sees a person lying across or diagonal to its beam within a second, at 1.3 to 2.6 m, with 0 false alarms over 95 s of walking ([floor trials](docs/field-tests/2026-09-27-floor-mount-grid.md)). |
+| **Does not** | See a person lying end-on (two of six lie-downs missed); reach WARN on the device (the fixes are tested offline only). Stock RF-DETR on two webcams sees the end-on poses but its box shape does not tell lying from standing ([C3](docs/field-tests/2026-09-27-rfdetr-results.md)). |
+| **Open** | **D1**: boxes, keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([plan](docs/field-tests/2026-09-28-roboflow-finetune-plan.md)); **D0**: where fusion runs; the config flip behind its [pre-declared bar](docs/field-tests/labels/README.md); a 3D sensor. |
+| **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
+| **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; one-line fix, verified on this device. |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 80 passed, 1 skipped ([quickstart](#quickstart)). |
+
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
 *Lying end-on with the feet toward the sensor, a person is two 0.3 m clusters to a floor-level LIDAR: the detector
@@ -205,7 +218,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 70 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 80 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector
