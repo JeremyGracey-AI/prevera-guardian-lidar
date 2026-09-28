@@ -53,7 +53,7 @@ running alongside, not restarted: sllidar_node (RPLIDAR C1, 10 Hz) + fall_detect
 | Device | Jetson Orin Nano 8 GB developer kit ("Super"), L4T R36.4.7, reported as JetPack 6.2.1 | `/proc/device-tree/model`, `/etc/nv_tegra_release` |
 | Server | Roboflow Inference **1.7.2**, image `roboflow/roboflow-inference-server-jetson-6.2.0`, listening on **127.0.0.1:9001** only | `GET /info` returns `"version":"1.7.2"`; `ss -ltn` shows `127.0.0.1:9001` |
 | Models | `rfdetr-nano`, `rfdetr-base` (alias `coco/36`, 560×560 input), `rfdetr-medium` (alias `coco/40`, 576×576 input). Stock COCO weights, no fine-tuning, class `person`, confidence 0.4 | `GET /model/registry` after the runs. Nano had already been evicted, so its alias and input size were not read and are not guessed here |
-| Client | `rf_eval.py`: serial, one frame per request. Latency is timed around the HTTP call only; the base64 body is built before the timer starts. Keeps `class == "person"` | `/opt/nvme/frames/rf_eval.py`, which is **not in the repo** (gap, section 7) |
+| Client | `rf_eval.py`: serial, one frame per request. Latency is timed around the HTTP call only; the base64 body is built before the timer starts. Keeps `class == "person"` | [`jetson/rf_eval.py`](../../jetson/rf_eval.py), a verbatim copy committed on 2026-09-28 (until then on the Jetson only; gap, section 7) |
 | Scorer | `score_rfdetr.py --lidar rfdetr-nano=39/43 --lidar rfdetr-base=47/46` | this commit |
 
 **Two environment fixes made RF-DETR run on this image.** The operator (the session that launched the container)
@@ -308,8 +308,10 @@ findings, and how each is handled above:
   with a confidence interval.
 - **Privacy:** it is not verified that active learning and telemetry were off. `rf_eval.py` does not pass
   `disable_active_learning`, `usage.db` was written after the last run, and there is no egress capture.
-- **Code and co-load:** `rf_eval.py` is on the Jetson only and is not in the repo. The LIDAR co-load effect was not
-  measured (no bag during the runs). Medium's `/scan` counts were not relayed.
+- **Code and co-load:** `rf_eval.py` was on the Jetson only until 2026-09-28, when a verbatim copy entered the repo
+  as [`jetson/rf_eval.py`](../../jetson/rf_eval.py). The LIDAR co-load effect was not measured during these runs (no
+  bag); it was measured on 2026-09-28 for a fine-tuned model ([fine-tune results, section 5](2026-09-28-roboflow-finetune-results.md)).
+  Medium's `/scan` counts were not relayed.
 - **Clocks:** the zero of the frames' `t_s` was not cross-checked against the scan stamps. Each lie-down was held still
   for about 30 s, so an offset of 1 s or less does not change a figure.
 
@@ -323,7 +325,7 @@ findings, and how each is handled above:
    recording `/scan` and `/fall_events` during the run so the co-load question gets an answer.
 3. **Close the privacy gap structurally.** Set `disable_active_learning: true` in the request, record the container's
    `docker run` environment in the repo, and capture egress for one run.
-4. **Commit `rf_eval.py`** alongside the scorer so the runner is versioned too.
+4. **Commit `rf_eval.py`** alongside the scorer so the runner is versioned too. Done 2026-09-28: `jetson/rf_eval.py`.
 
 ## Reproduce
 
@@ -334,7 +336,7 @@ python3 tools/bag_analysis/score_rfdetr.py --lidar rfdetr-nano=39/43 --lidar rfd
 # Figures (throwaway venv; see the script docstring for the uv install line)
 <venv>/bin/python tools/bag_analysis/rfdetr_figures.py --model rfdetr-base
 
-# Runner (Jetson; the key is sourced into the environment and never printed; rf_eval.py is not in this repo)
+# Runner (Jetson; the key is sourced into the environment and never printed; jetson/rf_eval.py is the versioned copy)
 ssh <user>@<jetson-ip> 'set -a; . ~/.roboflow.env; set +a; python3 /opt/nvme/frames/rf_eval.py rfdetr-base 0.4'
 ```
 

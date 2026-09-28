@@ -3,7 +3,7 @@
 [`time_on_floor_workflow.json`](time_on_floor_workflow.json) is the camera half of the fusion this repository has
 not built ([DR-14](../../docs/DECISIONS.md#dr-14)), written as a Roboflow Workflow so that it runs unchanged on the
 hosted API, in the Inference container on the Jetson, or in batch over recorded video. It is also the public
-stand-in for `rf_eval.py`, the RF-DETR runner used on the device that is not published.
+counterpart of [`jetson/rf_eval.py`](../../jetson/rf_eval.py), the RF-DETR runner used on the device (in the repo since 2026-09-28).
 
 ```
 image ──► detector (fine-tuned RF-DETR, pose as a class)
