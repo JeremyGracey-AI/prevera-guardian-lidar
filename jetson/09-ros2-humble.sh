@@ -1,14 +1,8 @@
 #!/bin/bash
-# 09-ros2-humble.sh - ROS 2 Humble base + bridges for the GUARDIAN+AI Jetson. Run with sudo on the Jetson:
-#   sudo GUARDIAN_WS=$HOME/prevera-guardian-lidar ./jetson/09-ros2-humble.sh
-# Idempotent. Configures the invoking (sudo) user: dialout group, ~/.bashrc, rosdep.
-# This is the install path the device was actually brought up with (2026-09-25); setup_jetson.sh is the
-# workspace build script that runs afterwards.
-set -euo pipefail
-TARGET_USER="${SUDO_USER:?run this script with sudo from the account that will run the stack}"
-TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
-GUARDIAN_WS="${GUARDIAN_WS:-$TARGET_HOME/prevera-guardian-lidar}"
-echo "START $(date)  user=$TARGET_USER  workspace=$GUARDIAN_WS"
+# 09-ros2-humble.sh - ROS 2 Humble base + bridges for GUARDIAN+AI. Run with sudo on the Jetson from the stack's account.
+# Idempotent. Configures $SUDO_USER (dialout, ~/.bashrc, rosdep); workspace = $GUARDIAN_WS (default ~/prevera-guardian-lidar).
+set -euo pipefail; U="${SUDO_USER:?run with sudo from the account that runs the stack}"; UH="$(getent passwd "$U" | cut -d: -f6)"; WS="${GUARDIAN_WS:-$UH/prevera-guardian-lidar}"
+echo "START $(date) user=$U workspace=$WS"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y software-properties-common curl gnupg lsb-release locales
@@ -23,18 +17,17 @@ apt-get install -y ros-humble-ros-base ros-dev-tools python3-colcon-common-exten
   ros-humble-slam-toolbox ros-humble-robot-state-publisher ros-humble-xacro ros-humble-nav2-map-server \
   ros-humble-demo-nodes-cpp ros-humble-rosbridge-suite python3-sklearn python3-pytest
 [ -f /etc/ros/rosdep/sources.list.d/20-default.list ] || rosdep init
-# RPLIDAR udev rule + serial access
-UDEV_SRC="$GUARDIAN_WS/src/prevera_bringup/udev/99-rplidar.rules"
-if [ -f "$UDEV_SRC" ]; then cp "$UDEV_SRC" /etc/udev/rules.d/99-rplidar.rules; udevadm control --reload-rules; udevadm trigger; fi
-id -nG "$TARGET_USER" | grep -qw dialout || usermod -aG dialout "$TARGET_USER"
-BRC="$TARGET_HOME/.bashrc"
-grep -q 'ros/humble/setup.bash' "$BRC" || cat >> "$BRC" <<EOB
+# RPLIDAR udev rule (from the workspace: src/prevera_bringup/udev/99-rplidar.rules) + serial access
+if [ -f "$WS/src/prevera_bringup/udev/99-rplidar.rules" ]; then cp "$WS/src/prevera_bringup/udev/99-rplidar.rules" /etc/udev/rules.d/99-rplidar.rules; udevadm control --reload-rules; udevadm trigger; fi
+id -nG "$U" | grep -qw dialout || usermod -aG dialout "$U"
+BRC="$UH/.bashrc"
+grep -q 'ros/humble/setup.bash' "$BRC" || cat >> "$BRC" <<EOF
 
 # ROS 2 Humble (added by 09-ros2-humble.sh)
 source /opt/ros/humble/setup.bash
 export ROS_DOMAIN_ID=42
-[ -f $GUARDIAN_WS/install/setup.bash ] && source $GUARDIAN_WS/install/setup.bash
-EOB
-chown "$TARGET_USER:$TARGET_USER" "$BRC"
-sudo -u "$TARGET_USER" rosdep update || true
+[ -f $WS/install/setup.bash ] && source $WS/install/setup.bash
+EOF
+chown "$U:$U" "$BRC"
+sudo -u "$U" rosdep update || true
 echo "DONE $(date)"

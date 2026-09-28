@@ -1,12 +1,5 @@
 # Implementation plan v4: offline replay harness + detector fixes (HANDOFF chunks 1-2)
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Local paths, one branch
-> name (`<docs-branch>`), the location of throwaway simulation scripts and one author-identity remark were replaced; the plan is otherwise
-> as written. Commit hashes and branch names refer to the private history and do not resolve here. The
-> `scratch-<name>/<file>` scripts cited below were local, unversioned simulations run while the plan was
-> reviewed; they are not in this repository. What was executed, and how, is in the commit history summarised in
-> [`docs/DEVELOPMENT-LOG.md`](../DEVELOPMENT-LOG.md).
-
 Repo: the private development repository (published as `prevera-guardian-lidar`; every path below is repo-relative). **Target branch: `feat/replay-harness`.** Verified on this Mac 2026-09-26 (round 3):
 
 - `feat/replay-harness` HEAD is **`3896706`** (`tools(jetson): MJPEG server for the camera topic`, adds only `jetson/mjpeg_server.py`) = `5b394aa` (`src/prevera_bringup/config/rplidar_c1.yaml:6` -> `inverted: true`) on top of `fix/background-absorption` `7b705c2`. A commit landed on the target branch between round 1 and round 2, so: **`git fetch origin && git status` before every commit**, and re-read this header's shas before starting.
@@ -520,3 +513,14 @@ Labels sidecar `docs/field-tests/labels/<bag>.json`: `{"bag", "time_base": "head
 | zero `RuntimeWarning` under `warnings.simplefilter('error')` | both variants |
 
 Other round-3 shell checks: `git rev-list --count bcae696..<docs-branch>` = 9; rig-doc md5 equal at `6950bfa` and `fcbc5ec`; `ls -d ~/.venv-prevera310` absent; `uv 0.12.5`; packages.ubuntu.com/jammy: `python3-sklearn 0.23.2-5ubuntu6`, `python3-numpy 1:1.21.5-1ubuntu22.04.1`; R3 band arithmetic: `abs(0.805-0.79) <= 0.02` True with decisions False/True, `isclose(3.497, 3.5003, rel_tol=1e-3)` True with decisions False/True, both pairs inside the band; `float(np.float32(0.8)) = 0.800000011920929 >= 0.8` (a recorded extent written exactly at threshold decodes above it — another reason the band exists).
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Local paths, one branch name (`<docs-branch>`), the
+location of throwaway simulation scripts and one author-identity remark were replaced; the plan is otherwise as written. Commit hashes and branch
+names refer to the private history and do not resolve here. The `scratch-<name>/<file>` scripts cited above were
+local, unversioned simulations run while the plan was reviewed; they are not in this repository. Line numbers
+cited into other documents refer to those documents as published. What was executed, and how, is summarised in
+[`docs/DEVELOPMENT-LOG.md`](../DEVELOPMENT-LOG.md).

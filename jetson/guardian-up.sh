@@ -4,9 +4,7 @@
 # Logs in ~/guardian-logs/. Stop: ~/guardian-down.sh. Also runs at boot via crontab @reboot.
 if pgrep -x sllidar_node >/dev/null; then echo "already running (sllidar_node up); run ~/guardian-down.sh first"; exit 0; fi
 source /opt/ros/humble/setup.bash
-# Workspace checkout (this repository, built with colcon). Override with GUARDIAN_WS=/path.
-GUARDIAN_WS="${GUARDIAN_WS:-$HOME/prevera-guardian-lidar}"
-source "$GUARDIAN_WS/install/setup.bash"
+source "${GUARDIAN_WS:-$HOME/prevera-guardian-lidar}/install/setup.bash"   # GUARDIAN_WS = this repo's colcon workspace
 export ROS_DOMAIN_ID=42
 mkdir -p ~/guardian-logs
 setsid nohup ros2 launch prevera_bringup perception.launch.py > ~/guardian-logs/perception.log 2>&1 < /dev/null &

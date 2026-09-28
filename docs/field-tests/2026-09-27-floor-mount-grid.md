@@ -1,11 +1,5 @@
 # 2026-09-27 — floor-mount LIDAR: level, orientation, and the six-station grid walk
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Host names, LAN
-> addresses, local paths, account names and references to unpublished planning documents were replaced
-> (for example `<jetson-ip>`); measurements, tables and findings are unchanged. Commit hashes, branch names
-> and PR numbers refer to the private history and do not resolve here. Decision labels such as D0 and D1
-> are defined in [`docs/DECISIONS.md`](../DECISIONS.md).
-
 Rig: RPLIDAR C1 **on the tile** at the counter base, at the start of the centre tape (scan plane ≈ 2 cm);
 arrow on the housing points at the desk. Brio 100 flush against the counter base beside it. C920 on the counter
 corner (unchanged). Photos: `docs/hardware/photos/2026-09-27-*`.
@@ -107,3 +101,14 @@ Findings:
 6. Permissions set up today: the Mac's agent session is allowed to SSH to the Jetson; on the Jetson a sudoers
    drop-in allows password-less service control (`systemctl` stop/start/restart/status), `jetson_clocks`,
    `nvpmodel -q` and shutdown/reboot only (verified: plain `sudo -n true` is refused). Other GPU services disabled.
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Host names, LAN addresses, local paths, account
+names and references to unpublished planning documents were replaced (for example `<jetson-ip>`); measurements,
+tables and findings are unchanged. Commit hashes, branch names and PR numbers refer to the private history and do
+not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
+numbers cited into this document from other documents refer to it as published: this note sits at the end so
+they hold.

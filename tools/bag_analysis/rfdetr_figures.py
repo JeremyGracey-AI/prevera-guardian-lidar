@@ -9,10 +9,7 @@ Writes into --out:
 Every number that appears in a caption is derived here from the bag / results JSON and printed to stdout,
 so the figures can be checked against this script's output. Nothing is uploaded anywhere.
 
-Data: the frames, results JSON and LIDAR mcap are NOT in this repository (field data is not published);
-the defaults below are where they live on the author's machine. Pass --frames/--bag to point elsewhere.
-
-Usage (throwaway venv, not part of the ROS workspace):
+Usage (throwaway venv; the frames, results JSON and bag are field data, not in this repo: see --frames/--bag):
   uv venv <venv> --python 3.10
   uv pip install --python <venv>/bin/python \
       supervision matplotlib mcap mcap-ros2-support opencv-python-headless

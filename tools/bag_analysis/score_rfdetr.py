@@ -8,8 +8,7 @@ Usage:
     python3 score_rfdetr.py [FRAMES_DIR] [--lidar MODEL=BEFORE/AFTER ...] [--json]
 
 FRAMES_DIR holds results-<model>.json written by rf_eval.py (default: the Mac copy
-~/src/local/prevera-frames/floor-trials-1). The results files are field data and are NOT in this
-repository. Read-only; prints to stdout; standard library only.
+~/src/local/prevera-frames/floor-trials-1; field data, not in this repo). Read-only; stdout; stdlib only.
 
 Everything is recomputed from each file's raw frames[].persons[] boxes, not from the
 runner's summary.per_segment; the runner's numbers are then diffed against ours and any
@@ -40,8 +39,7 @@ Definitions, applied exactly as the plan states them (thresholds are the plan's,
       a frame fails when its best-box aspect is on the wrong side of 1.0 (<= 1.0 in A-F,
       >= 1.0 in W) or it has no person box. These are listed for segments whose median fails;
       wrong-side counts are reported for every segment. The plan pre-declares the meaning of
-      a C3 fail: box shape alone cannot carry D1 (docs/DECISIONS.md: what the camera model predicts,
-      boxes or keypoints) and keypoints are needed.
+      a C3 fail: box shape alone cannot carry D1 (docs/DECISIONS.md) and keypoints are needed.
   C4  Fits on the device: report only (no pass bar). Latency and memory come from the results
       summary (written by rf_eval.py on the Jetson); median server_time_s is computed from frames.
       server_time_s is the server's own response `time` field, which in Inference 1.7.2 spans

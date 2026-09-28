@@ -1,11 +1,5 @@
 # RF-DETR on the floor-trials-1 frames: results
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Host names, LAN
-> addresses, local paths, account names and references to unpublished planning documents were replaced
-> (for example `<jetson-ip>`); measurements, tables and findings are unchanged. Commit hashes, branch names
-> and PR numbers refer to the private history and do not resolve here. Decision labels such as D0 and D1
-> are defined in [`docs/DECISIONS.md`](../DECISIONS.md).
-
 Companion to the pre-declared plan [`2026-09-27-rfdetr-eval-plan.md`](2026-09-27-rfdetr-eval-plan.md), committed in
 `73ec3f6` before any model was run. The plan's four conditions and thresholds are used here unchanged. No segment was
 redefined and no threshold was moved after the results came in. Where the audit found a problem with a verdict, the
@@ -343,3 +337,14 @@ python3 tools/bag_analysis/score_rfdetr.py --lidar rfdetr-nano=39/43 --lidar rfd
 # Runner (Jetson; the key is sourced into the environment and never printed; rf_eval.py is not in this repo)
 ssh <user>@<jetson-ip> 'set -a; . ~/.roboflow.env; set +a; python3 /opt/nvme/frames/rf_eval.py rfdetr-base 0.4'
 ```
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Host names, LAN addresses, local paths, account
+names and references to unpublished planning documents were replaced (for example `<jetson-ip>`); measurements,
+tables and findings are unchanged. Commit hashes, branch names and PR numbers refer to the private history and do
+not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
+numbers cited into this document from other documents refer to it as published: this note sits at the end so
+they hold. The three figures in `2026-09-27-rfdetr/` were re-encoded once for publication (JPEG quality 92, metadata stripped), so their byte sizes differ from what section 4 states; the pixel content is otherwise the figure script's output.

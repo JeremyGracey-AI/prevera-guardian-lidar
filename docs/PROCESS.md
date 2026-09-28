@@ -78,7 +78,7 @@ Every results document ends with what is not known. Examples: the RF-DETR runner
 repository; active learning and telemetry being off is reported, not verified; one subject, one room, one session;
 frames within a segment are near-duplicates, so each segment is closer to one trial than to thirty
 ([results, section 7](field-tests/2026-09-27-rfdetr-results.md)). The same goes for this publication: what was
-excluded or redacted is stated at the top of each redacted document.
+replaced in each redacted document is stated in a publication note at its end.
 
 ## 6. Govern the tools, including the AI
 

@@ -1,9 +1,7 @@
 #!/bin/bash
 # guardian-status.sh: one-screen health check. Run first thing: ssh jetson ~/guardian-status.sh
 source /opt/ros/humble/setup.bash
-# Workspace checkout (this repository, built with colcon). Override with GUARDIAN_WS=/path.
-GUARDIAN_WS="${GUARDIAN_WS:-$HOME/prevera-guardian-lidar}"
-source "$GUARDIAN_WS/install/setup.bash" 2>/dev/null
+GUARDIAN_WS="${GUARDIAN_WS:-$HOME/prevera-guardian-lidar}"; source "$GUARDIAN_WS/install/setup.bash" 2>/dev/null   # this repo's workspace
 export ROS_DOMAIN_ID=42
 ok(){ printf "  %-28s %s\n" "$1" "$2"; }
 echo "GUARDIAN status  $(date '+%F %T')  up $(uptime -p | sed 's/up //')"

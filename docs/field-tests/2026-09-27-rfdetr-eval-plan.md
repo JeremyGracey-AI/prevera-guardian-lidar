@@ -1,12 +1,5 @@
 # RF-DETR on the floor-trials-1 frames — pre-declared evaluation (written before any result)
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Host names, LAN
-> addresses, local paths, account names and references to unpublished planning documents were replaced
-> (for example `<jetson-ip>`); measurements, tables and findings are unchanged. Commit hashes, branch names
-> and PR numbers refer to the private history and do not resolve here. Decision labels such as D0 and D1
-> are defined in [`docs/DECISIONS.md`](../DECISIONS.md).
-> This is a pre-declared plan: apart from these replacements its text is exactly as committed before the run.
-
 **Question.** The floor-level LIDAR missed both end-on lie-downs in `floor-trials-1` (B: feet toward the sensor,
 F: head toward the sensor; the scan plane saw only 0.22–0.33 m of soles or head). Does a stock RF-DETR person
 detector, running locally on the Jetson Orin Nano (Roboflow Inference server, JetPack 6.2 image, localhost only),
@@ -33,3 +26,14 @@ confidence threshold 0.4, served by `roboflow/roboflow-inference-server-jetson-6
    (fusion inside a Workflow vs in ROS) needs.
 
 Every failure is reported as a finding with the frames that failed; no threshold is changed after results.
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Host names, LAN addresses, local paths, account
+names and references to unpublished planning documents were replaced (for example `<jetson-ip>`); measurements,
+tables and findings are unchanged. Commit hashes, branch names and PR numbers refer to the private history and do
+not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
+numbers cited into this document from other documents refer to it as published: this note sits at the end so
+they hold. This is a pre-declared plan: apart from these replacements its text is exactly as committed before the run.

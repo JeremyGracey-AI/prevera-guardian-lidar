@@ -1,11 +1,5 @@
 # Field test: RPLIDAR C1 fall detection — 2026-09-25
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Host names, LAN
-> addresses, local paths, account names and references to unpublished planning documents were replaced
-> (for example `<jetson-ip>`); measurements, tables and findings are unchanged. Commit hashes, branch names
-> and PR numbers refer to the private history and do not resolve here. Decision labels such as D0 and D1
-> are defined in [`docs/DECISIONS.md`](../DECISIONS.md).
-
 Setup: RPLIDAR C1 → Jetson Orin Nano Super (`<jetson-hostname>`, `<jetson-ip>`), ROS 2 Humble,
 `prevera_bringup/perception.launch.py` from branch `fix/background-absorption` (PR #1).
 Tester performed controlled falls onto a mat. Recordings (mcap) are **not** in git — too large:
@@ -49,3 +43,14 @@ Jetson `/opt/nvme/bags/`, plus a backup drive on the OMEN workstation.
 - `jetson/guardian-up.sh` / `guardian-down.sh` — start/stop LIDAR + detector + foxglove_bridge (:8765) + rosbridge (:9090); single-instance guard; `@reboot` via crontab
 - `jetson/09-ros2-humble.sh` — ROS 2 Humble base + bridges (root)
 Next session: [HANDOFF-2026-09-26.md](HANDOFF-2026-09-26.md)
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Host names, LAN addresses, local paths, account
+names and references to unpublished planning documents were replaced (for example `<jetson-ip>`); measurements,
+tables and findings are unchanged. Commit hashes, branch names and PR numbers refer to the private history and do
+not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
+numbers cited into this document from other documents refer to it as published: this note sits at the end so
+they hold.

@@ -1,9 +1,9 @@
 # PREVERA GUARDIAN+AI: LIDAR fall-detection prototype
 
 A privacy-first fall detector for senior-care rooms, built on a Jetson Orin Nano. A 2D LIDAR on the floor finds a
-person lying down from geometry alone, with no images; two webcams with a stock RF-DETR detector, run locally on the
-device, cover the poses a single scan plane cannot see; a proprietary V-JEPA stage (not in this repository) is where a
-fall gets confirmed. This repository holds the LIDAR detector, the tools that test it against real recordings, and
+person lying down from geometry alone, with no images. Two webcams with a stock RF-DETR detector, run locally on the
+device, were shown in an offline evaluation to see the poses a single scan plane misses. A proprietary V-JEPA stage
+(not in this repository) is where a fall gets confirmed. This repository holds the LIDAR detector, the tools that test it against real recordings, and
 the field evidence behind every design decision, including the results that failed.
 
 > **Status:** research prototype, measured on one subject in one room. Not a medical device, not cleared by any
@@ -174,6 +174,10 @@ Seventeen decision records, each with context, options, evidence and consequence
 ├── LICENSE                       Apache-2.0
 └── NOTICE                        copyright, patent notice, third-party components
 ```
+
+Documents published from the private development history end with a **publication note** that lists what was
+replaced (hosts, addresses, local paths, unpublished planning references). The notes sit at the end so that line
+numbers cited between documents still hold.
 
 ## Quickstart
 

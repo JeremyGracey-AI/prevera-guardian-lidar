@@ -65,8 +65,7 @@ class H(BaseHTTPRequestHandler):
 def main():
     rclpy.init()
     node = Sub()
-    # SECURITY: binds every interface with no authentication (bench tool for a trusted LAN only).
-    srv = ThreadingHTTPServer(("0.0.0.0", PORT), H)
+    srv = ThreadingHTTPServer(("0.0.0.0", PORT), H)   # SECURITY: all interfaces, no auth; trusted LAN only
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     rclpy.spin(node)
 

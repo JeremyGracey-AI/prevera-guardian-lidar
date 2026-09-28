@@ -1,12 +1,5 @@
 # RF-DETR keypoint preview on the floor-trials-1 B and F frames: pre-declared check (written before any result)
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Host names, LAN
-> addresses, local paths, account names, one branch name and references to unpublished planning documents were replaced
-> (for example `<jetson-ip>`); measurements, tables and findings are unchanged. Commit hashes, branch names
-> and PR numbers refer to the private history and do not resolve here. Decision labels such as D0 and D1
-> are defined in [`docs/DECISIONS.md`](../DECISIONS.md).
-> This is a pre-declared plan: apart from these replacements its text is exactly as committed before the run.
-
 Written 2026-09-27 on branch `<docs-branch>`. At the time of writing, `RFDETRKeypointPreview` has not been run on any
 frame from this room. The stock-detection results from `6460492` ([`2026-09-27-rfdetr-results.md`](2026-09-27-rfdetr-results.md))
 are already known. They were used only to write the definitions below (which W/Brio frames show an empty room, where
@@ -215,3 +208,14 @@ the unchanged verdict. Any rerun gets its own new pre-declared plan.
 - **K2 cannot be tested on the counter camera,** because W/C920 never shows the standing torso.
 - **Telemetry.** The `rfdetr` / `supervision` packages have not been audited for telemetry, and no egress capture is
   made. The runner itself sends no frame anywhere.
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Host names, LAN addresses, local paths, account
+names, one branch name and references to unpublished planning documents were replaced (for example `<jetson-ip>`); measurements,
+tables and findings are unchanged. Commit hashes, branch names and PR numbers refer to the private history and do
+not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
+numbers cited into this document from other documents refer to it as published: this note sits at the end so
+they hold. This is a pre-declared plan: apart from these replacements its text is exactly as committed before the run.

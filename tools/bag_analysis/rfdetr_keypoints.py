@@ -17,10 +17,7 @@ Three subcommands, run in this order:
            check passed. Computes K1, K2, K3 and the report-only items; prints a report and writes
            keypoints-score.json.
 
-Data: the frames and every results file are NOT in this repository (field data is not published); the
-default --frames-dir is where they live on the author's machine.
-
-Usage (from any directory):
+Usage (from any directory; the frames and results files are field data and are not in this repo):
     export RF_HOME=<venv>/models
     <venv>/bin/python rfdetr_keypoints.py run   [--frames-dir DIR]
     <venv>/bin/python rfdetr_keypoints.py check [--frames-dir DIR]

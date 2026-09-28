@@ -1,11 +1,5 @@
 # Capture runbook — 2026-09-26 (counter baseline + floor trials)
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Host names, LAN
-> addresses, local paths, account names and references to unpublished planning documents were replaced
-> (for example `<jetson-ip>`); measurements, tables and findings are unchanged. Commit hashes, branch names
-> and PR numbers refer to the private history and do not resolve here. Decision labels such as D0 and D1
-> are defined in [`docs/DECISIONS.md`](../DECISIONS.md).
-
 > **Status 2026-09-26 22:50:** Phases 0–1 done (`counter-baseline-2` is the counter baseline; `-1` was made with the LIDAR
 > on its side). Phases 2–4 (floor trials) are tomorrow's first chunk: see `HANDOFF-2026-09-27.md`, which also
 > replaces steps 3 and 7 with `guardian-cams-up.sh` and the sign result (forward = +y, camera-left = +x).
@@ -220,3 +214,14 @@ out of view, wait 10 s (the tracker re-arms after ~2 s out of view).
 - `bag.log` doesn't list `/camera/image_raw/compressed` → the camera node isn't up (step 3 log) or the topic name differs: `ssh jetson 'source /opt/ros/humble/setup.bash; export ROS_DOMAIN_ID=42; ros2 topic list --no-daemon | grep -i image'`.
 - `/scan` dies → two `sllidar_node`s (lesson 7): `~/guardian-down.sh`, then `~/guardian-up.sh`.
 - Foxglove connects but shows nothing → `ROS_DOMAIN_ID`: the bridge runs inside `guardian-up.sh` with 42, and the camera node was started with 42 above.
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Host names, LAN addresses, local paths, account
+names and references to unpublished planning documents were replaced (for example `<jetson-ip>`); measurements,
+tables and findings are unchanged. Commit hashes, branch names and PR numbers refer to the private history and do
+not resolve here. Decision labels such as D0 and D1 are defined in [`docs/DECISIONS.md`](../DECISIONS.md). Line
+numbers cited into this document from other documents refer to it as published: this note sits at the end so
+they hold.

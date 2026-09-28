@@ -1,12 +1,5 @@
 # Replay-harness plan v4: what the last critic round still found
 
-> **Publication note.** Published 2026-09-27 from the private development repository. Local paths, one branch
-> name (`<docs-branch>`), the location of throwaway simulation scripts and one author-identity remark were replaced; the plan is otherwise
-> as written. Commit hashes and branch names refer to the private history and do not resolve here. The
-> `scratch-<name>/<file>` scripts cited below were local, unversioned simulations run while the plan was
-> reviewed; they are not in this repository. What was executed, and how, is in the commit history summarised in
-> [`docs/DEVELOPMENT-LOG.md`](../DEVELOPMENT-LOG.md).
-
 Three revise/critique rounds (2026-09-26, 17:19-20:06). Resolutions per round: r1=21, r2=29, r3=19. The loop did not converge; these are the round-3 findings, left for the executor to settle with the tie-breaks in the commit message that added this file.
 
 ## Gaps
@@ -109,3 +102,14 @@ Three revise/critique rounds (2026-09-26, 17:19-20:06). Resolutions per round: r
 - Steps 5 and 6: 57 -> 70 tests passing; see commit bodies of `53ebdda`, `ef87137`, `24e4931`, `fc73c11` for
   deviations (`SpawnRecord.path` gains `split-like`; `max_association_speed_mps <= 0` = off; `Track.last_seen_s`
   defaults to 0.0).
+
+---
+
+## Publication note
+
+Published 2026-09-27 from the private development repository. Local paths, one branch name (`<docs-branch>`), the
+location of throwaway simulation scripts and one author-identity remark were replaced; the plan is otherwise as written. Commit hashes and branch
+names refer to the private history and do not resolve here. The `scratch-<name>/<file>` scripts cited above were
+local, unversioned simulations run while the plan was reviewed; they are not in this repository. Line numbers
+cited into other documents refer to those documents as published. What was executed, and how, is summarised in
+[`docs/DEVELOPMENT-LOG.md`](../DEVELOPMENT-LOG.md).
