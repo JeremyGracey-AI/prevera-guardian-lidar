@@ -280,7 +280,7 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes them to
   the network on purpose, for a trusted bench only.
 - **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`),
-  raw recordings, extracted frames and model outputs. The URDF still describes the old 0.65 m scan plane.
+  raw recordings, extracted frames and model outputs.
 
 ## Roadmap
 

@@ -133,7 +133,8 @@ flowchart LR
   raised no false alarm; the grid walk tracked continuously at all six stations.
 - **Consequences:** the end-on blind spot ([DR-10](#dr-10)); standing people are seen as feet (each shoe its own track
   at the near row); furniture feet make elongated, still clusters, the same signature as a lying person, which is the
-  false-alarm risk for the fixes in [DR-09](#dr-09). Gap: the URDF still describes the 0.65 m plane.
+  false-alarm risk for the fixes in [DR-09](#dr-09). The URDF described the 0.65 m plane until 2026-09-28; it now
+  puts the laser frame 0.02 m above the floor, with `lidar_mount_height:=0.65` drawing the original rig.
 
 <a id="dr-03"></a>
 ## DR-03 · Establish the scan frame empirically after every rig change
