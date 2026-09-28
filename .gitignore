@@ -1,0 +1,38 @@
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local agent / tool state (never published)
+.claude/
+.remember/
+
+# Sllidar source (cloned by setup_jetson.sh, not versioned here)
+src/sllidar_ros2/
+
+# Field data is never committed: bags, extracted frames, raw model outputs, maps
+*.bag
+*.mcap
+*.db3
+maps/
+frames/
+results-rfdetr-*.json
+keypoints-results*.json
+keypoints-results*.jsonl

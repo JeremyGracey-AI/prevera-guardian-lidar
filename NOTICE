@@ -1,0 +1,26 @@
+PREVERA GUARDIAN+AI: LIDAR fall-detection prototype
+Copyright 2026 Jeremy Gracey / PREVERA
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Patent pending. The fall-detection methods described in this repository are the
+subject of a pending US patent application.
+
+The V-JEPA verification stage referred to in this repository is proprietary and is
+not included. src/prevera_perception/prevera_perception/vjepa_bridge.py contains
+only an interface stub.
+
+Third-party software. None of the following is vendored in this repository; each
+is fetched or installed separately and is distributed under its own license:
+
+  * sllidar_ros2 (Slamtec): RPLIDAR ROS 2 driver, cloned by setup_jetson.sh at
+    build time.
+  * Roboflow Inference server (roboflow/inference, open-source core under the
+    Apache License 2.0): used as a local container on the Jetson for the RF-DETR
+    evaluation in docs/field-tests/.
+  * RF-DETR (roboflow/rf-detr, Apache License 2.0): stock COCO detection weights
+    and the keypoint-preview checkpoint used in the evaluations.
+  * supervision (roboflow/supervision, MIT License): drawing the evaluation
+    figures.
+  * ROS 2 Humble and its packages, NumPy, scikit-learn, mcap and the other
+    Python dependencies listed in tools/bag_analysis/requirements.txt.
