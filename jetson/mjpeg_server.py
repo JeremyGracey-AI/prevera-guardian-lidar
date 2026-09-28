@@ -18,9 +18,17 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CompressedImage
 
+
+
+def resolve_bind(argv, environ) -> str:
+    """argv[3] if given, else GUARDIAN_BIND; an empty value in either place means unset (never "" = every interface)."""
+    explicit = argv[3] if len(argv) > 3 else ""
+    return explicit.strip() or (environ.get("GUARDIAN_BIND") or "").strip() or "127.0.0.1"
+
+
 TOPIC = sys.argv[1] if len(sys.argv) > 1 else "/camera/image_raw/compressed"
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8081
-BIND = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("GUARDIAN_BIND", "127.0.0.1")
+BIND = resolve_bind(sys.argv, os.environ)
 latest = {"jpg": None}
 cond = threading.Condition()
 

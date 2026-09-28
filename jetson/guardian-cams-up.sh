@@ -24,4 +24,4 @@ setsid nohup python3 $T/mjpeg_server.py /camera_floor/image_raw/compressed 8082 
 (cd $T/www && setsid nohup python3 -m http.server 8083 --bind $BIND > ~/guardian-logs/www.log 2>&1 < /dev/null &)
 sleep 3
 ss -ltn | grep -E ":808[123]" | awk '{print $4}'
-if [ "$BIND" = "127.0.0.1" ]; then echo "started (loopback only; tunnel: ssh -L 8083:127.0.0.1:8083 jetson)"; else echo "started, EXPOSED on $BIND with no auth: trusted LAN only, stop after use"; fi
+if [ "$BIND" = "127.0.0.1" ]; then echo "started (loopback only; tunnel all three: ssh -L 8081:127.0.0.1:8081 -L 8082:127.0.0.1:8082 -L 8083:127.0.0.1:8083 jetson, then http://127.0.0.1:8083/)"; else echo "started, EXPOSED on $BIND with no auth: trusted LAN only, stop after use"; fi
