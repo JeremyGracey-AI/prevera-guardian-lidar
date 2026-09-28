@@ -1,0 +1,37 @@
+{
+  "arm": "B",
+  "dataset": "jeremy-gracey/fall-detection-urfd-vzgtq (fork of me-15gfc/fall-detection-urfd, CC BY 4.0)",
+  "version": 1,
+  "training_id": "03323c21dd303d13b7e1",
+  "model_id": "jeremy-gracey/fall-detection-urfd-vzgtq-1-rfdetr-nano-t2",
+  "model_type": "rfdetr-nano",
+  "training_utc": {"start": "2026-09-28T18:32:58Z", "end": "2026-09-28T19:03:13Z"},
+  "eval_id": "L3FS0JwEOHVFWuJMGq2B",
+  "eval_summary": {"mAP": 0.9933, "precision": 0.973, "recall": 0.986, "f1": 0.98, "medianLatencyMs": 4.72,
+                   "note": "summary as model_evals_get returns it; its precision/recall are the test split at its own optimal threshold (0.45), not the plan's rule"},
+  "map": {
+    "valid": {"map50": 0.9971, "map50_95": 0.9097, "map75": 0.9918,
+              "perClass": {"fall": {"map50": 0.9944, "map50_95": 0.8917}, "not_fall": {"map50": 0.9998, "map50_95": 0.9277}}},
+    "test":  {"map50": 0.9933, "map50_95": 0.9012, "map75": 0.9933,
+              "perClass": {"fall": {"map50": 0.9923, "map50_95": 0.8934}, "not_fall": {"map50": 0.9943, "map50_95": 0.9089}}}
+  },
+  "threshold_rule": "plan: the valid split's optimal threshold, applied to test",
+  "valid_optimal_threshold": 0.39,
+  "valid_optimal_metrics": {"precision": 0.965, "recall": 0.981, "f1": 0.973},
+  "test_at_0.39": {"overall": {"precision": 0.952, "recall": 0.986, "f1": 0.969},
+                   "fall": {"precision": 0.931, "recall": 0.982, "f1": 0.956},
+                   "not_fall": {"precision": 0.973, "recall": 0.991, "f1": 0.982}},
+  "confusion_matrix_test": {
+    "note": "the evaluation stores matrices at 0.1 steps only; 0.39 returns an empty matrix, so the nearest stored threshold, 0.40, is reported",
+    "confidence": 0.40,
+    "classes": ["fall", "not_fall", "background"],
+    "rows_actual_cols_predicted": [[108, 0, 2], [0, 108, 1], [8, 3, 0]]
+  },
+  "unplanned_duplicate": {
+    "training_id": "e96ae32763dfe961b783",
+    "model_id": "jeremy-gracey/fall-detection-urfd-vzgtq-1-rfdetr-nano-t1",
+    "eval_id": "NufkG8AIaoYCVUQP0FOq",
+    "eval_summary": {"mAP": 0.9869, "precision": 0.978, "recall": 0.982, "f1": 0.98},
+    "why": "the first trainings_create call returned an internal error but had started the run; the retry started t2. Same version, same recipe; reported as a seed-variance reading, not scored"
+  }
+}

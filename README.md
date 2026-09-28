@@ -9,6 +9,19 @@ the field evidence behind its design decisions, including the results that faile
 > **Status:** research prototype, measured on one subject in one room. Not a medical device, not cleared by any
 > regulator, and not to be relied on to detect falls. Apache-2.0, patent pending (see [NOTICE](NOTICE)).
 
+[![tests](https://github.com/JeremyGracey-AI/prevera-guardian-lidar/actions/workflows/tests.yml/badge.svg)](https://github.com/JeremyGracey-AI/prevera-guardian-lidar/actions/workflows/tests.yml)
+
+**At a glance**
+
+| | |
+|---|---|
+| **Works** | A floor-level 2D LIDAR sees a person lying across or diagonal to its beam within a second, at 1.3 to 2.6 m, with 0 false alarms over 95 s of walking ([floor trials](docs/field-tests/2026-09-27-floor-mount-grid.md)). |
+| **Does not** | See a person lying end-on (two of six lie-downs missed); reach WARN on the device (the fixes are tested offline only). Stock RF-DETR on two webcams sees the end-on poses but its box shape does not tell lying from standing ([C3](docs/field-tests/2026-09-27-rfdetr-results.md)). |
+| **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; room frames next); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
+| **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
+| **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; one-line fix, verified on this device. |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 96 passed, 1 skipped ([quickstart](#quickstart)). |
+
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
 *Lying end-on with the feet toward the sensor, a person is two 0.3 m clusters to a floor-level LIDAR: the detector
@@ -167,10 +180,11 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 71 tests, goldens, legacy reference
+│   │   └── test/                 the test suite (96 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
+├── tools/roboflow/               time-on-floor Workflow (the camera half of D0), runnable on the device
 ├── tools/git-hooks/pre-push      the structural push gate
 ├── jetson/                       bring-up and run scripts, camera views, scan and track probes
 ├── foxglove/guardian.json        Foxglove layout used during capture
@@ -205,7 +219,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 70 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 96 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector
@@ -276,10 +290,13 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   it is the main false-alarm risk once stillness works.
 - **Camera privacy is not fully verified.** Inference runs on the device and the client posts only to localhost, but
   whether the server's active learning and telemetry were off is reported, not verified.
-- **The camera views are unauthenticated** and bind every interface (`guardian-cams-up.sh`, `mjpeg_server.py`): a
-  bench tool for a trusted network only.
-- **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`),
-  raw recordings, extracted frames and model outputs. The URDF still describes the old 0.65 m scan plane.
+- **The camera views are unauthenticated.** Since 2026-09-28 the MJPEG views bind the loopback address by default
+  and are opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes
+  them on purpose, for a trusted bench only. The camera topic itself is still reachable on the LAN through
+  `foxglove_bridge` and `rosbridge`, which `guardian-up.sh` starts on all interfaces without authentication
+  ([ARCHITECTURE, section 7](docs/ARCHITECTURE.md#7-ports-and-exposure)).
+- **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`;
+  [`tools/roboflow/`](tools/roboflow/) is its public stand-in), raw recordings, extracted frames and model outputs.
 
 ## Roadmap
 

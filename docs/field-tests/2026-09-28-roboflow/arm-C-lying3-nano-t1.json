@@ -1,0 +1,31 @@
+{
+  "arm": "C",
+  "dataset": "jeremy-gracey/lying3-vcr6i (fork of poscoproject/lying3, CC BY 4.0), splits rebalanced 70/20/10 before versioning (train 3,726 / valid 1,065 / test 532; the fork had 6 test images)",
+  "version": 1,
+  "training_id": "ff2b5e54336befca318b",
+  "model_id": "jeremy-gracey/lying3-vcr6i-1-rfdetr-nano-t1",
+  "model_type": "rfdetr-nano",
+  "training_utc": {"start": "2026-09-28T18:38:18Z", "end": "2026-09-28T19:18:11Z"},
+  "eval_id": "WIwGOZXFJ8KudQrumRxK",
+  "map": {
+    "valid": {"map50": 0.9349, "map50_95": 0.6823, "map75": 0.8542,
+              "perClass": {"lying": {"map50": 0.9791, "map50_95": 0.7088}, "sit": {"map50": 0.8904, "map50_95": 0.6413}, "standing": {"map50": 0.9350, "map50_95": 0.6968}}},
+    "test":  {"map50": 0.9256, "map50_95": 0.6577, "map75": 0.8094,
+              "perClass": {"lying": {"map50": 0.9701, "map50_95": 0.6966}, "sit": {"map50": 0.8786, "map50_95": 0.6016}, "standing": {"map50": 0.9282, "map50_95": 0.6749}}}
+  },
+  "threshold_rule": "plan: the valid split's optimal threshold, applied to test",
+  "valid_optimal_threshold": 0.44,
+  "valid_optimal_metrics": {"precision": 0.847, "recall": 0.946, "f1": 0.893},
+  "test_at_0.44": {"overall": {"precision": 0.837, "recall": 0.933, "f1": 0.882},
+                   "lying": {"precision": 0.910, "recall": 0.950, "f1": 0.930},
+                   "sit": {"precision": 0.771, "recall": 0.898, "f1": 0.829},
+                   "standing": {"precision": 0.831, "recall": 0.951, "f1": 0.887}},
+  "confusion_matrix_test": {
+    "note": "matrices are stored at 0.1 steps only (0.45 returns report_not_found); the nearest stored threshold to 0.44, 0.40, is reported",
+    "confidence": 0.40,
+    "classes": ["lying", "sit", "standing", "background"],
+    "rows_actual_cols_predicted": [[286, 2, 0, 11], [2, 163, 0, 11], [0, 0, 295, 10], [30, 54, 63, 0]],
+    "lying_ground_truth": 299,
+    "lying_vs_upright_confusion": {"lying_as_sit": 2, "lying_as_standing": 0, "sit_as_lying": 2, "standing_as_lying": 0, "total": 4, "share_of_lying_gt": 0.013}
+  }
+}

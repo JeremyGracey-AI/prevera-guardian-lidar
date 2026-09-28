@@ -16,7 +16,10 @@ Jeremy does the physical steps, types labels, and runs the one `sudo` line (step
 
 Live view, on the OMEN and on the Mac:
 - **Camera in any browser:** `http://<jetson-ip>:8081/` (`jetson/mjpeg_server.py` on the harness
-  branch; `/snap` gives one JPEG). Aim the C920 while watching this.
+  branch; `/snap` gives one JPEG). Aim the C920 while watching this. *(Note added 2026-09-28: the views now bind
+  127.0.0.1 by default, so this address needs `ssh -L 8081:127.0.0.1:8081 jetson` first, then
+  `http://127.0.0.1:8081/`; see the header of `jetson/guardian-cams-up.sh`. The commands below are as run on
+  2026-09-26.)*
 - **Foxglove** (OMEN and Mac), first time:
   1. Foxglove → **Open connection** → **Foxglove WebSocket** → URL `ws://<jetson-ip>:8765` → Open.
   2. Left sidebar → **Layouts** → **⋯** (or the import icon) → **Import from file** → pick

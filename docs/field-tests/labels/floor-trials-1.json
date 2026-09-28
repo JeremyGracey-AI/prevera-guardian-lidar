@@ -1,0 +1,56 @@
+{
+  "bag": "floor-trials-1",
+  "recorded": "2026-09-27",
+  "time_base": "header_stamp_rel",
+  "driver_inverted": false,
+  "sensor_height_cm": 2,
+  "duration_s": 537.2,
+  "status": "DRAFT, unconfirmed: segment bounds copied from the camera-timed table in 2026-09-27-floor-mount-grid.md; Jeremy confirms against the bag and the frames before any pre-declared bar is scored against it",
+  "segments": [
+    {
+      "t0": 28.0,
+      "t1": 63.0,
+      "kind": "lying",
+      "note": "A: across the beam at the X, head east, 2.0 m; onset 28.9 s"
+    },
+    {
+      "t0": 94.0,
+      "t1": 127.0,
+      "kind": "lying",
+      "note": "B: along the beam, feet toward the C1, soles at 0.9 m; LIDAR blind (0.33 m cluster)"
+    },
+    {
+      "t0": 157.0,
+      "t1": 191.0,
+      "kind": "lying",
+      "note": "C: across, far row 2.6 m, head west; onset 157.2 s"
+    },
+    {
+      "t0": 238.0,
+      "t1": 273.0,
+      "kind": "lying",
+      "note": "D: diagonal, west lane, near row, 1.6 m; onset 238.0 s"
+    },
+    {
+      "t0": 302.0,
+      "t1": 335.0,
+      "kind": "lying",
+      "note": "E: diagonal, east lane, near row, 1.3 m; onset 302.1 s"
+    },
+    {
+      "t0": 370.0,
+      "t1": 400.0,
+      "kind": "lying",
+      "note": "F: along the beam, head toward the C1, head at 0.83 m; LIDAR blind (0.22 m cluster)"
+    },
+    {
+      "t0": 428.0,
+      "t1": 522.0,
+      "kind": "walking",
+      "note": "W: standing and walking over the six grid stations; no fall"
+    }
+  ],
+  "no_empty_segment": true,
+  "no_empty_segment_reason": "the bag began about 7 min after the empty-room detector restart and the subject was in the room, moving between lie-downs, for its whole length; the get-ups between segments are not labelled",
+  "confirmed_by": null
+}

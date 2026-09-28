@@ -2,20 +2,34 @@
 <!--
   PREVERA GUARDIAN+AI Sentinel URDF
   Stationary fall-detection unit for skilled nursing facilities.
-  LIDAR is mounted at 0.55 m: catches waist on a standing adult,
-  and produces an elongated silhouette for a person on the floor.
+
+  Scan plane at floor level: the RPLIDAR C1 sits on the tile at the counter base, level (gauge 0.0 deg), and
+  its scan window is about 0.02 m above the floor (DR-02, accepted 2026-09-27; measured in
+  docs/field-tests/2026-09-27-floor-mount-grid.md). A person lying across or diagonal to the beam is an
+  elongated cluster; a standing person is seen as feet. Until 2026-09-28 this file described the original
+  design, a 0.55 m mast on a 0.10 m base (a 0.65 m level plane), which never touched a person on the floor
+  (docs/field-tests/2026-09-25-rplidar-fall-tests.md); `lidar_mount_height` keeps that history reachable.
+
+  The laser frame is level and right-handed as the sllidar driver publishes it (`inverted: false`,
+  rplidar_c1.yaml); the room orientation is in the floor-mount document. LIDAR-to-camera extrinsics are not
+  measured yet (docs/DECISIONS.md, DR-14), so no camera link is declared here.
 -->
 <robot name="prevera_sentinel" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:property name="lidar_mount_height" value="0.55"/>
-  <xacro:property name="base_size"          value="0.20"/>
+  <!-- Height of the scan window above the floor. 0.02 = floor mount (DR-02). The original design was 0.65
+       (0.55 m mast on a 0.10 m base); pass lidar_mount_height:=0.65 to xacro to draw that rig. -->
+  <xacro:arg name="lidar_mount_height" default="0.02"/>
+  <xacro:property name="lidar_mount_height" value="$(arg lidar_mount_height)"/>
+  <!-- RPLIDAR C1 housing, approximate: 0.056 m across, 0.041 m tall (datasheet); visual only. -->
+  <xacro:property name="lidar_radius" value="0.028"/>
+  <xacro:property name="lidar_height" value="0.041"/>
 
-  <!-- World-fixed footprint of the sentinel unit. -->
+  <!-- World-fixed footprint of the sentinel unit: the tile the sensor stands on. -->
   <link name="base_link">
     <visual>
-      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <origin xyz="0 0 0.0025" rpy="0 0 0"/>
       <geometry>
-        <box size="${base_size} ${base_size} 0.10"/>
+        <box size="0.20 0.20 0.005"/>
       </geometry>
       <material name="prevera_charcoal">
         <color rgba="0.15 0.15 0.17 1.0"/>
@@ -23,11 +37,12 @@
     </visual>
   </link>
 
+  <!-- The sensor body, drawn so that its scan window sits at lidar_mount_height. -->
   <link name="lidar_mount">
     <visual>
-      <origin xyz="0 0 ${lidar_mount_height / 2}" rpy="0 0 0"/>
+      <origin xyz="0 0 ${lidar_height / 2}" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="${lidar_mount_height}" radius="0.02"/>
+        <cylinder length="${lidar_height}" radius="${lidar_radius}"/>
       </geometry>
       <material name="prevera_steel">
         <color rgba="0.45 0.45 0.47 1.0"/>
@@ -35,19 +50,19 @@
     </visual>
   </link>
 
-  <!-- Frame the rplidar driver publishes scans in (must match 'frame_id' param). -->
+  <!-- Frame the rplidar driver publishes scans in (must match 'frame_id' in rplidar_c1.yaml and fall_detector.yaml). -->
   <link name="laser"/>
 
   <joint name="base_to_mount" type="fixed">
     <parent link="base_link"/>
     <child  link="lidar_mount"/>
-    <origin xyz="0 0 0.10" rpy="0 0 0"/>
+    <origin xyz="0 0 ${lidar_mount_height - lidar_height / 2}" rpy="0 0 0"/>
   </joint>
 
   <joint name="mount_to_laser" type="fixed">
     <parent link="lidar_mount"/>
     <child  link="laser"/>
-    <origin xyz="0 0 ${lidar_mount_height}" rpy="0 0 0"/>
+    <origin xyz="0 0 ${lidar_height / 2}" rpy="0 0 0"/>
   </joint>
 
 </robot>

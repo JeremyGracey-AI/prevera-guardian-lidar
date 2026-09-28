@@ -191,9 +191,9 @@ header stamp, never the mcap log time; every float is written as float32, as on 
 | Package | Contents |
 |---|---|
 | [`prevera_msgs`](../src/prevera_msgs) | `FallEvent`, `PersonTrack`, `PersonTrackArray` |
-| [`prevera_perception`](../src/prevera_perception) | `background.py`, `clustering.py`, `tracker.py`, `detector_core.py` (all ROS-free), `fall_detector_node.py` (rclpy adapter), `synthetic_scene.py` + `synthetic_publisher_node.py`, `vjepa_bridge.py` (interface stub), 71 tests |
+| [`prevera_perception`](../src/prevera_perception) | `background.py`, `clustering.py`, `tracker.py`, `detector_core.py` (all ROS-free), `fall_detector_node.py` (rclpy adapter), `synthetic_scene.py` + `synthetic_publisher_node.py`, `vjepa_bridge.py` (interface stub), the test suite (83 tests at 2026-09-28, plus tools tests beside them) |
 | [`prevera_bringup`](../src/prevera_bringup) | `lidar.launch.py`, `perception.launch.py` (LIDAR + detector), `slam.launch.py`, `guardian.launch.py` (SLAM + detector, optional RViz), configs, udev rule, RViz layout |
-| [`prevera_description`](../src/prevera_description) | sentinel URDF (still the 0.65 m plane, see DR-02) |
+| [`prevera_description`](../src/prevera_description) | sentinel URDF (scan plane at floor level since 2026-09-28, the 0.65 m rig behind an arg; DR-02) |
 
 ## 7. Ports and exposure
 
@@ -202,11 +202,17 @@ header stamp, never the mcap log time; every float is written as float32, as on 
 | 9001 | Roboflow Inference | 127.0.0.1 | loopback only (DR-11) |
 | 8765 | foxglove_bridge | all interfaces | development visualisation |
 | 9090 | rosbridge | all interfaces | development visualisation |
-| 8081, 8082, 8083 | camera MJPEG views and the two-camera page | all interfaces, no authentication | bench tool: trusted LAN only, stop it after use |
+| 8081, 8082, 8083 | camera MJPEG views and the two-camera page | 127.0.0.1 by default (since 2026-09-28); `GUARDIAN_BIND=0.0.0.0` for a trusted bench | no authentication; open through an ssh tunnel, stop after use |
 
-The camera views are a development convenience and the main exposure in this setup: anyone on the same network can
-watch both cameras while they run. They are not part of the detector and are started only by
-`guardian-cams-up.sh`.
+The camera views are a development convenience. Until 2026-09-28 they bound every interface by default; they now
+bind the loopback address and are reached with
+`ssh -L 8081:127.0.0.1:8081 -L 8082:127.0.0.1:8082 -L 8083:127.0.0.1:8083 jetson`. That change covers the MJPEG
+views only. While the cameras run, their topic (`/camera/image_raw/compressed`) is still reachable on the LAN by
+anyone who can join ROS domain 42 or connect to `foxglove_bridge` (:8765) and `rosbridge` (:9090), which
+`guardian-up.sh` starts on all interfaces with no authentication and which the Foxglove layout subscribes to. So
+the exposure of the cameras is not closed; it is narrowed to the bridges, which are development tools that
+`guardian-up.sh` starts on every boot. Binding them to the loopback address, or not starting them by default, is
+an open item.
 
 ## 8. The V-JEPA boundary
 
