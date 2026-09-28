@@ -384,9 +384,11 @@ flowchart LR
 - **Definition:** D0 is where LIDAR and camera evidence are combined.
 - **Options on record:** the candidate placements are in planning notes that are not published and are not described
   here.
-- **Evidence so far:** the direct-call baseline is 108 to 127 ms per frame, of which 18 to 19 ms is HTTP and JSON, with
-  about 2.6 GB of memory headroom, measured serially on one camera stream with the cameras off
-  ([results, section 5](field-tests/2026-09-27-rfdetr-results.md)).
+- **Evidence so far:** the direct-call baseline is 108 to 127 ms per frame for the stock models, of which 18 to 19 ms
+  is HTTP and JSON, with about 2.6 GB of memory headroom, measured serially on one camera stream with the cameras off
+  ([results, section 5](field-tests/2026-09-27-rfdetr-results.md)). The fine-tuned children measured the same way on
+  2026-09-28: 78.7 ms (`e65db0`, 288x288) and 125.2 ms (`00ba18`, 640x640), floor 2,799 MB with both resident
+  ([fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)).
 - **Next:** measure the chosen placement against that baseline on the device, recording `/scan` and `/fall_events`
   during the run to answer the co-load question. Any placement needs the LIDAR-to-camera extrinsics, which are not
   measured yet ([rig doc](hardware/rig-2026-09-26.md)). Since 2026-09-28 the camera side exists as a runnable

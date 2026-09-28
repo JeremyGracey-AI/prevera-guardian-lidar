@@ -1,0 +1,42 @@
+scan before:   /scan msgs in ~5 s (≈50)   29
+{
+ "model": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18",
+ "confidence": 0.75,
+ "frames_requested": 580,
+ "frames_answered": 580,
+ "errors": 0,
+ "first_call_s": 9.1,
+ "latency_ms_median": 125.2,
+ "latency_ms_p90": 132.1,
+ "fps_serial": 8.0,
+ "server_time_ms_median": 107.7,
+ "mem_avail_idle_mb": 3703,
+ "mem_avail_min_mb": 2799,
+ "gpu_pct_max": 99.6,
+ "sampler": "jtop",
+ "boxes_total": 501,
+ "frames_with_a_box": 501,
+ "run_s": 77.2,
+ "server_version": "1.7.2",
+ "device": "jg-desktop",
+ "registry_entries_for_model": [
+  {
+   "model_id": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18",
+   "task_type": "object-detection",
+   "batch_size": null,
+   "input_height": 640,
+   "input_width": 640,
+   "vram_bytes": 351670272,
+   "request_aliases": [],
+   "request_paths": [
+    "/infer/object_detection"
+   ]
+  }
+ ],
+ "started_utc": "2026-09-28T22:57:03Z",
+ "frames_dir": "/opt/nvme/frames/floor-trials-1",
+ "note": "cost measurement only; predictions were not kept (see docstring)"
+}
+exit: 0
+scan after:   /scan msgs in ~5 s (≈50)   46
+DONE

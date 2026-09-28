@@ -1,0 +1,84 @@
+{
+ "summary": {
+  "model": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0",
+  "confidence": 0.56,
+  "frames_requested": 5,
+  "frames_answered": 5,
+  "errors": 0,
+  "first_call_s": 17.5,
+  "latency_ms_median": 78.9,
+  "latency_ms_p90": 86.6,
+  "fps_serial": 12.7,
+  "server_time_ms_median": 58.1,
+  "mem_avail_idle_mb": 5214,
+  "mem_avail_min_mb": 3675,
+  "gpu_pct_max": 0,
+  "sampler": "jtop",
+  "boxes_total": 5,
+  "frames_with_a_box": 5,
+  "run_s": 0.4,
+  "server_version": "1.7.2",
+  "device": "jg-desktop",
+  "registry_entries_for_model": [
+   {
+    "model_id": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0",
+    "task_type": "object-detection",
+    "batch_size": null,
+    "input_height": 288,
+    "input_width": 288,
+    "vram_bytes": 605220864,
+    "request_aliases": [],
+    "request_paths": [
+     "/infer/object_detection"
+    ]
+   }
+  ],
+  "started_utc": "2026-09-28T22:54:56Z",
+  "frames_dir": "/opt/nvme/frames/floor-trials-1",
+  "note": "cost measurement only; predictions were not kept (see docstring)"
+ },
+ "latency_ms": [
+  72.3,
+  78.9,
+  84.4,
+  86.6,
+  78.1
+ ],
+ "samples": [
+  {
+   "t": 1790636082.0140321,
+   "mem_avail_mb": 5044,
+   "gpu_pct": 0.0
+  },
+  {
+   "t": 1790636082.9895787,
+   "mem_avail_mb": 5024,
+   "gpu_pct": 0.0
+  },
+  {
+   "t": 1790636085.9929812,
+   "mem_avail_mb": 4954,
+   "gpu_pct": 0.0
+  },
+  {
+   "t": 1790636088.996218,
+   "mem_avail_mb": 4695,
+   "gpu_pct": 0.0
+  },
+  {
+   "t": 1790636091.998267,
+   "mem_avail_mb": 4301,
+   "gpu_pct": 0.0
+  },
+  {
+   "t": 1790636095.000369,
+   "mem_avail_mb": 4097,
+   "gpu_pct": 0.0
+  },
+  {
+   "t": 1790636098.0030477,
+   "mem_avail_mb": 3675,
+   "gpu_pct": 0.0
+  }
+ ]
+}
