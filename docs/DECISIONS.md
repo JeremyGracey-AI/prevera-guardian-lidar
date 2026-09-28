@@ -454,7 +454,10 @@ flowchart LR
 - **Pre-declared evaluations:** the plan, with its pass bars, is committed before the first result; thresholds do not
   move afterwards; audit findings are written beside unchanged verdicts; failures are reported as findings. The RF-DETR
   plan was committed at 16:38 and its results at 17:26; the keypoint plan at 17:36 and the run at 17:44
-  ([development log](DEVELOPMENT-LOG.md)). See [PROCESS.md](PROCESS.md).
+  ([development log](DEVELOPMENT-LOG.md)). On 2026-09-28 the fine-tune plan preceded its results by 2 h 41 min
+  (`4adc303` to `d88072e`), and the close-the-gaps plan (`cec878a`, 23:25 UTC) preceded the co-load bags (23:32) and the
+  egress capture (23:40); its EG1 bar failed and is reported as a finding with the bar unchanged. See
+  [PROCESS.md](PROCESS.md).
 - **Evidence:** run without the variable, the hook prints its block message and exits 1 (`sh tools/git-hooks/pre-push`,
   checked 2026-09-27); the sudoers scope was checked by `sudo -n true` being refused (lesson 6 above); the plan and
   result commit times are in the [development log](DEVELOPMENT-LOG.md).

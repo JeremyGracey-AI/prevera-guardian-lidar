@@ -10,7 +10,7 @@ authors:
 repository-code: "https://github.com/JeremyGracey-AI/prevera-guardian-lidar"
 url: "https://jeremygracey.ai"
 license: Apache-2.0
-date-released: "2026-09-27"
+date-released: "2026-09-28"
 version: "0.1.0"
 keywords:
   - fall detection
