@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Serve a CompressedImage topic as an MJPEG stream (/, /stream, /snap).
 
-Usage: mjpeg_server.py [topic] [port]   (defaults: /camera/image_raw/compressed 8081)
+Usage: mjpeg_server.py [topic] [port] [bind]   (defaults: /camera/image_raw/compressed 8081 127.0.0.1)
 No dependencies beyond rclpy. One instance per camera.
+
+SECURITY: no authentication. The default bind is the loopback address, so the view is reachable only on the
+Jetson itself or through an ssh tunnel (`ssh -L 8081:127.0.0.1:8081 jetson`, then http://127.0.0.1:8081/).
+Passing `0.0.0.0` (or setting GUARDIAN_BIND=0.0.0.0) exposes the stream to every interface: trusted LAN only,
+and stop it after use (guardian-cams-down.sh).
 """
+import os
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +20,7 @@ from sensor_msgs.msg import CompressedImage
 
 TOPIC = sys.argv[1] if len(sys.argv) > 1 else "/camera/image_raw/compressed"
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8081
+BIND = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("GUARDIAN_BIND", "127.0.0.1")
 latest = {"jpg": None}
 cond = threading.Condition()
 
@@ -65,7 +72,10 @@ class H(BaseHTTPRequestHandler):
 def main():
     rclpy.init()
     node = Sub()
-    srv = ThreadingHTTPServer(("0.0.0.0", PORT), H)   # SECURITY: all interfaces, no auth; trusted LAN only
+    srv = ThreadingHTTPServer((BIND, PORT), H)   # SECURITY: no auth; loopback by default, 0.0.0.0 = trusted LAN only
+    print("mjpeg_server: %s on http://%s:%d/ (%s)" % (TOPIC, BIND, PORT,
+          "loopback only; use an ssh tunnel" if BIND.startswith("127.") else "EXPOSED on every interface, no auth"),
+          flush=True)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     rclpy.spin(node)
 

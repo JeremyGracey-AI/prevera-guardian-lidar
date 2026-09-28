@@ -202,11 +202,12 @@ header stamp, never the mcap log time; every float is written as float32, as on 
 | 9001 | Roboflow Inference | 127.0.0.1 | loopback only (DR-11) |
 | 8765 | foxglove_bridge | all interfaces | development visualisation |
 | 9090 | rosbridge | all interfaces | development visualisation |
-| 8081, 8082, 8083 | camera MJPEG views and the two-camera page | all interfaces, no authentication | bench tool: trusted LAN only, stop it after use |
+| 8081, 8082, 8083 | camera MJPEG views and the two-camera page | 127.0.0.1 by default (since 2026-09-28); `GUARDIAN_BIND=0.0.0.0` for a trusted bench | no authentication; open through an ssh tunnel, stop after use |
 
-The camera views are a development convenience and the main exposure in this setup: anyone on the same network can
-watch both cameras while they run. They are not part of the detector and are started only by
-`guardian-cams-up.sh`.
+The camera views are a development convenience and, when exposed, the main exposure in this setup: anyone on the
+same network can watch both cameras while they run. They are not part of the detector and are started only by
+`guardian-cams-up.sh`. Until 2026-09-28 they bound every interface by default; they now bind the loopback address
+and are reached with `ssh -L 8081:127.0.0.1:8081 -L 8082:127.0.0.1:8082 -L 8083:127.0.0.1:8083 jetson`.
 
 ## 8. The V-JEPA boundary
 

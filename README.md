@@ -276,8 +276,9 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   it is the main false-alarm risk once stillness works.
 - **Camera privacy is not fully verified.** Inference runs on the device and the client posts only to localhost, but
   whether the server's active learning and telemetry were off is reported, not verified.
-- **The camera views are unauthenticated** and bind every interface (`guardian-cams-up.sh`, `mjpeg_server.py`): a
-  bench tool for a trusted network only.
+- **The camera views are unauthenticated.** Since 2026-09-28 they bind the loopback address by default and are
+  opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes them to
+  the network on purpose, for a trusted bench only.
 - **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`),
   raw recordings, extracted frames and model outputs. The URDF still describes the old 0.65 m scan plane.
 
