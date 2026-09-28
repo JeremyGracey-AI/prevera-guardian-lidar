@@ -1,0 +1,31 @@
+"""egress_summary() sums bytes by destination outside the LAN from `tcpdump -n -q -tt` lines within a time window."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "jetson"))
+from egress_summary import egress_summary  # noqa: E402
+
+LINES = """1790640000.100000 IP 192.168.4.39.40000 > 34.120.1.2.443: tcp 1200
+1790640000.200000 IP 192.168.4.39.40001 > 192.168.4.60.9090: tcp 500
+1790640000.300000 IP 34.120.1.2.443 > 192.168.4.39.40000: tcp 300
+1790640001.000000 eth0  Out IP 192.168.4.39.40002 > 8.8.8.8.53: UDP, length 40
+1790640050.000000 IP 192.168.4.39.40003 > 1.2.3.4.443: tcp 100
+""".splitlines()
+ARGS = dict(t0=1790640000.0, t1=1790640010.0, lan="192.168.4.", self_ip="192.168.4.39")
+
+
+def test_sums_outbound_bytes_to_non_lan_destinations_inside_the_window():
+    s = egress_summary(LINES, **ARGS)
+    assert s["out_bytes_non_lan"] == 1240
+    assert s["by_destination"] == {"34.120.1.2:443": 1200, "8.8.8.8:53": 40}
+    assert s["in_bytes_non_lan"] == 300
+
+
+def test_lines_outside_the_window_and_lan_traffic_are_excluded():
+    s = egress_summary(LINES, **ARGS)
+    assert "1.2.3.4:443" not in s["by_destination"] and "192.168.4.60:9090" not in s["by_destination"]
+
+
+def test_unparseable_line_is_counted_not_dropped():
+    s = egress_summary(["garbage"], t0=0, t1=1e12, lan="192.168.4.", self_ip="192.168.4.39")
+    assert s["unparsed_lines"] == 1
