@@ -23,15 +23,18 @@ is not dead on arrival", not as a recall estimate.
 
 | Arm | Dataset (fork) | Version | Model | Training | Credits (run) |
 |---|---|---|---|---|---|
-| A, primary | `fall_detection-johan-jsi2o` (736 images; bed, standing, lying, sitting) | v1, 640 stretch, no offline augmentation | RF-DETR NAS (Standard), `rfdetr-nas-parent` | 18:31 to 20:30 UTC, 1 h 59 min; 37 frontier children + 4 stock baselines out of 5,011 architectures | 3.94 |
-| B | `fall-detection-urfd-vzgtq` (2,204; fall, not_fall) | v1, same | `rfdetr-nano` | 30 min | about 1 |
-| C | `lying3-vcr6i` (5,323; standing, lying, sit), splits rebalanced 70/20/10 | v1, same | `rfdetr-nano` | 40 min | about 1.3 |
+| A, primary | `fall_detection-johan-jsi2o` (736 images; bed, standing, lying, sitting) | v1, 640 stretch, no offline augmentation | RF-DETR NAS (Standard), `rfdetr-nas-parent` | 18:31 to 20:30 UTC, 1 h 59 min; 37 frontier children + 4 stock baselines out of 5,011 architectures | 3.94 (NAS page, in the extract) |
+| B | `fall-detection-urfd-vzgtq` (2,204; fall, not_fall) | v1, same | `rfdetr-nano` | 30 min | not recorded |
+| C | `lying3-vcr6i` (5,323; standing, lying, sit), splits rebalanced 70/20/10 | v1, same | `rfdetr-nano` | 40 min | not recorded |
 
-Deviations from the plan, all forced by tooling and all stated before any verdict was read:
+Deviations from the plan, all forced by tooling. Each was decided when it arose, before the verdict it could
+have touched was read, and all are written down here, in the document written after the evaluations:
 
 - **Arm B trained twice.** The first `trainings_create` call returned an internal error after it had started a
-  run; the retry started a second. Same version, same recipe. The retry's model (`...-nano-t2`) is arm B; the
-  first (`...-nano-t1`, test mAP@50 0.987 against 0.993) is reported as a seed-variance reading and not scored.
+  run; the retry started a second. Same version, same recipe. The rule, fixed when the duplicate was found and
+  before either evaluation was read: the run whose creation call returned successfully (`...-nano-t2`) is arm B;
+  the first (`...-nano-t1`, test mAP@50 0.987 against 0.993) is reported as a seed-variance reading and not
+  scored. Both are report-only arms, so no verdict depends on the choice.
 - **The rule's arm-A model had no evaluation.** The platform evaluates its own `recommended` child (the fast end of
   the frontier). The plan's rule picks the child with the highest valid mAP@50-95, `...--00ba18` (96.85), so its
   evaluation was started by hand from the model page at 21:01 UTC and read when it finished. The recommended
@@ -45,7 +48,11 @@ Deviations from the plan, all forced by tooling and all stated before any verdic
 
 ## 3. Arm A, scored
 
-Model `...-rfdetr-nas-t1--00ba18`, valid mAP@50-95 0.963, test mAP@50 **0.974**, test mAP@50-95 **0.952**
+Model `...-rfdetr-nas-t1--00ba18`. Two valid-split mAP@50-95 figures exist for it and both are quoted with
+their source: **96.85** is the NAS run's own per-child metric (`trainings_get`, the NAS page), the number the
+selection rule was applied to because no Model Evaluation existed at selection time; **0.963** is what Model
+Evaluation reported afterwards for the same model and split. They are two evaluators, not one number rounded
+twice; the results below use Model Evaluation throughout. Test mAP@50 **0.974**, test mAP@50-95 **0.952**
 (per class, test: bed 1.000 / 0.971, lying **1.000 / 0.950**, sitting 0.928 / 0.928, standing 0.967 / 0.958).
 Valid-optimal threshold **0.75** (valid: precision 0.972, recall 0.971), applied to test.
 
@@ -76,8 +83,9 @@ predicted):
 
 The model's errors are all on the upright side: 4 standing instances read as sitting and 1 missed. The platform's
 own recommendations for this evaluation say the same (missed standing 2, standing confused with sitting 3, at its
-0.85 threshold) and flag class imbalance: sitting has 11 test instances. `lying` is 1.000 / 1.000 at every stored
-threshold from 0.30 to 0.60 as well, so F1 does not hinge on the 0.75.
+0.85 threshold) and flag class imbalance: sitting has 11 test instances. `lying` is 1.000 / 1.000 on the test
+split at every threshold from 0.11 to 0.87 in the committed
+[per-threshold sweep](2026-09-28-roboflow/arm-A-00ba18-sweep.json), so F1 does not hinge on the 0.75.
 
 **Device-sized candidate.** The platform's `recommended` child, `...--e65db0`, is the fast end of the frontier
 (2.93 ms on AI1, 1.16 ms on T4, against 18.2 / 4.66 ms for `00ba18`) at a lower box accuracy: test mAP@50 0.971,
@@ -112,7 +120,7 @@ Read the way F2 reads arm A (not scored): arm B swaps `fall` and `not_fall` **0*
 `lying` with an upright pose **4** times in 299 (1.3 %). Arm C's errors are misses (11 of 299 lying) and false
 positives on background, and its weakest class is `sit` (precision 0.771), which is the pose behind the 09-26
 false WARN on the LIDAR side. The gap between arm A and arm C is not scored; it says that the harder, larger
-dataset with a nano model lands around 0.91 / 0.95 on the down class, which is still above the F1 bar.
+dataset with a nano model lands around 0.91 / 0.95 on the down class. No bar applies to arms B and C.
 
 ## 5. Not run: F5, device fit
 
@@ -127,10 +135,10 @@ models' 108 to 127 ms.
 
 ## 6. What this changes
 
-- **D1** ([DR-13](../DECISIONS.md#dr-13)) now has two measured "no" results (box shape, C3; the v1 keypoint run,
-  invalid) and one measured "yes on public data" (this plan). The room-frame measurement is the next step for the
-  class split, and the [v2 rescore](2026-09-28-rfdetr-keypoints-plan-v2.md) is the next step for keypoints. Which
-  runs first is Jeremy's call.
+- **D1** ([DR-13](../DECISIONS.md#dr-13)) now has one measured "no" (box shape, C3), one unscored run (the v1
+  keypoint run, invalid under its own rule, awaiting the [v2 rescore](2026-09-28-rfdetr-keypoints-plan-v2.md)) and
+  one measured "yes on public data" (this plan). The room-frame measurement is the next step for the class split;
+  which of the two runs first is Jeremy's call.
 - **D0** ([DR-14](../DECISIONS.md#dr-14)) gets its camera half as a runnable artefact: the
   [time-on-floor Workflow](../../tools/roboflow/README.md) takes any of these models by id and returns seconds since
   a down-pose track entered a floor polygon, the unit the LIDAR detector's stillness clock uses. Its clock is
@@ -138,6 +146,27 @@ models' 108 to 127 ms.
 - **The bed.** `bed` labels the furniture, and the model never confused it with a lying person on 16 + 24
   instances. A person lying **in** the bed is a different question that this label set cannot ask; the Workflow's
   floor polygon is the mechanism that keeps in-bed lying out of the count until a dataset asks it.
+
+## 7. What is not known
+
+- **Whether train and test share near-duplicate frames.** The three datasets are video-derived and their splits
+  are the uploaders'; nothing here checked for frames of the same sequence on both sides of the split, which is
+  the most likely way a 24-of-24 could be inflated. Until that is checked, the arm-A numbers are an upper bound.
+- **One run per arm.** Arm A was trained once; its seed variance is unmeasured (arm B's accidental duplicate moved
+  test mAP@50 by 0.006). One dataset, 73 test images, 89 instances, 11 of them sitting.
+- **Two evaluators.** The selection rule ran on the NAS run's own valid metric; the scoring ran on Model
+  Evaluation. Whether the rule would have picked the same child under Model Evaluation's numbers is not known,
+  because only two children were evaluated.
+- **Thresholds.** Per-class precision and recall are at the rule's exact thresholds; the confusion matrices are at
+  the nearest stored 0.1 step. For arm A the two neighbours (0.70, 0.80) agree, which bounds F2; for arms B and
+  C the matrix at 0.40 stands in for 0.39 and 0.44.
+- **The device-sized candidate is not scored** under the plan's rule; its per-class numbers are at each class's
+  own optimal threshold, as the platform reports them.
+- **F5 was not run.** Nothing in this document is a Jetson latency or memory figure; the NAS latencies are the
+  platform's AI1 and T4 targets.
+- **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
+  against the original dataset's terms.
+- **Nothing here is a room result.** No frame from the test room was involved, by design.
 
 ## Reproduce
 
