@@ -214,3 +214,29 @@ def test_v2_refuses_when_the_probe_ran_in_another_environment(tmp_path, capsys):
         assert kp.cmd_score(_args(tmp_path)) == 5
         v = json.loads((tmp_path / kp.SCORE_NAME_V2).read_text())["validity"]
         assert v["c3_ok"] is False and ("environment" in v["c3_reason"] or "md5" in v["c3_reason"])
+
+
+# --- v1 stays byte-for-byte: the key sets the base commit (45501c3) wrote, pinned (review finding I1) ---
+BASE_V1_SCORE_KEYS = {"plan", "plan_commit", "report_only", "results_file", "validity", "verdict"}
+BASE_V1_CHECK_KEYS = {"checked_utc", "frames", "frozen_mapping", "names_under_test", "plan_rule", "verdict"}
+
+
+def test_v1_outputs_carry_exactly_the_keys_the_base_commit_wrote(tmp_path, monkeypatch, capsys):
+    _write(tmp_path, _results())
+    monkeypatch.setattr(kp, "_draw", lambda *a, **k: None)
+    assert kp.cmd_score(_args(tmp_path)) == 5
+    assert set(json.loads((tmp_path / kp.SCORE_NAME).read_text())) == BASE_V1_SCORE_KEYS
+    assert kp.cmd_check(_args(tmp_path)) == 4
+    assert set(json.loads((tmp_path / kp.CHECK_NAME).read_text())) == BASE_V1_CHECK_KEYS
+
+
+def test_v2_outputs_say_which_plan_and_rule_they_used(tmp_path, monkeypatch, capsys):
+    _write(tmp_path, _results(), probe_person_ids=[1])
+    kp.PLAN = "v2"
+    monkeypatch.setattr(kp, "_draw", lambda *a, **k: None)
+    assert kp.cmd_check(_args(tmp_path)) == 0
+    chk = json.loads((tmp_path / kp.CHECK_NAME_V2).read_text())
+    assert chk["plan"] == kp.PLAN_V2_FILE and chk["instance_rule"] == "class_name == 'person'"
+    assert kp.cmd_score(_args(tmp_path)) == 0
+    rep = json.loads((tmp_path / kp.SCORE_NAME_V2).read_text())
+    assert rep["plan"] == kp.PLAN_V2_FILE and rep["instance_rule"] == "class_name == 'person'"

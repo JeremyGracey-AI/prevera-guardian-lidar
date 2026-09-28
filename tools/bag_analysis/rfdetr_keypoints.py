@@ -659,12 +659,12 @@ def cmd_check(args) -> int:
     plan_file, plan_commit, check_name, _ = plan_files()
     out_dir = frames_dir / ("kp-schema-check-v2" if PLAN == "v2" else "kp-schema-check")
     out_dir.mkdir(exist_ok=True)
-    result = {"plan": plan_file, "plan_commit": plan_commit,
-              "plan_rule": "first selected W/brio and first selected A/c920 frame with a scored instance, "
+    result = {"plan_rule": "first selected W/brio and first selected A/c920 frame with a scored instance, "
                            "time order; numeric ordering proxy (see module docstring)",
-              "instance_rule": "class_name == 'person'" if PLAN == "v2" else "class_id == 0",
               "names_under_test": data["meta"]["keypoint_names"], "frames": {}}
     if PLAN == "v2":
+        # v2 names its plan and rule; v1 output keeps exactly the keys it always had
+        result = {"plan": plan_file, "plan_commit": plan_commit, "instance_rule": "class_name == 'person'", **result}
         # plan v2: validity comes first; the schema check is not read on an invalid run
         result["validity"] = validity_v2(data["meta"], frames, frames_dir)
         if not result["validity"]["valid"]:
@@ -777,8 +777,9 @@ def cmd_score(args) -> int:
     plan_file, plan_commit, check_name, score_name = plan_files()
     validity = validity_v2(meta, frames, frames_dir) if PLAN == "v2" else meta["validity"]
     report = {"plan": plan_file, "plan_commit": plan_commit, "results_file": str(frames_dir / RESULTS_NAME),
-              "instance_rule": "class_name == 'person'" if PLAN == "v2" else "class_id == 0",
               "validity": validity}
+    if PLAN == "v2":
+        report["instance_rule"] = "class_name == 'person'"
     report["report_only"] = _report_only(meta, frames)
     if not validity["valid"]:
         report["verdict"] = f"RUN INVALID (definition 9{', v2' if PLAN == 'v2' else ''}); K1-K3 not scored"
