@@ -292,9 +292,9 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   whether the server's active learning and telemetry were off is reported, not verified.
 - **The camera views are unauthenticated.** Since 2026-09-28 the MJPEG views bind the loopback address by default
   and are opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes
-  them on purpose, for a trusted bench only. The camera topic itself is still reachable on the LAN through
-  `foxglove_bridge` and `rosbridge`, which `guardian-up.sh` starts on all interfaces without authentication
-  ([ARCHITECTURE, section 7](docs/ARCHITECTURE.md#7-ports-and-exposure)).
+  them on purpose, for a trusted bench only; `foxglove_bridge` and `rosbridge` follow the same rule in
+  `guardian-up.sh`. The camera topic itself stays reachable by anyone who can join ROS domain 42 over DDS
+  multicast, which is the transport, not a port ([ARCHITECTURE, section 7](docs/ARCHITECTURE.md#7-ports-and-exposure)).
 - **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`;
   [`tools/roboflow/`](tools/roboflow/) is its public stand-in), raw recordings, extracted frames and model outputs.
 

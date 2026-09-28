@@ -1,5 +1,10 @@
 # Capture runbook — 2026-09-26 (counter baseline + floor trials)
 
+> **Note 2026-09-28:** `guardian-up.sh` now binds `foxglove_bridge` (:8765) and `rosbridge` (:9090) to the loopback
+> address by default. For a capture session driven from the OMEN, start the stack with `GUARDIAN_BIND=0.0.0.0 ~/guardian-up.sh`
+> or open the tunnel `ssh -L 8765:127.0.0.1:8765 -L 9090:127.0.0.1:9090 jetson`. The steps below are unchanged and
+> predate this rule.
+
 > **Status 2026-09-26 22:50:** Phases 0–1 done (`counter-baseline-2` is the counter baseline; `-1` was made with the LIDAR
 > on its side). Phases 2–4 (floor trials) are tomorrow's first chunk: see `HANDOFF-2026-09-27.md`, which also
 > replaces steps 3 and 7 with `guardian-cams-up.sh` and the sign result (forward = +y, camera-left = +x).
