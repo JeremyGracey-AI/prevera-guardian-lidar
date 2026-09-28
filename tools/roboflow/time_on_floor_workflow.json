@@ -1,0 +1,127 @@
+{
+  "version": "1.0",
+  "inputs": [
+    {"type": "WorkflowImage", "name": "image"},
+    {"type": "WorkflowParameter", "name": "model_id", "default_value": "fall_detection-johan-jsi2o/1"},
+    {"type": "WorkflowParameter", "name": "confidence", "default_value": 0.5},
+    {"type": "WorkflowParameter", "name": "down_classes", "default_value": ["lying", "fall", "person-fall", "fallen"]},
+    {"type": "WorkflowParameter", "name": "floor_zone", "default_value": [[0, 300], [1280, 300], [1280, 720], [0, 720]]},
+    {"type": "WorkflowParameter", "name": "warn_after_s", "default_value": 4.0}
+  ],
+  "steps": [
+    {
+      "type": "roboflow_core/roboflow_object_detection_model@v2",
+      "name": "detector",
+      "image": "$inputs.image",
+      "model_id": "$inputs.model_id",
+      "confidence": "$inputs.confidence"
+    },
+    {
+      "type": "roboflow_core/trackers_bytetrack@v1",
+      "name": "tracker",
+      "image": "$inputs.image",
+      "detections": "$steps.detector.predictions",
+      "track_activation_threshold": "$inputs.confidence",
+      "lost_track_buffer": 30,
+      "minimum_consecutive_frames": 2
+    },
+    {
+      "type": "roboflow_core/track_class_lock@v1",
+      "name": "class_lock",
+      "image": "$inputs.image",
+      "detections": "$steps.tracker.tracked_detections",
+      "min_votes": 5,
+      "vote_confidence": "$inputs.confidence",
+      "lead_margin": 2,
+      "switch_after": 15
+    },
+    {
+      "type": "roboflow_core/detections_filter@v1",
+      "name": "down_only",
+      "predictions": "$steps.class_lock.tracked_detections",
+      "operations": [
+        {
+          "type": "DetectionsFilter",
+          "filter_operation": {
+            "type": "StatementGroup",
+            "statements": [
+              {
+                "type": "BinaryStatement",
+                "left_operand": {
+                  "type": "DynamicOperand",
+                  "operand_name": "_",
+                  "operations": [{"type": "ExtractDetectionProperty", "property_name": "class_name"}]
+                },
+                "comparator": {"type": "in (Sequence)"},
+                "right_operand": {"type": "DynamicOperand", "operand_name": "down_classes"}
+              }
+            ]
+          }
+        }
+      ],
+      "operations_parameters": {"down_classes": "$inputs.down_classes"}
+    },
+    {
+      "type": "roboflow_core/time_in_zone@v3",
+      "name": "time_on_floor",
+      "image": "$inputs.image",
+      "detections": "$steps.down_only.predictions",
+      "zone": "$inputs.floor_zone",
+      "triggering_anchor": "CENTER",
+      "remove_out_of_zone_detections": true,
+      "reset_out_of_zone_detections": true
+    },
+    {
+      "type": "roboflow_core/detections_filter@v1",
+      "name": "down_too_long",
+      "predictions": "$steps.time_on_floor.timed_detections",
+      "operations": [
+        {
+          "type": "DetectionsFilter",
+          "filter_operation": {
+            "type": "StatementGroup",
+            "statements": [
+              {
+                "type": "BinaryStatement",
+                "left_operand": {
+                  "type": "DynamicOperand",
+                  "operand_name": "_",
+                  "operations": [{"type": "ExtractDetectionProperty", "property_name": "time_in_zone"}]
+                },
+                "comparator": {"type": "(Number) >="},
+                "right_operand": {"type": "DynamicOperand", "operand_name": "warn_after_s"}
+              }
+            ]
+          }
+        }
+      ],
+      "operations_parameters": {"warn_after_s": "$inputs.warn_after_s"}
+    },
+    {
+      "type": "roboflow_core/polygon_zone_visualization@v1",
+      "name": "zone_viz",
+      "image": "$inputs.image",
+      "zone": "$inputs.floor_zone",
+      "opacity": 0.15
+    },
+    {
+      "type": "roboflow_core/bounding_box_visualization@v1",
+      "name": "box_viz",
+      "image": "$steps.zone_viz.image",
+      "predictions": "$steps.time_on_floor.timed_detections"
+    },
+    {
+      "type": "roboflow_core/label_visualization@v1",
+      "name": "label_viz",
+      "image": "$steps.box_viz.image",
+      "predictions": "$steps.time_on_floor.timed_detections",
+      "text": "Time In Zone"
+    }
+  ],
+  "outputs": [
+    {"type": "JsonField", "name": "detections", "selector": "$steps.detector.predictions"},
+    {"type": "JsonField", "name": "down_on_floor", "selector": "$steps.time_on_floor.timed_detections"},
+    {"type": "JsonField", "name": "warn", "selector": "$steps.down_too_long.predictions"},
+    {"type": "JsonField", "name": "visualization", "selector": "$steps.label_viz.image"}
+  ]
+}
