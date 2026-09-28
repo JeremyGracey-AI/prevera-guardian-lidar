@@ -29,7 +29,7 @@ flowchart LR
   f9["09-27 B and F: end-on lie-downs<br/>missed by the floor LIDAR"] --> dr10["DR-10 two webcams +<br/>stock RF-DETR"]
   dr10 --> dr11["DR-11 on-device inference"]
   dr11 --> dr12["DR-12 upstream Triton fix"]
-  dr10 --> dr13["DR-13 · D1 boxes vs keypoints"]
+  dr10 --> dr13["DR-13 · D1 boxes, keypoints,<br/>or a fine-tuned class split"]
   dr10 --> dr14["DR-14 · D0 where fusion runs"]
   dr15["DR-15 V-JEPA stage<br/>proprietary, black box"]
   f10["09-27: sqlite bags, warm-start<br/>bag, full disk"] --> dr16["DR-16 mcap, record first,<br/>split storage"]
@@ -57,7 +57,7 @@ flowchart LR
 | [DR-10](#dr-10) | Add two webcams and a stock camera detector for the LIDAR's blind spots | accepted; evaluated offline, not in the alert path |
 | [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; privacy verification incomplete |
 | [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR open |
-| [DR-13](#dr-13) | **D1**: boxes or keypoints | open, direction keypoints |
+| [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (2026-09-28), room frames next |
 | [DR-14](#dr-14) | **D0**: where fusion runs | open |
 | [DR-15](#dr-15) | Publish the LIDAR path; keep the V-JEPA verification stage proprietary | accepted |
 | [DR-16](#dr-16) | Record every bag as mcap, start it before the restart, split storage | accepted |
@@ -349,15 +349,17 @@ flowchart LR
 <a id="dr-13"></a>
 ## DR-13 · D1: boxes or keypoints
 
-- **Status:** open; direction keypoints. The first keypoint run was invalid under its own rule; a rescore needs a new
-  pre-declared plan.
+- **Status:** open. Box shape: measured no (C3). Keypoints: the first run was invalid under its own rule; the
+  [v2 rescore plan](field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md) fixes the person rule and waits for the Mac.
+  Fine-tuned class split: measured **yes on public data** (2026-09-28, F1 and F2 pass); not yet measured on room frames.
 - **Definition:** D1 is what the camera model predicts for the fall signal: a bounding box (a fall class or the box's
-  shape) or human keypoints (pose).
+  shape), human keypoints (pose), or, since 2026-09-28, a detector fine-tuned to predict the pose as a class.
 - **Context:** detection condition C3 (the counter camera's box aspect separates lying from standing) failed for all
   three model sizes: median width/height 0.85 to 0.87 in B, 0.78 to 0.79 in D and E; W passes only because the frame cuts
   the person off at the top ([results, C3](field-tests/2026-09-27-rfdetr-results.md)).
 - **Options on record:** a box (a fall class or the box's shape) or keypoints, as defined above. The pre-declared plan
-  tested box shape first (C3) and named keypoints as the consequence if it failed.
+  tested box shape first (C3) and named keypoints as the consequence if it failed. A third option, a pose-as-class
+  fine-tune, was added by the [2026-09-28 plan](field-tests/2026-09-28-roboflow-finetune-plan.md) before its run.
 - **Decision so far:** the consequence declared before the run applies: box shape alone cannot carry D1, so keypoints
   are next. The keypoint check was [pre-declared](field-tests/2026-09-27-rfdetr-keypoints-plan.md) and run, and failed
   validity check 9(c): every instance came back as `class_id` 1, none as `class_id` 0, so K1 to K3 were not scored
@@ -365,9 +367,13 @@ flowchart LR
   [extract](field-tests/2026-09-27-rfdetr/keypoints-validity.json)).
 - **Evidence:** C3 per model and segment in the [results](field-tests/2026-09-27-rfdetr-results.md); the validity
   failure in the [status note](field-tests/2026-09-27-rfdetr-keypoints-status.md) and its
-  [extract](field-tests/2026-09-27-rfdetr/keypoints-validity.json).
-- **Consequences:** a rescore plan that fixes the class rule and states what has already been seen; a counter-camera
-  framing that shows the whole body (D and E are cut at the frame edges, W at the top).
+  [extract](field-tests/2026-09-27-rfdetr/keypoints-validity.json); the class split's F1 (`lying` 1.000 / 1.000)
+  and F2 (0 of 24 pose swaps) on the arm-A test split, with the comparison arms, in the
+  [fine-tune results](field-tests/2026-09-28-roboflow-finetune-results.md) and its
+  [extracts](field-tests/2026-09-28-roboflow/).
+- **Consequences:** the keypoint rescore (plan v2, on the Mac) and a room-frame plan for the class split are both
+  pre-declared next measurements; which runs first is open. A counter-camera framing that shows the whole body
+  (D and E are cut at the frame edges, W at the top) is needed by either.
 
 <a id="dr-14"></a>
 ## DR-14 · D0: where fusion runs
@@ -381,7 +387,9 @@ flowchart LR
   ([results, section 5](field-tests/2026-09-27-rfdetr-results.md)).
 - **Next:** measure the chosen placement against that baseline on the device, recording `/scan` and `/fall_events`
   during the run to answer the co-load question. Any placement needs the LIDAR-to-camera extrinsics, which are not
-  measured yet ([rig doc](hardware/rig-2026-09-26.md)).
+  measured yet ([rig doc](hardware/rig-2026-09-26.md)). Since 2026-09-28 the camera side exists as a runnable
+  artefact, the [time-on-floor Workflow](../tools/roboflow/README.md), which turns any pose-as-class model into
+  seconds down inside a floor polygon, the unit the LIDAR detector's stillness clock uses.
 
 <a id="dr-15"></a>
 ## DR-15 · Publish the LIDAR path; keep the V-JEPA verification stage proprietary

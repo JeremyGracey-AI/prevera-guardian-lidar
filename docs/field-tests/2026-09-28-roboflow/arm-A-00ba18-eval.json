@@ -1,0 +1,44 @@
+{
+  "arm": "A",
+  "model_id": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18",
+  "selected_by": "plan rule: highest valid mAP@50-95 among the NAS frontier children (96.85)",
+  "eval_id": "IrczVmJNDEsBtBRmizoy",
+  "eval_started": "2026-09-28T21:01:00Z, by hand from the model page (the platform had evaluated only its recommended child)",
+  "eval_summary": {"mAP": 0.9739, "precision": 0.946, "recall": 0.967, "f1": 0.952, "medianLatencyMs": 9.37,
+                   "note": "summary as returned; its precision/recall are the test split at its own optimal threshold (0.85), not the plan's rule"},
+  "test_split_ground_truth": {"images": 73, "instances": 89, "bed": 16, "lying": 24, "sitting": 11, "standing": 38},
+  "map": {
+    "valid": {"map50": 0.9858, "map50_95": 0.9633, "map75": 0.9698,
+              "perClass": {"bed": {"map50": 1.0, "map50_95": 0.9746}, "lying": {"map50": 0.9843, "map50_95": 0.9596}, "sitting": {"map50": 0.9649, "map50_95": 0.9559}, "standing": {"map50": 0.9939, "map50_95": 0.9631}}},
+    "test":  {"map50": 0.9739, "map50_95": 0.9517, "map75": 0.9739,
+              "perClass": {"bed": {"map50": 1.0, "map50_95": 0.9708}, "lying": {"map50": 1.0, "map50_95": 0.9501}, "sitting": {"map50": 0.9283, "map50_95": 0.9283}, "standing": {"map50": 0.9674, "map50_95": 0.9575}}}
+  },
+  "threshold_rule": "plan: the valid split's optimal threshold, applied to test",
+  "valid_optimal_threshold": 0.75,
+  "valid_optimal_metrics": {"precision": 0.972, "recall": 0.971, "f1": 0.971},
+  "valid_per_class_at_0.75": {"bed": {"precision": 1.0, "recall": 1.0}, "lying": {"precision": 0.978, "recall": 0.978}, "sitting": {"precision": 0.923, "recall": 0.96}, "standing": {"precision": 0.986, "recall": 0.947}},
+  "test_at_0.75": {"overall": {"precision": 0.933, "recall": 0.967, "f1": 0.944},
+                   "bed": {"precision": 1.0, "recall": 1.0, "f1": 1.0},
+                   "lying": {"precision": 1.0, "recall": 1.0, "f1": 1.0},
+                   "sitting": {"precision": 0.733, "recall": 1.0, "f1": 0.846},
+                   "standing": {"precision": 1.0, "recall": 0.868, "f1": 0.93}},
+  "test_lying_at_other_thresholds": {"note": "precision and recall 1.0 at every stored threshold from 0.30 to 0.60 as well; the bar does not depend on the threshold in that range"},
+  "confusion_matrix_test": {
+    "note": "matrices are stored at 0.1 steps; 0.75 is equidistant from 0.70 and 0.80, both were read and they are identical",
+    "confidences": [0.70, 0.80],
+    "classes": ["bed", "lying", "sitting", "standing", "background"],
+    "rows_actual_cols_predicted": [[16, 0, 0, 0, 0], [0, 24, 0, 0, 0], [0, 0, 11, 0, 0], [0, 0, 4, 33, 1], [0, 0, 0, 0, 0]]
+  },
+  "F1": {"bar": "lying precision >= 0.90 and recall >= 0.90 on test at the valid-optimal threshold", "lying_precision": 1.0, "lying_recall": 1.0, "verdict": "PASS"},
+  "F2": {"bar": "lying<->{standing, sitting} confusion <= 5 % of ground-truth lying instances", "lying_as_standing": 0, "lying_as_sitting": 0, "standing_as_lying": 0, "sitting_as_lying": 0, "total": 0, "lying_ground_truth": 24, "share": 0.0, "verdict": "PASS"},
+  "F3": {"bed_as_lying": 0, "lying_as_bed": 0, "note": "report only; bed labels the furniture"},
+  "platform_recommendations": {"generated": "2026-09-28T21:04:37Z", "at_confidence": 0.85, "items": ["missed_detection: standing, count 2", "wrong_class: standing confused with sitting, count 3", "class_imbalance: sitting has 11 test instances of 89 (min-count rule violated); bed 16, lying 24 also below the median"]},
+  "device_sized_candidate_e65db0": {
+    "model_id": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0",
+    "why": "the platform's `recommended` child, the fast end of the frontier (AI1 2.93 ms, T4 1.16 ms); evaluated by the platform (eval QPoGPdNc9zPGYfUxkpgG)",
+    "eval_summary": {"mAP": 0.9713, "precision": 0.946, "recall": 0.971, "f1": 0.955, "medianLatencyMs": 4.29},
+    "map_test": {"map50": 0.9713, "map50_95": 0.8407, "lying": {"map50": 1.0, "map50_95": 0.8660}},
+    "test_per_class_at_each_class_own_optimal": {"lying": {"precision": 1.0, "recall": 1.0, "threshold": 0.27}, "sitting": {"precision": 0.786, "recall": 1.0, "threshold": 0.43}, "standing": {"precision": 1.0, "recall": 0.947, "threshold": 0.2}, "bed": {"precision": 1.0, "recall": 0.938, "threshold": 0.42}},
+    "note": "report only: not the plan's threshold rule (its sweep was not pulled), and not scored"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "arm": "A",
+  "dataset": "jeremy-gracey/fall_detection-johan-jsi2o (fork of fyp-isiva/fall_detection-johan, CC BY 4.0)",
+  "version": 1,
+  "training_id": "181deb0702b83397fedb",
+  "model_type": "rfdetr-nas-parent (RF-DETR NAS, Standard)",
+  "training_utc": {"start": "2026-09-28T18:31:16Z", "end": "2026-09-28T20:30:26Z", "wall_clock": "1 h 59 min"},
+  "credits_used_by_the_run": 3.94,
+  "nas_summary_from_ui": {"models_selected": 37, "architectures_evaluated": 5011, "f1_improvement_pct": 1.7, "latency_improvement_pct": 82.9},
+  "model_group": "s4OXkFSjOOM9umrXQYGZ-181deb0702b83397fedb-rfdetrNasGroup",
+  "model_count": 41,
+  "metrics_note": "per-child metrics as trainings_get returns them (valid split, as the NAS page labels them): map50, map5095, f1 at f1ConfThresh, recall; latency in ms on the two hardware targets the platform measures, AI1 and T4. The Jetson is not one of them: F5 stays a device measurement.",
+  "selection_rule": "plan: the frontier child with the highest mAP@50-95 on the valid split",
+  "selected_child": {"model_id": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--00ba18", "map50": 98.96, "map5095": 96.85, "f1": 97.1, "f1ConfThresh": 0.75, "latency_ms": {"AI1": 18.23, "T4": 4.66}, "paretoOptimalFor": ["T4:map_50_95", "AI1:map_50_95"], "evaluation": "not run by the platform; started by hand from the model page at 21:01 UTC (eval IrczVmJNDEsBtBRmizoy)"},
+  "runners_up_by_map5095": [
+    {"model_id": "...--8cabaa", "map50": 99.08, "map5095": 96.62, "f1": 96.8, "latency_ms": {"AI1": 12.21, "T4": 3.27}},
+    {"model_id": "...--56f9a6", "map50": 98.67, "map5095": 96.07, "f1": 97.2, "latency_ms": {"AI1": 9.52, "T4": 2.81}},
+    {"model_id": "...--cefe76", "map50": 99.23, "map5095": 95.96, "f1": 97.1, "latency_ms": {"AI1": 15.04, "T4": 3.83}},
+    {"model_id": "...--d9087d", "map50": 98.59, "map5095": 95.88, "f1": 97.5, "latency_ms": {"AI1": 9.30, "T4": 2.77}}
+  ],
+  "platform_recommended_children": [
+    {"model_id": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0", "map50": 98.42, "map5095": 83.63, "f1": 96.8, "f1ConfThresh": 0.56, "latency_ms": {"AI1": 2.93, "T4": 1.16}, "paretoOptimalFor": ["T4:map_50", "T4:f1"], "evaluation": "run by the platform at 20:30 UTC (eval QPoGPdNc9zPGYfUxkpgG)"},
+    {"model_id": "...--ed6403", "map50": 98.42, "map5095": 83.63, "f1": 96.8, "f1ConfThresh": 0.56, "latency_ms": {"AI1": 2.93, "T4": 1.17}, "paretoOptimalFor": ["AI1:map_50", "AI1:f1"]}
+  ],
+  "recommended_note": "the `recommended` flag is the platform's speed/accuracy pick per hardware bucket, flattened; it is the fastest end of the frontier, not the most accurate child (map5095 83.6 against 96.9). It stands in for the plan's 'device-sized candidate' because NAS children carry no size name.",
+  "baselines_stock_rfdetr_same_data": [
+    {"model_id": "...--4290bf", "map50": 97.90, "map5095": 94.80, "f1": 97.3, "latency_ms": {"AI1": 7.57, "T4": 2.32}},
+    {"model_id": "...--482e07", "map50": 96.56, "map5095": 93.32, "f1": 96.4, "latency_ms": {"AI1": 13.40, "T4": 3.48}},
+    {"model_id": "...--9ae04f", "map50": 98.52, "map5095": 95.97, "f1": 96.7, "latency_ms": {"AI1": 17.30, "T4": 4.36}},
+    {"model_id": "...--46e50c", "map50": 97.39, "map5095": 95.00, "f1": 96.8, "latency_ms": {"AI1": 25.09, "T4": 6.78}}
+  ],
+  "frontier_note": "37 frontier children plus the 4 baselines; the full table with per-child metrics is on the NAS page of the version (app.roboflow.com/jeremy-gracey/fall_detection-johan-jsi2o/nas-runs/1) and in trainings_get; only the rows cited in the results are transcribed here.",
+  "license_shown_on_the_run": "PML-1.0 (Roboflow Platform Model License), as displayed on the training card"
+}
