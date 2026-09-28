@@ -1,0 +1,15 @@
+<!doctype html><html><head><title>Guardian cams</title>
+<style>body{margin:0;background:#111;color:#ddd;font:14px -apple-system,sans-serif}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px}
+figure{margin:0}img{width:100%;display:block;background:#000}figcaption{padding:4px 2px;color:#9ab}</style></head>
+<body><div class="g">
+<figure><img id="top" alt="top camera"><figcaption>top cam: C920, 103 cm, 15° down (/camera)</figcaption></figure>
+<figure><img id="floor" alt="floor camera"><figcaption>floor cam: Brio 100, on the grid line, level (/camera_floor)</figcaption></figure>
+</div>
+<script>
+// Streams come from the same host that served this page (jetson/mjpeg_server.py on :8081 and :8082).
+const h = location.hostname;
+document.getElementById("top").src = "http://" + h + ":8081/stream";
+document.getElementById("floor").src = "http://" + h + ":8082/stream";
+</script>
+</body></html>
