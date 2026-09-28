@@ -5,14 +5,44 @@
   "driver_inverted": false,
   "sensor_height_cm": 2,
   "duration_s": 131.6,
-  "status": "DRAFT, unconfirmed: station windows copied from the grid-walk table in 2026-09-27-floor-mount-grid.md; Jeremy confirms against the bag before step 9 scores it",
+  "status": "DRAFT, unconfirmed: station windows copied from the grid-walk table in 2026-09-27-floor-mount-grid.md; Jeremy confirms against the bag before any pre-declared bar is scored against it",
   "segments": [
-    {"t0": 12.0,  "t1": 31.0,  "kind": "walking", "note": "station 1: 2 m, centre, near row (standing still, facing south)"},
-    {"t0": 36.0,  "t1": 45.0,  "kind": "walking", "note": "station 2: 1 m toward the glass door, west, near row"},
-    {"t0": 50.0,  "t1": 60.0,  "kind": "walking", "note": "station 3: 1 m up toward the black chair, west, far row"},
-    {"t0": 65.0,  "t1": 81.0,  "kind": "walking", "note": "station 4: 2 m, centre, far row"},
-    {"t0": 87.0,  "t1": 97.0,  "kind": "walking", "note": "station 5: 3 m, east, far row"},
-    {"t0": 103.0, "t1": 114.0, "kind": "walking", "note": "station 6: the X, centre, 2.0 m"}
+    {
+      "t0": 12.0,
+      "t1": 31.0,
+      "kind": "walking",
+      "note": "station 1: 2 m, centre, near row (standing still, facing south)"
+    },
+    {
+      "t0": 36.0,
+      "t1": 45.0,
+      "kind": "walking",
+      "note": "station 2: 1 m toward the glass door, west, near row"
+    },
+    {
+      "t0": 50.0,
+      "t1": 60.0,
+      "kind": "walking",
+      "note": "station 3: 1 m up toward the black chair, west, far row"
+    },
+    {
+      "t0": 65.0,
+      "t1": 81.0,
+      "kind": "walking",
+      "note": "station 4: 2 m, centre, far row"
+    },
+    {
+      "t0": 87.0,
+      "t1": 97.0,
+      "kind": "walking",
+      "note": "station 5: 3 m, east, far row"
+    },
+    {
+      "t0": 103.0,
+      "t1": 114.0,
+      "kind": "walking",
+      "note": "station 6: the X, centre, 2.0 m"
+    }
   ],
   "no_empty_segment": true,
   "no_empty_segment_reason": "the subject was in the room for the whole bag (walking between stations); a 'walking' kind covers standing still at a station, since the schema has no 'standing'",
