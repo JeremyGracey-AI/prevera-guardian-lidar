@@ -29,3 +29,12 @@ def test_lines_outside_the_window_and_lan_traffic_are_excluded():
 def test_unparseable_line_is_counted_not_dropped():
     s = egress_summary(["garbage"], t0=0, t1=1e12, lan="192.168.4.", self_ip="192.168.4.39")
     assert s["unparsed_lines"] == 1
+
+
+def test_two_lan_prefixes_and_two_self_addresses_wired_and_wifi():
+    lines = ["1790640000.100000 IP 192.168.4.60.40000 > 34.120.1.2.443: tcp 700",   # wired, out
+             "1790640000.200000 IP 192.168.4.39.40001 > 34.120.1.2.443: tcp 50",    # wifi, out
+             "1790640000.300000 IP 192.168.4.60.40002 > 192.168.6.9.5000: tcp 900"]  # LAN /22, excluded
+    s = egress_summary(lines, t0=0, t1=1e12, lan="192.168.4.,192.168.5.,192.168.6.,192.168.7.",
+                       self_ip="192.168.4.60,192.168.4.39")
+    assert s["out_bytes_non_lan"] == 750 and list(s["by_destination"]) == ["34.120.1.2:443"]
