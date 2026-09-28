@@ -422,7 +422,9 @@ def load_results(frames_dir: Path) -> dict:
 
 # ---------------------------------------------------------------- plan v2 validity (definition 9, v2 form)
 def _mapping_person_ids(mapping) -> list[int]:
-    """Ids whose name is 'person' in a mapping given as {id: name}, {name: id}, or a list/tuple of names."""
+    """Ids whose name is 'person' in an explicit mapping given as {id: name} or {name: id}. A bare list of names
+    carries no ids (rfdetr's `class_names` is such a list, 0-indexed by position, and the ids `predict()` emits
+    are NOT its positions for the keypoint preview), so a list yields nothing here."""
     ids: list[int] = []
     if isinstance(mapping, dict):
         for k, v in mapping.items():
@@ -430,9 +432,36 @@ def _mapping_person_ids(mapping) -> list[int]:
                 ids.append(k)
             elif isinstance(k, str) and k.lower() == PERSON_NAME and isinstance(v, int):
                 ids.append(v)
-    elif isinstance(mapping, (list, tuple)):
-        ids = [i for i, v in enumerate(mapping) if isinstance(v, str) and v.lower() == PERSON_NAME]
     return sorted(set(ids))
+
+
+def package_class_mapping(class_names, num_classes=None, num_keypoints_per_class=None, coco_classes=None) -> dict:
+    """The id-to-name mapping `rfdetr.detr.RFDETR.predict()` applies in rfdetr 1.11.0, reproduced from its inputs
+    (plan v2, c3, amendment of 2026-09-28). Three rules, in the package's order:
+      * coco-pretrained: `args.num_classes` > len(class_names) and class_names == the COCO name list -> the COCO
+        category ids (1..90 with gaps) in order, from `rfdetr.assets.coco_classes.COCO_CLASSES`;
+      * legacy-bg-first-keypoint: `args.num_keypoints_per_class` starts with a 0 slot (background) -> every slot
+        with keypoints maps, in order, to class_names[0], class_names[1], ... (slot 1 -> class_names[0]);
+      * zero-indexed: class_id i -> class_names[i].
+    Returns {"rule", "mapping" ({id: name}), "person_ids", "inputs"}."""
+    names = [str(n) for n in (class_names or [])]
+    n = len(names)
+    schema = list(num_keypoints_per_class or [])
+    coco = dict(coco_classes or {})
+    coco_names = [coco[k] for k in sorted(coco)] if coco else []
+    if num_classes is not None and n and num_classes > n and coco_names and names == coco_names:
+        rule = "coco-pretrained"
+        mapping = {cid: names[i] for i, cid in enumerate(sorted(coco)) if i < n}
+    elif schema and schema[0] == 0:
+        rule = "legacy-bg-first-keypoint"
+        foreground = [slot for slot, k in enumerate(schema) if k > 0]
+        mapping = {slot: names[i] for i, slot in enumerate(foreground) if i < n}
+    else:
+        rule = "zero-indexed"
+        mapping = dict(enumerate(names))
+    return {"rule": rule, "mapping": mapping, "person_ids": _mapping_person_ids(mapping),
+            "inputs": {"class_names": names, "num_classes": num_classes, "num_keypoints_per_class": schema,
+                       "coco_classes_available": bool(coco)}}
 
 
 def validity_v2(meta: dict, frames: list[dict], frames_dir: Path) -> dict:
@@ -461,13 +490,25 @@ def validity_v2(meta: dict, frames: list[dict], frames_dir: Path) -> dict:
                    c3_ok=False, c3_reason=f"{PROBE_NAME} missing: run `probe-classes` in the run environment first")
     else:
         probe = json.loads(probe_path.read_text())
-        exposed = [m for m in probe.get("mappings", []) if m.get("person_ids")]
+        mappings = [m for m in probe.get("mappings", []) if "error" not in m]
+        exposed = [m for m in mappings if m.get("person_ids")]
         pkg_ids = sorted({pid for m in exposed for pid in m["person_ids"]})
+        run_rfdetr = (meta.get("packages") or {}).get("rfdetr")
         out.update(c3_probe_found=True, c3_probe_utc=probe.get("probed_utc"),
-                   c3_package_mapping_exposed=bool(exposed), c3_person_ids_from_package=pkg_ids,
-                   c3_sources=[m.get("source") for m in exposed])
-        if not exposed:
+                   c3_package_mapping_exposed=bool(mappings), c3_person_ids_from_package=pkg_ids,
+                   c3_sources=[m.get("source") for m in exposed],
+                   c3_probe_rfdetr=probe.get("rfdetr"), c3_run_rfdetr=run_rfdetr,
+                   c3_probe_md5_ok=probe.get("md5_ok"))
+        # the probe must have run in the run's environment: same rfdetr, same checkpoint (plan v2, c3)
+        if probe.get("md5_ok") is not True:
+            out.update(c3_ok=False, c3_reason="probe did not verify the run's checkpoint md5 (md5_ok is not true)")
+        elif run_rfdetr is not None and probe.get("rfdetr") != run_rfdetr:
+            out.update(c3_ok=False, c3_reason=f"probe environment differs: rfdetr {probe.get('rfdetr')!r} in the "
+                                              f"probe, {run_rfdetr!r} in the run")
+        elif not mappings:
             out.update(c3_ok=True, c3_reason="package exposes no id-to-name mapping; (c3) rests on (c1) and (c2)")
+        elif not exposed:
+            out.update(c3_ok=False, c3_reason="package exposes a mapping with no 'person' in it")
         elif len(pkg_ids) == 1 and out["c2_class_id"] == pkg_ids[0]:
             out.update(c3_ok=True, c3_reason=f"package maps 'person' to {pkg_ids[0]}, the id every instance carries")
         else:
@@ -478,51 +519,74 @@ def validity_v2(meta: dict, frames: list[dict], frames_dir: Path) -> dict:
 
 
 def cmd_probe_classes(args) -> int:
-    """Plan v2 definition 9(c3): ask the package, in the run's environment, which id it maps to 'person'.
-    Loads the model exactly as the run did and records every id-to-name mapping it exposes. No inference."""
+    """Plan v2 definition 9(c3), as amended 2026-09-28: ask the package, in the run's environment, which id it
+    maps to 'person' for this model. Loads the model exactly as `run` did (RF_HOME checkpoint, md5 checked
+    first), reads the inputs `RFDETR.predict()` builds its id-to-name mapping from (`class_names`,
+    `args.num_classes`, `args.num_keypoints_per_class`, the COCO id table) and reproduces that mapping with
+    `package_class_mapping`. Any explicit id-to-name dict the package exposes is recorded as well. No inference."""
     frames_dir = args.frames_dir
-    mappings = []
+    rf_home = os.environ.get("RF_HOME")
+    if not rf_home:
+        print("RF_HOME must be set (plan: <venv>/models), the same as for `run`", file=sys.stderr)
+        return 2
+    ckpt = Path(rf_home) / CKPT_NAME
+    if not ckpt.is_file():
+        print(f"checkpoint not found at {ckpt}; the probe must load the run's checkpoint", file=sys.stderr)
+        return 2
+    md5 = md5sum(ckpt)
+    if md5 != EXPECTED_MD5:
+        print(f"MD5 MISMATCH (expected {EXPECTED_MD5}); probe stops", file=sys.stderr)
+        return 3
 
-    def record(source, obj):
-        if obj is None:
-            return
-        try:
-            if isinstance(obj, dict):
-                sample = {str(k): str(v) for k, v in list(obj.items())[:8]}
-            elif isinstance(obj, (list, tuple)):
-                sample = {str(i): str(v) for i, v in list(enumerate(obj))[:8]}
-            else:
-                return
-        except Exception as e:  # noqa: BLE001
-            mappings.append({"source": source, "error": repr(e)})
-            return
-        mappings.append({"source": source, "type": type(obj).__name__, "size": len(obj), "sample": sample,
-                         "person_ids": _mapping_person_ids(obj)})
+    from importlib.metadata import version as pkg_version
 
-    try:
-        from rfdetr.util import coco_classes  # type: ignore
-        record("rfdetr.util.coco_classes.COCO_CLASSES", getattr(coco_classes, "COCO_CLASSES", None))
-    except Exception as e:  # noqa: BLE001
-        mappings.append({"source": "rfdetr.util.coco_classes.COCO_CLASSES", "error": repr(e)})
     import rfdetr  # type: ignore
     from rfdetr import RFDETRKeypointPreview  # type: ignore
 
+    coco_classes = None
+    coco_error = None
+    try:
+        from rfdetr.assets import coco_classes as _cc  # type: ignore  (rfdetr.util was removed in 1.9.0)
+        coco_classes = dict(getattr(_cc, "COCO_CLASSES", {}) or {})
+    except Exception as e:  # noqa: BLE001
+        coco_error = repr(e)
+
     model = RFDETRKeypointPreview(device="cpu")
-    for name, obj in (("model", model), ("model.model", getattr(model, "model", None)),
-                      ("model.model.model", getattr(getattr(model, "model", None), "model", None)),
-                      ("model.model.config", getattr(getattr(model, "model", None), "config", None)),
-                      ("model.model.args", getattr(getattr(model, "model", None), "args", None))):
-        for attr in ("class_names", "classes", "id2label", "names", "category_names", "label_names"):
-            record(f"{name}.{attr}", getattr(obj, attr, None) if obj is not None else None)
+    if model.model_config.pretrain_weights != str(ckpt):
+        print(f"model loaded weights from {model.model_config.pretrain_weights}, not {ckpt}", file=sys.stderr)
+        return 3
+    inner = getattr(model, "model", None)
+    margs = getattr(inner, "args", None)
+    class_names = list(getattr(model, "class_names", None) or [])
+    num_classes = getattr(margs, "num_classes", None)
+    schema = list(getattr(margs, "num_keypoints_per_class", None) or [])
+    reproduced = package_class_mapping(class_names, num_classes, schema, coco_classes)
+    reproduced["mapping"] = {str(k): v for k, v in reproduced["mapping"].items()}
+    reproduced["source"] = "rfdetr.detr.RFDETR.predict() id-to-name rule, reproduced from the model's inputs"
+    mappings = [reproduced]
+
+    # explicit id<->name dicts the package may expose (none known in 1.11.0; recorded if present)
+    for name, obj in (("model", model), ("model.model", inner), ("model.model.args", margs),
+                      ("model.model.config", getattr(inner, "config", None))):
+        for attr in ("id2label", "class_map", "category_map", "label_map"):
+            v = getattr(obj, attr, None) if obj is not None else None
+            if isinstance(v, dict) and v:
+                mappings.append({"source": f"{name}.{attr}", "rule": "explicit-dict",
+                                 "mapping": {str(k): str(x) for k, x in list(v.items())[:100]},
+                                 "person_ids": _mapping_person_ids(v)})
     probe = {"plan": PLAN_V2_FILE, "plan_commit": PLAN_V2_COMMIT, "probed_utc": datetime.now(timezone.utc).isoformat(),
-             "rfdetr": getattr(rfdetr, "__version__", None), "python": platform.python_version(),
+             "rfdetr": getattr(rfdetr, "__version__", None) or pkg_version("rfdetr"),
+             "python": platform.python_version(),
+             "checkpoint": {"path": str(ckpt), "md5": md5, "md5_expected": EXPECTED_MD5},
+             "md5_ok": md5 == EXPECTED_MD5,
              "constructed_with": "RFDETRKeypointPreview(device='cpu')", "inference_run": False,
+             "coco_classes_error": coco_error,
              "mappings": mappings,
              "person_ids_exposed": sorted({pid for m in mappings for pid in m.get("person_ids", [])})}
     (frames_dir / PROBE_NAME).write_text(json.dumps(probe, indent=1))
     print(json.dumps({k: v for k, v in probe.items() if k != "mappings"}, indent=1))
     for m in mappings:
-        print(f"  {m['source']}: {m.get('person_ids', m.get('error'))}")
+        print(f"  {m['source']}: rule={m.get('rule')} person_ids={m.get('person_ids')}")
     return 0
 
 

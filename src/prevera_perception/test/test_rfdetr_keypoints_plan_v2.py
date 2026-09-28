@@ -54,6 +54,7 @@ def _results(class_id: int = 1, class_name="person"):
                                "instances": [_instance(class_id, class_name, vertical=(seg == "W"))]})
                 order += 1
     meta = {"keypoint_names": list(kp.COCO17), "torch_num_threads": 4, "raw_pass": {"run": False},
+            "packages": {"rfdetr": "1.11.0"},
             "validity": {"a_md5_ok": True, "b_no_partial_load_warning": True,
                          "c_all_instances_person_class0": False, "c_violation_count": len(frames), "valid": False}}
     return {"meta": meta, "frames": frames}
@@ -62,8 +63,11 @@ def _results(class_id: int = 1, class_name="person"):
 def _write(tmp_path: Path, results: dict, probe_person_ids=None):
     (tmp_path / kp.RESULTS_NAME).write_text(json.dumps(results))
     if probe_person_ids is not None:
-        mappings = [{"source": "test", "type": "dict", "size": 2, "sample": {}, "person_ids": probe_person_ids}]
-        (tmp_path / kp.PROBE_NAME).write_text(json.dumps({"mappings": mappings, "probed_utc": "t"}))
+        mappings = [{"source": "test", "rule": "test", "mapping": {str(i): "person" for i in probe_person_ids},
+                     "person_ids": probe_person_ids}]
+        (tmp_path / kp.PROBE_NAME).write_text(json.dumps({"mappings": mappings, "probed_utc": "t",
+                                                          "rfdetr": results["meta"].get("packages", {}).get("rfdetr"),
+                                                          "md5_ok": True}))
 
 
 @pytest.fixture(autouse=True)
@@ -151,7 +155,7 @@ def test_v2_scores_with_a_consistent_probe(tmp_path, monkeypatch, capsys):
 def test_v2_probe_with_no_mapping_rests_on_c1_c2(tmp_path, monkeypatch, capsys):
     _write(tmp_path, _results())
     (tmp_path / kp.PROBE_NAME).write_text(json.dumps({"mappings": [{"source": "x", "error": "AttributeError"}],
-                                                      "probed_utc": "t"}))
+                                                      "probed_utc": "t", "rfdetr": "1.11.0", "md5_ok": True}))
     kp.PLAN = "v2"
     monkeypatch.setattr(kp, "_draw", lambda *a, **k: None)
     assert kp.cmd_check(_args(tmp_path)) == 0
@@ -159,8 +163,54 @@ def test_v2_probe_with_no_mapping_rests_on_c1_c2(tmp_path, monkeypatch, capsys):
     assert v["valid"] and v["c3_package_mapping_exposed"] is False
 
 
-def test_mapping_person_ids_accepts_the_three_shapes():
+def test_mapping_person_ids_reads_explicit_id_dicts_only():
+    # only an explicit id<->name dict carries ids; a bare name list has none (rfdetr's class_names is such a list)
     assert kp._mapping_person_ids({1: "person", 2: "bicycle"}) == [1]
     assert kp._mapping_person_ids({"person": 1, "bicycle": 2}) == [1]
-    assert kp._mapping_person_ids(["__background__", "person"]) == [1]
+    assert kp._mapping_person_ids(["__background__", "person"]) == []
     assert kp._mapping_person_ids({"a": "b"}) == []
+
+
+# --- the mapping rfdetr 1.11.0's predict() applies, reproduced by the probe (plan v2 c3, amendment 2026-09-28) ---
+def test_package_mapping_legacy_bg_first_keypoint_schema_puts_person_at_slot_1():
+    m = kp.package_class_mapping(class_names=["person"], num_classes=2, num_keypoints_per_class=[0, 17])
+    assert m["rule"] == "legacy-bg-first-keypoint"
+    assert m["mapping"] == {1: "person"} and m["person_ids"] == [1]
+
+
+def test_package_mapping_coco_pretrained_uses_coco_ids():
+    coco = {1: "person", 2: "bicycle", 3: "car"}
+    m = kp.package_class_mapping(class_names=["person", "bicycle", "car"], num_classes=91,
+                                 num_keypoints_per_class=[], coco_classes=coco)
+    assert m["rule"] == "coco-pretrained" and m["person_ids"] == [1]
+
+
+def test_package_mapping_default_is_zero_indexed():
+    m = kp.package_class_mapping(class_names=["cat", "person"], num_classes=2, num_keypoints_per_class=[17, 17])
+    assert m["rule"] == "zero-indexed" and m["person_ids"] == [1]
+    m = kp.package_class_mapping(class_names=["person"], num_classes=None, num_keypoints_per_class=None)
+    assert m["rule"] == "zero-indexed" and m["person_ids"] == [0]
+
+
+def test_v2_refuses_when_the_package_mapping_has_no_person(tmp_path, capsys):
+    _write(tmp_path, _results())
+    (tmp_path / kp.PROBE_NAME).write_text(json.dumps({
+        "mappings": [{"source": "test", "rule": "zero-indexed", "mapping": {"0": "dog"}, "person_ids": []}],
+        "probed_utc": "t", "rfdetr": "1.11.0", "md5_ok": True}))
+    kp.PLAN = "v2"
+    assert kp.cmd_score(_args(tmp_path)) == 5
+    v = json.loads((tmp_path / kp.SCORE_NAME_V2).read_text())["validity"]
+    assert v["c3_ok"] is False and "no 'person'" in v["c3_reason"]
+
+
+def test_v2_refuses_when_the_probe_ran_in_another_environment(tmp_path, capsys):
+    r = _results()
+    r["meta"]["packages"] = {"rfdetr": "1.11.0"}
+    _write(tmp_path, r)
+    kp.PLAN = "v2"
+    for probe in ({"mappings": [{"source": "t", "person_ids": [1]}], "rfdetr": "1.12.0", "md5_ok": True},
+                  {"mappings": [{"source": "t", "person_ids": [1]}], "rfdetr": "1.11.0", "md5_ok": False}):
+        (tmp_path / kp.PROBE_NAME).write_text(json.dumps(probe))
+        assert kp.cmd_score(_args(tmp_path)) == 5
+        v = json.loads((tmp_path / kp.SCORE_NAME_V2).read_text())["validity"]
+        assert v["c3_ok"] is False and ("environment" in v["c3_reason"] or "md5" in v["c3_reason"])

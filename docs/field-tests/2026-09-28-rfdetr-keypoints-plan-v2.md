@@ -65,3 +65,27 @@ Every failure is reported as a finding with the frames behind it; no threshold i
 join box shape as a measured no on this data, and D1 turns to the fine-tuned class split
 ([2026-09-28 fine-tune plan](2026-09-28-roboflow-finetune-plan.md)) or a different measurement. K3 says nothing
 about D1 either way.
+
+## Amendments (dated; written before any rescore was run)
+
+**2026-09-28, later the same day, from the branch review, before `probe-classes` has been run on the Mac.**
+
+1. **(c3), what "the mapping the package exposes" means.** rfdetr 1.11.0 exposes `RFDETR.class_names` as a plain
+   0-indexed list of names, and the class ids `predict()` emits are **not** that list's positions for this model:
+   `predict()` builds its id-to-name table from `class_names` together with `args.num_classes` and
+   `args.num_keypoints_per_class` (`rfdetr/detr.py`, the `_is_legacy_bgfirst_keypoint` branch: slot 0 is background,
+   slot 1 is `class_names[0]`), and for COCO-pretrained detectors from `rfdetr.assets.coco_classes.COCO_CLASSES`
+   (`rfdetr.util` was removed in 1.9.0). The probe therefore reproduces that rule from the same inputs
+   (`package_class_mapping` in `rfdetr_keypoints.py`) and records the rule it took, its inputs and the mapping; any
+   explicit id-to-name dict the package exposes is recorded beside it. A list position is never read as an id. The
+   plan's (c3) test is unchanged: the id that rule gives for `'person'` must equal the id from (c2).
+2. **(c3), the run's environment.** The probe loads the run's checkpoint from `RF_HOME` and stops if its md5 is not
+   `6de511943ee85a547d4c5cb527daf0eb`, the same rule as `run`; it records the rfdetr version. (c3) fails if the
+   probe did not verify the md5, if its rfdetr version differs from the one in the results file, or if the package
+   exposes a mapping with no `'person'` in it. A package that exposes no mapping at all still leaves (c3) to (c1)
+   and (c2), as written.
+3. **Corrections to the text above.** `check` is not standard-library only: it draws the schema-check overlays
+   with Pillow, as v1 did. "Changes exactly one thing" means one rule (how an instance is recognised as a person),
+   which touches definition 2 and definition 9(c) and adds the probe; no bar and no other definition moves.
+
+Nothing from the invalid run has been looked at since the "Already seen" section was written.
