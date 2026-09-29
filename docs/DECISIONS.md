@@ -6,8 +6,8 @@ private commit message, the commit is summarised in [DEVELOPMENT-LOG.md](DEVELOP
 were not written down at the time, the record says so. [DR-00](#dr-00) lists the choices inherited from the 2026-04
 snapshot, whose rationale was never recorded; DR-01 to DR-17 were made from 2026-09-25 on.
 
-Two labels appear in the field-test documents: **D0** (where fusion runs) and **D1** (boxes or keypoints). They are
-[DR-14](#dr-14) and [DR-13](#dr-13) below.
+Two labels appear in the field-test documents: **D0** (where fusion runs) and **D1** (boxes, keypoints, or a
+fine-tuned class split). They are [DR-14](#dr-14) and [DR-13](#dr-13) below.
 
 ## Decision map
 
@@ -95,7 +95,7 @@ flowchart LR
 <a id="dr-01"></a>
 ## DR-01 · Hold still foreground out of the background model
 
-- **Status:** accepted 2026-09-25; running on the Jetson (`36ca257`, merged as PR #1).
+- **Status:** accepted 2026-09-25; running on the Jetson (`36ca257`, merged as private PR #1).
 - **Context:** the background is a per-beam rolling median over 40 scans (4 s at 10 Hz). Anything that stopped moving
   was learned into it within about 2 s, so a person lying still vanished before the 4 s sustained-down rule could fire:
   the detector could not report a fall ([field test 2026-09-25, finding 6](field-tests/2026-09-25-rplidar-fall-tests.md);
@@ -314,7 +314,8 @@ flowchart LR
 <a id="dr-11"></a>
 ## DR-11 · Run camera inference on the device, not on a hosted API
 
-- **Status:** accepted; privacy verified twice by capture. 2026-09-28: the container posted a record of every request
+- **Status:** accepted; privacy checked by four captures (two egress, two container start).
+  2026-09-28: the container posted a record of every request
   (class and confidence per detection, API key in clear, hostname, IP, MAC) to `api.roboflow.com` once a minute
   through the model-monitoring pingback, which the hardened command never turned off; `TELEMETRY_OPT_OUT` is inert in
   Inference 1.7.2. 2026-09-29: with `METRICS_ENABLED=False` in the command
@@ -325,8 +326,10 @@ flowchart LR
   [container-start capture](field-tests/2026-09-29-version-check-capture-plan.md) at 02:57 UTC, VC2 PASS), which
   also found ultralytics' `is_online()` handshake to `1.1.1.1:80`, 0 bytes, twice per start (VC1 FAIL as declared);
   with `YOLO_OFFLINE=True` a [fourth capture](field-tests/2026-09-29-yolo-offline-capture-plan.md) at 03:11 UTC saw
-  nothing leave the container in 32.6 minutes (VC1, VC2 PASS). A container that is not asked anything now says
-  nothing to anyone. **Decision (Jeremy, 2026-09-29): yes, for now**, the aggregated usage record may leave once
+  no packet leave the container for any non-LAN address in 32.6 minutes, with no request sent (VC1, VC2 PASS). A
+  container that is not asked anything said nothing to anyone for as long as it was watched (32.6 minutes, idle;
+  a model pull has never been captured).
+  **Decision (Jeremy, 2026-09-29): yes, for now**, the aggregated usage record may leave once
   requests arrive; no revisit trigger was set.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
@@ -370,8 +373,8 @@ flowchart LR
 <a id="dr-12"></a>
 ## DR-12 · Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`)
 
-- **Status:** pull request open: [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072), not merged
-  as of 2026-09-27.
+- **Status:** pull request [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): open, review
+  required, as of 2026-09-29 (a one-line `ENV` fix plus a unit test).
 - **Context:** started with the documented hardened `--read-only` command, the JetPack 6.2.0 image returns HTTP 500 for
   every RF-DETR request: Triton compiles preprocessing kernels into `/root/.triton/cache`, which is read-only. YOLO
   models on the same server are unaffected.
@@ -386,7 +389,7 @@ flowchart LR
   recorded in the results and offered upstream as a separate documentation note.
 
 <a id="dr-13"></a>
-## DR-13 · D1: boxes or keypoints
+## DR-13 · D1: boxes, keypoints, or a fine-tuned class split
 
 - **Status:** open. Box shape: measured no (C3). Keypoints: the first run was invalid under its own rule; the
   [v2 rescore plan](field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md) fixes the person rule and waits for the Mac.
@@ -427,7 +430,8 @@ flowchart LR
   2026-09-28: 78.7 ms (`e65db0`, 288x288) and 125.2 ms (`00ba18`, 640x640), floor 2,799 MB with both resident
   ([fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)).
 - **Next:** measure the chosen placement against that baseline on the device, recording `/scan` and `/fall_events`
-  during the run to answer the co-load question. Any placement needs the LIDAR-to-camera extrinsics, which are not
+  during the run (co-load was measured once for the direct call on 2026-09-28: CL1, CL2 PASS; one run, cameras
+  off). Any placement needs the LIDAR-to-camera extrinsics, which are not
   measured yet ([rig doc](hardware/rig-2026-09-26.md)). Since 2026-09-28 the camera side exists as a runnable
   artefact, the [time-on-floor Workflow](../tools/roboflow/README.md), which turns any pose-as-class model into
   seconds since a down-pose track entered a floor polygon, the unit the LIDAR detector's stillness clock uses. Its
@@ -445,9 +449,10 @@ flowchart LR
   [`vjepa_bridge.py`](../src/prevera_perception/prevera_perception/vjepa_bridge.py) is an interface stub: two dataclasses
   (`FusionRequest`, `FusionResult`) and no logic. `FallEvent.vjepa_confidence` stays in the message and is
   published as NaN. ALERT and CRITICAL are defined but never emitted here. See [NOTICE](../NOTICE).
-- **Evidence:** nothing in the code imports the stub; the test suite gives the same 70 passed, 1 skipped with it.
-- **Consequences:** every claim in this repository is about OBSERVE and WARN from the LIDAR and about stock camera
-  detection; nothing here measures or implies how the verification stage performs.
+- **Evidence:** nothing in the code imports the stub; the test suite passes with it (130 passed, 1 skipped in CI at
+  `6990dfe`).
+- **Consequences:** every claim in this repository is about OBSERVE and WARN from the LIDAR and about camera
+  detection (stock and fine-tuned RF-DETR); nothing here measures or implies how the verification stage performs.
 
 <a id="dr-16"></a>
 ## DR-16 · Record every bag as mcap, start it before the restart, split storage

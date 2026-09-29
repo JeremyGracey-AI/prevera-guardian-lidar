@@ -27,6 +27,10 @@ unchanged verdict, and any rerun gets a new plan.
 - RF-DETR keypoints: [plan](field-tests/2026-09-27-rfdetr-keypoints-plan.md) committed at 17:36, the run at 17:44. The run
   failed the plan's own validity check 9(c), so nothing was scored and no informal score was substituted
   ([status](field-tests/2026-09-27-rfdetr-keypoints-status.md)).
+- RF-DETR fine-tune on public data: [plan](field-tests/2026-09-28-roboflow-finetune-plan.md) committed at 11:30 PDT
+  on 2026-09-28 (`4adc303`), before any training started; its
+  [results](field-tests/2026-09-28-roboflow-finetune-results.md) were committed 2 h 41 min later (`d88072e`). Both
+  bars (F1, F2) passed on a public test split; that is not a room result.
 - Replay harness: every bar (the OBSERVE alignment tolerance, the R4 and R5 bars, the flip rules for two options) is
   fixed in [plan v4](plans/replay-harness-plan-v4.md) before the data it applies to is replayed.
 
@@ -74,8 +78,12 @@ claim is acted on:
 
 ## 5. State the gaps
 
-Every results document ends with what is not known. Examples: the RF-DETR runner (`rf_eval.py`) is not in the
-repository; active learning and telemetry being off is reported, not verified; one subject, one room, one session;
+Every results document ends with what is not known. Examples from the 09-27 results: the RF-DETR runner was not yet
+versioned (it is now [`jetson/rf_eval.py`](../jetson/rf_eval.py)); active learning and telemetry being off was
+reported, not verified (four captures on 2026-09-28 PDT then found the model-monitoring pingback on and verified the
+three switches that turn off the pingback, the version check and the ultralytics probe; the usage collector's
+aggregated record still leaves while inferring, and a model pull has never been captured, DR-11);
+one subject, one room, one session;
 frames within a segment are near-duplicates, so each segment is closer to one trial than to thirty
 ([results, section 7](field-tests/2026-09-27-rfdetr-results.md)). The same goes for this publication: what was
 replaced in each redacted document is stated in a publication note at its end.

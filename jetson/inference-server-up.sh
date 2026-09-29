@@ -22,11 +22,14 @@
 #                                                                    GitHub lookup, no connection)
 #   -e YOLO_OFFLINE=True                                             stops ultralytics' is_online() at import, a TCP
 #                                                                    handshake to 1.1.1.1:80 twice per container start
-#                                                                    (VC1 FAIL, 2026-09-29); added after that capture,
-#                                                                    not yet verified by one
+#                                                                    (VC1 FAIL, 2026-09-29); verified by the next
+#                                                                    container-start capture (VC1, VC2 PASS: no packet
+#                                                                    from the idle container to any non-LAN address in
+#                                                                    32.6 minutes, no request sent)
 # What still leaves with all of the above: the usage collector's aggregated record every ~10 s while inferring
 # (API key in clear, hashed hostname and IP, model id, frame counts). No switch turns it off short of OFFLINE_MODE=True
-# or a local sink (METRICS_COLLECTOR_BASE_URL); that is DR-11's open decision, not this script's to make.
+# or a local sink (METRICS_COLLECTOR_BASE_URL); DR-11 records the decision to let it leave, for now (Jeremy,
+# 2026-09-29).
 # The API key comes from the invoking user's ~/.roboflow.env through --env-file and is never on the command line.
 # Under sudo, ~ is /root, so the file is resolved from SUDO_USER (override with GUARDIAN_ENV_FILE=/path).
 set -euo pipefail
