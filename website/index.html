@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREVERA GUARDIAN+AI — privacy-first fall-detection prototype</title>
+<meta name="description" content="Research prototype: a floor-level 2D LIDAR finds a person lying down from distances alone, and, in an offline evaluation, two webcams with a stock detector run on the device saw the poses one scan plane misses. One subject, one room. Not a medical device.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="PREVERA GUARDIAN+AI — privacy-first fall-detection prototype">
+<meta property="og:description" content="Floor-level 2D LIDAR on a Jetson Orin Nano, on-device camera detection (stock and fine-tuned RF-DETR, the fine-tune on public data only), and network captures of what leaves the device. Field results, including the failures, are public under Apache-2.0. Research prototype, not a medical device.">
+<meta property="og:site_name" content="PREVERA GUARDIAN+AI">
+<meta property="og:url" content="https://preveraguard.com/">
+<link rel="canonical" href="https://preveraguard.com/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#1A2332">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:76px;font-size:16px}
+:root{--navy:#1A2332;--navy-light:#243044;--teal:#0D7377;--teal-dark:#0A5E61;--mint:#2ECDA7;--mint-light:#E6FAF4;--gray-50:#F8FAFB;--gray-100:#EEF2F5;--gray-200:#D8DFE6;--gray-600:#556275;--white:#FFFFFF;--red:#FF6B6B;--gold:#F4C752;--red-text:#B42318;--red-bg:#FDECEC;--gold-text:#8A5A00;--amber-bg:#FFF7E6;--on-navy:rgba(255,255,255,0.72);--on-navy-strong:rgba(255,255,255,0.85);--radius:12px;--radius-lg:20px;--shadow-sm:0 1px 3px rgba(26,35,50,0.06);--shadow-md:0 4px 20px rgba(26,35,50,0.08);--transition:0.3s cubic-bezier(0.25,0.1,0.25,1);--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--navy);background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:3px solid var(--teal-dark);outline-offset:3px;border-radius:6px}
+.nav a:focus-visible,.nav button:focus-visible,.hero a:focus-visible,.dark a:focus-visible,.dark button:focus-visible,.problem-right a:focus-visible,.status-box a:focus-visible,.footer a:focus-visible,.skip-link:focus-visible{outline-color:var(--mint)}
+code{font-family:var(--mono);font-size:.85em;background:var(--gray-100);padding:1px 5px;border-radius:4px;word-break:break-word}
+.dark code{background:rgba(255,255,255,0.08);color:var(--on-navy-strong)}
+.skip-link{position:absolute;left:16px;top:-60px;z-index:2000;background:var(--mint);color:var(--navy);padding:10px 16px;border-radius:8px;font-weight:600;text-decoration:none}
+.skip-link:focus{top:12px}
+.container{max-width:1140px;margin:0 auto;padding:0 24px}
+.section{padding:100px 0}
+.section-label{display:inline-block;font-family:var(--mono);font-size:.75rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:12px}
+.dark .section-label{color:var(--mint)}
+.section-title{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:700;line-height:1.2;color:var(--navy);margin-bottom:16px}
+.dark .section-title{color:#fff}
+.section-subtitle{font-size:1.1rem;color:var(--gray-600);max-width:680px;line-height:1.7}
+.dark .section-subtitle{color:var(--on-navy)}
+.center{text-align:center}.center .section-subtitle{margin:0 auto}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:8px;font-weight:600;font-size:.95rem;transition:var(--transition);cursor:pointer;border:none;font-family:inherit;text-decoration:none}
+.btn-primary{background:var(--teal);color:var(--white)}.btn-primary:hover{background:var(--teal-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(13,115,119,0.3)}
+.btn-outline{background:transparent;color:var(--white);border:1.5px solid rgba(255,255,255,0.45)}.btn-outline:hover{border-color:var(--white);background:rgba(255,255,255,0.08)}
+.btn-outline-dark{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}.btn-outline-dark:hover{background:var(--mint-light)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-family:var(--mono);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.ext::after{content:" \2197";font-size:.85em}
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 24px;transition:var(--transition)}
+.nav.scrolled,.nav.open{background:rgba(26,35,50,0.97);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:72px;gap:16px}
+.logo-chip{display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:5px 12px}
+.nav-logo img{height:40px;width:auto}
+.nav-links{display:flex;align-items:center;gap:22px;list-style:none}
+.nav-links a{color:var(--on-navy);font-size:.88rem;font-weight:500;transition:var(--transition);text-decoration:none;white-space:nowrap}.nav-links a:hover{color:#fff}
+.nav-cta{padding:10px 18px!important;font-size:.85rem!important;background:var(--teal);color:#fff!important;border-radius:8px}.nav-cta:hover{background:var(--teal-dark)!important}
+.nav-concept{padding:9px 14px!important;border:1.5px solid rgba(255,255,255,0.4);border-radius:8px;font-size:.8rem!important}
+.nav-mobile{display:none;background:none;border:none;cursor:pointer;padding:8px;z-index:1001}.nav-mobile svg{width:24px;height:24px;color:white}
+.nav-links.show{display:flex!important;flex-direction:column;align-items:stretch;position:absolute;top:72px;left:0;right:0;background:rgba(26,35,50,0.98);padding:16px 24px 24px;gap:0;border-bottom:1px solid rgba(255,255,255,0.08);animation:slideDown .3s ease}
+.nav-links.show li{width:100%}.nav-links.show a{display:block;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:1rem;white-space:normal}
+.nav-links.show .nav-cta,.nav-links.show .nav-concept{margin-top:12px;text-align:center}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+/* HERO */
+.hero{position:relative;background:var(--navy);padding:150px 0 100px;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(13,115,119,0.15)0%,transparent 70%);pointer-events:none}
+.hero-content{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:center}
+.hero-badges{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.hero-badge{background:rgba(13,115,119,0.22);color:var(--mint)}
+.hero-badge.dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--mint)}
+.hero-badge.plain{background:rgba(255,255,255,0.08);color:var(--on-navy-strong)}
+.hero h1{font-size:clamp(2.1rem,5vw,3.1rem);font-weight:800;line-height:1.15;color:#fff;margin-bottom:20px}
+.hero h1 em{font-style:normal;color:var(--mint)}
+.hero-sub{font-size:1.1rem;color:var(--on-navy);line-height:1.7;margin-bottom:20px;max-width:540px}
+.hero-points{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:32px;max-width:540px}
+.hero-points li{display:flex;gap:10px;font-size:.93rem;color:var(--on-navy);line-height:1.55}
+.hero-points li::before{content:'';flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--mint);margin-top:8px}
+.hero-points strong{color:#fff;font-weight:600}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:44px}
+.hero-proof{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 32px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.1)}
+.hero-proof-item{display:flex;flex-direction:column}
+.hero-proof-value{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--mint);white-space:nowrap}
+.hero-proof-label{font-size:.78rem;color:var(--on-navy);margin-top:4px;line-height:1.4}
+.hero-qualifier{font-size:.8rem;color:var(--on-navy);margin-top:18px}
+.hero-visual{position:relative;display:flex;align-items:center;justify-content:center}
+.hero-visual-card{background:var(--navy-light);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:480px}
+.schematic{width:100%;height:auto;display:block;border-radius:var(--radius);background:linear-gradient(135deg,rgba(13,115,119,0.12)0%,rgba(46,205,167,0.05)100%);margin-bottom:10px}
+.schematic-note{font-family:var(--mono);font-size:.72rem;color:var(--on-navy);margin-bottom:18px;line-height:1.5}
+.hero-card-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hero-card-stat{background:rgba(13,115,119,0.14);border-radius:8px;padding:12px 14px}
+.hero-card-stat-label{font-size:.68rem;color:var(--on-navy);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.hero-card-stat-value{font-family:var(--mono);font-size:.9rem;font-weight:600;color:#fff}.hero-card-stat-value.mint{color:var(--mint)}
+/* PROBLEM */
+.problem{background:var(--gray-50);padding:100px 0}
+.problem-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:start}
+.problem-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:36px}
+.problem-stat{background:#fff;border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+.problem-stat-value{font-size:1.8rem;font-weight:800;color:var(--navy);line-height:1.1;margin-bottom:8px}
+.problem-stat-label{font-size:.88rem;color:var(--navy);line-height:1.5;margin-bottom:10px}
+.problem-stat-source{font-size:.76rem;color:var(--gray-600);line-height:1.45;margin-top:auto}
+.problem-stat-source a{color:var(--teal);font-weight:500}
+.problem-right{background:var(--navy);border-radius:var(--radius-lg);padding:44px;color:#fff}
+.problem-right h3{font-size:1.25rem;font-weight:700;margin-bottom:8px}
+.problem-right>p{font-size:.93rem;color:var(--on-navy);line-height:1.6;margin-bottom:24px}
+.problem-list{list-style:none;display:flex;flex-direction:column;gap:18px}
+.problem-list li{display:flex;align-items:flex-start;gap:12px;font-size:.93rem;color:var(--on-navy);line-height:1.55}
+.problem-list strong{color:#fff}
+.problem-list .icon{flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.75rem;font-weight:700;margin-top:1px;background:rgba(46,205,167,0.15);color:var(--mint)}
+.problem-list .icon.gold{background:rgba(244,199,82,0.15);color:var(--gold)}
+.problem-list a{color:var(--mint)}
+/* STATE TAGS */
+.tag{display:inline-block;font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.tag-live{background:var(--mint-light);color:var(--teal-dark)}
+.tag-offline{background:#E8F0FB;color:#1D4E89}
+.tag-public{background:var(--white);color:var(--teal-dark);border:1px solid var(--teal)}
+.tag-open{background:var(--amber-bg);color:var(--gold-text)}
+.tag-prop{background:var(--gray-100);color:var(--navy);border:1px dashed var(--gray-600)}
+.tag-fail{background:var(--red-bg);color:var(--red-text)}
+.tag-future{background:var(--gray-100);color:var(--gray-600)}
+/* PIPELINE */
+.how{padding:100px 0}
+.how-header{margin-bottom:48px}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;margin:24px 0 0}
+.legend span.item{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;color:var(--gray-600)}
+.pipe{display:flex;flex-direction:column;gap:22px}
+.lane{border-radius:var(--radius-lg);padding:26px;border:1px solid var(--gray-100);background:var(--gray-50)}
+.lane-live{border-left:5px solid var(--teal)}
+.lane-offline{border-left:5px solid #1D4E89}
+.lane-down{border-left:5px dashed var(--gold-text);background:#fff}
+.lane-head{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;margin-bottom:18px}
+.lane-head h3{font-size:1.1rem;font-weight:700;color:var(--navy)}
+.lane-head p{font-size:.85rem;color:var(--gray-600);flex-basis:100%}
+.flow{list-style:none;display:grid;grid-template-columns:repeat(var(--n,6),minmax(0,1fr));gap:30px}
+.node{position:relative;background:#fff;border:1px solid var(--gray-200);border-radius:10px;padding:14px 14px 16px;box-shadow:var(--shadow-sm)}
+.node h4{font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:6px;line-height:1.3}
+.node p{font-size:.8rem;color:var(--gray-600);line-height:1.5}
+.node .tag{margin-top:8px}
+.node.out{background:var(--mint-light);border-color:rgba(13,115,119,0.35)}
+.node.box-open{background:var(--amber-bg);border:1.5px dashed var(--gold-text)}
+.node.box-prop{background:var(--gray-100);border:3px double var(--gray-600)}
+.flow .node:not(:last-child)::after{content:'\2192';position:absolute;right:-24px;top:50%;transform:translateY(-50%);font-size:1.1rem;font-weight:700;color:var(--teal)}
+.lane-offline .flow .node:not(:last-child)::after{color:#1D4E89}
+.lane-down .flow .node:not(:last-child)::after{color:var(--gold-text)}
+.fixes{margin-top:18px;background:#fff;border:1.5px dashed var(--teal);border-radius:10px;padding:14px 16px;font-size:.85rem;color:var(--navy);line-height:1.55}
+.fixes strong{color:var(--teal-dark)}
+.down-rows{display:flex;flex-direction:column;gap:18px}
+.down-row-label{font-family:var(--mono);font-size:.72rem;color:var(--gray-600);margin-bottom:8px;letter-spacing:.04em}
+.levels{margin-top:28px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--gray-200);display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.level{padding:14px 12px;text-align:center;background:#fff;border-right:1px solid var(--gray-200)}
+.level:last-child{border-right:none}
+.level .num{font-family:var(--mono);font-size:.72rem;color:var(--gray-600)}
+.level .name{font-family:var(--mono);font-weight:700;font-size:.9rem;color:var(--navy);margin:2px 0 4px}
+.level .note{font-size:.72rem;color:var(--gray-600);line-height:1.35}
+.level.emit{background:var(--mint-light)}.level.emit .note{color:var(--teal-dark);font-weight:600}
+.level.never{background:var(--gray-50)}
+.levels-caption{font-size:.82rem;color:var(--gray-600);margin-top:10px}
+.tech-stack{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:40px}
+.tech-tag{padding:9px 16px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;font-family:var(--mono);font-size:.76rem;font-weight:500;color:var(--navy)}
+/* EVIDENCE */
+.evidence{background:var(--gray-50);padding:100px 0}
+.ev-block{margin-top:56px}
+.ev-block>h3{font-size:1.35rem;font-weight:700;color:var(--navy);margin-bottom:8px}
+.ev-block>p.lead{font-size:.98rem;color:var(--gray-600);max-width:780px;margin-bottom:20px;line-height:1.65}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-100)}
+table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:560px}
+caption{text-align:left;padding:14px 16px 0;font-size:.8rem;color:var(--gray-600);caption-side:bottom;padding-bottom:14px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--gray-100);vertical-align:top;line-height:1.45}
+thead th{background:var(--gray-100);font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);font-weight:600}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:none}
+td.num,th.num{font-family:var(--mono);white-space:nowrap}
+tbody th{font-weight:600;color:var(--navy)}
+.res-miss{color:var(--red-text);font-weight:700}
+.res-ok{color:var(--teal-dark);font-weight:700}
+.res-warn{color:var(--gold-text);font-weight:700}
+.ev-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.ev-card{background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-sm);border-top:3px solid var(--teal)}
+.ev-card.fail{border-top-color:var(--red-text)}
+.ev-card .big{font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--navy);line-height:1.1;margin-bottom:8px}
+.ev-card.fail .big{color:var(--red-text)}
+.ev-card p{font-size:.88rem;color:var(--gray-600);line-height:1.55}
+.ev-card p strong{color:var(--navy)}
+.callout{margin-top:20px;border-radius:var(--radius);padding:18px 20px;font-size:.9rem;line-height:1.6;background:var(--amber-bg);border-left:4px solid var(--gold-text);color:var(--navy)}
+.callout strong{color:var(--gold-text)}
+.callout.teal{background:var(--mint-light);border-left-color:var(--teal)}
+.callout.teal strong{color:var(--teal-dark)}
+.figure{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);padding:14px;margin:0}
+.figure img{border-radius:8px;width:100%}
+.figure figcaption{font-size:.86rem;color:var(--gray-600);line-height:1.6;padding:14px 6px 4px}
+.figure figcaption strong{color:var(--navy)}
+.figure figcaption a,.table-wrap a,.caveats a{color:var(--teal-dark);font-weight:500}
+.caveats{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:12px 28px;margin-top:20px}
+.caveats li{position:relative;padding-left:22px;font-size:.88rem;color:var(--gray-600);line-height:1.55}
+.caveats li::before{content:'!';position:absolute;left:0;top:1px;width:16px;height:16px;border-radius:50%;background:var(--amber-bg);color:var(--gold-text);font-family:var(--mono);font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.caveats li strong{color:var(--navy)}
+.doc-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:40px}
+.doc-link{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;font-size:.85rem;font-weight:500;color:var(--teal-dark);text-decoration:none;transition:var(--transition)}
+.doc-link:hover{border-color:var(--teal);box-shadow:var(--shadow-sm)}
+/* PROCESS */
+.process{padding:100px 0}
+.how-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;position:relative;margin-top:56px}
+.how-steps::before{content:'';position:absolute;top:24px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,var(--teal),var(--mint));opacity:.25}
+.how-step{text-align:center;position:relative}
+.how-step-num{width:48px;height:48px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:1rem;margin:0 auto 18px;position:relative;z-index:1}
+.how-step h3{font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:8px}
+.how-step p{font-size:.86rem;color:var(--gray-600);line-height:1.55;max-width:220px;margin:0 auto}
+.process-notes{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:56px}
+.note-card{background:var(--gray-50);border-radius:var(--radius-lg);padding:30px;border:1px solid var(--gray-100)}
+.note-card h3{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:10px}
+.note-card p,.note-card li{font-size:.9rem;color:var(--gray-600);line-height:1.6}
+.note-card ul{padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.note-card a{color:var(--teal);font-weight:500}
+/* OPEN SOURCE */
+.open{background:var(--navy);padding:100px 0;color:#fff}
+.open-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:48px}
+.feature-card{background:var(--navy-light);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-lg);padding:34px 28px}
+.feature-icon{width:48px;height:48px;border-radius:12px;background:rgba(13,115,119,0.22);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.feature-icon svg{width:24px;height:24px;color:var(--mint)}
+.feature-card h3{font-size:1.15rem;font-weight:700;margin-bottom:12px}
+.feature-card p,.feature-card li{font-size:.92rem;color:var(--on-navy);line-height:1.65}
+.feature-card ul{padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.feature-card a{color:var(--mint)}
+.feature-card .pr-state{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:.75rem;color:var(--gold);border:1px solid rgba(244,199,82,0.5);border-radius:6px;padding:3px 8px}
+/* ROADMAP */
+.roadmap{padding:100px 0;background:#fff}
+.road-cols{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:22px;margin-top:48px}
+.road-col{border-radius:var(--radius-lg);padding:28px;border:1px solid var(--gray-100);background:var(--gray-50)}
+.road-col.later{background:#fff;border:1.5px dashed var(--gray-200)}
+.road-col h3{font-size:1.1rem;font-weight:700;color:var(--navy);margin:10px 0 14px}
+.road-col ol,.road-col ul{padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.road-col li{font-size:.9rem;color:var(--gray-600);line-height:1.55}
+.road-col li strong{color:var(--navy)}
+/* STATUS */
+.status{background:var(--gray-50);padding:100px 0}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;margin-top:40px}
+.status-box{background:var(--navy);color:#fff;border-radius:var(--radius-lg);padding:36px}
+.status-box h3{font-size:1.2rem;font-weight:700;margin-bottom:16px;color:#fff}
+.status-box ul{list-style:none;display:flex;flex-direction:column;gap:14px}
+.status-box li{display:flex;gap:12px;font-size:.95rem;color:var(--on-navy-strong);line-height:1.55}
+.status-box li::before{content:'';flex-shrink:0;width:10px;height:10px;border-radius:2px;background:var(--gold);margin-top:7px}
+.limits{background:#fff;border-radius:var(--radius-lg);padding:32px;box-shadow:var(--shadow-sm)}
+.limits h3{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:14px}
+.limits ul{padding-left:18px;display:flex;flex-direction:column;gap:10px}
+.limits li{font-size:.9rem;color:var(--gray-600);line-height:1.55}
+.limits li strong{color:var(--navy)}
+.name-note{margin-top:28px;font-size:.9rem;color:var(--gray-600);text-align:center}
+.name-note .pre{color:var(--teal);font-weight:700}
+/* WORK WITH US */
+.cta{padding:110px 0;background:var(--navy);position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:1000px;height:1000px;background:radial-gradient(circle,rgba(13,115,119,0.14)0%,transparent 60%);pointer-events:none}
+.cta .container{position:relative;z-index:1}
+.ask-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:48px}
+.ask-card{background:var(--navy-light);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-lg);padding:34px;display:flex;flex-direction:column}
+.ask-card .num{font-family:var(--mono);font-size:2.2rem;font-weight:800;color:var(--mint);line-height:1;margin-bottom:12px}
+.ask-card .num small{font-size:.95rem;font-weight:500;color:var(--on-navy);margin-left:6px}
+.ask-card h3{font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:10px}
+.ask-card p,.ask-card li{font-size:.93rem;color:var(--on-navy);line-height:1.65}
+.ask-card ul{padding-left:18px;margin:10px 0 0;display:flex;flex-direction:column;gap:6px}
+.ask-card .placeholder{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:.85rem;color:var(--gold);border:1px dashed rgba(244,199,82,0.6);border-radius:6px;padding:6px 10px}
+.ask-card .ask-note{font-size:.8rem;color:var(--on-navy);margin-top:12px}
+.ask-card .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:24px}
+.contact-line{text-align:center;margin-top:40px;font-size:.95rem;color:var(--on-navy)}
+.contact-line a{color:var(--mint);font-weight:600}
+/* DEMO */
+.demo{background:#fff;padding:90px 0;text-align:center}
+.demo-box{max-width:760px;margin:0 auto;border:1.5px dashed var(--gray-200);border-radius:var(--radius-lg);padding:40px 32px;background:var(--gray-50)}
+.demo-box .badge{background:var(--amber-bg);color:var(--gold-text);margin-bottom:16px}
+.demo-box h2{font-size:clamp(1.5rem,3.5vw,2rem);font-weight:700;color:var(--navy);margin-bottom:14px}
+.demo-box p{font-size:1rem;color:var(--gray-600);line-height:1.7;margin-bottom:14px}
+.demo-box p strong{color:var(--navy)}
+.not-built{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 26px}
+.not-built span{font-size:.8rem;font-weight:500;padding:5px 12px;border-radius:20px;background:#fff;border:1px dashed var(--gray-200);color:var(--gray-600)}
+.demo-box .not-built-label{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-600);margin-top:4px}
+/* FOOTER */
+.footer{background:var(--navy);border-top:1px solid rgba(255,255,255,0.06);padding:48px 0 32px}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-brand .logo-chip{margin-bottom:16px}
+.footer-brand img{height:34px;width:auto}
+.footer-brand p{color:var(--on-navy);font-size:.85rem;line-height:1.6;max-width:300px}
+.footer-col h2{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--on-navy);margin-bottom:14px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-col a{font-size:.88rem;color:var(--on-navy-strong);transition:var(--transition);text-decoration:none;word-break:break-word}.footer-col a:hover{color:#fff;text-decoration:underline}
+.footer-bottom{padding-top:22px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.footer-bottom p{font-size:.8rem;color:var(--on-navy)}
+/* RESPONSIVE */
+@media(max-width:1080px){.flow{grid-template-columns:1fr;gap:26px;max-width:520px}.flow .node:not(:last-child)::after{content:'\2193';right:auto;left:50%;top:auto;bottom:-24px;transform:translateX(-50%)}}
+@media(max-width:1024px){.hero-content{grid-template-columns:1fr;gap:48px}.hero-visual{justify-content:flex-start}.problem-grid{grid-template-columns:1fr;gap:40px}.open-grid{grid-template-columns:1fr 1fr}.road-cols{grid-template-columns:1fr 1fr}.ev-cards{grid-template-columns:1fr 1fr}.how-steps{grid-template-columns:repeat(3,1fr);row-gap:36px}.how-steps::before{display:none}.footer-grid{grid-template-columns:1fr 1fr}.status-grid{grid-template-columns:1fr}}
+@media(max-width:1180px){.nav-links{display:none}.nav-mobile{display:block}}
+@media(max-width:768px){.section,.problem,.how,.evidence,.process,.open,.roadmap,.status{padding:72px 0}.cta{padding:80px 0}.hero{padding:112px 0 72px}.hero-proof{gap:20px}.open-grid,.road-cols,.ask-grid,.process-notes,.ev-cards{grid-template-columns:1fr}.caveats{grid-template-columns:1fr}.how-steps{grid-template-columns:1fr 1fr}.levels{grid-template-columns:1fr}.level{border-right:none;border-bottom:1px solid var(--gray-200);text-align:left;display:grid;grid-template-columns:2.2em 6.5em 1fr;align-items:baseline;gap:6px}.level:last-child{border-bottom:none}.level .name{margin:0}.footer-grid{grid-template-columns:1fr;gap:28px}.problem-right,.status-box,.limits,.ask-card,.feature-card,.road-col,.note-card{padding:26px}}
+@media(max-width:480px){.hero-proof-value{font-size:1.1rem;white-space:normal}.container{padding:0 16px}.nav{padding:0 16px}.nav-logo img{height:32px}.hero h1{font-size:1.9rem}.hero-ctas{flex-direction:column}.hero-ctas .btn{width:100%;justify-content:center}.problem-stats{grid-template-columns:1fr}.how-steps{grid-template-columns:1fr}.hero-visual-card{padding:18px}.lane{padding:18px}.demo-box{padding:28px 18px}.ask-card .btns .btn{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header>
+<nav class="nav" id="nav" aria-label="Main">
+  <div class="nav-inner">
+    <a href="#top" class="nav-logo" aria-label="PREVERA GUARDIAN+AI, back to top"><span class="logo-chip"><img src="assets/logo.png" alt="PREVERA GUARDIAN+AI" width="158" height="40"></span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#evidence">Evidence</a></li>
+      <li><a href="#process">How we work</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+      <li><a href="#status">Status</a></li>
+      <li><a href="#concept" class="nav-concept">App UI concept (fictional data)</a></li>
+      <li><a href="#involved" class="nav-cta">Get involved</a></li>
+    </ul>
+    <button class="nav-mobile" id="menuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      <svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+</nav>
+</header>
+
+<main id="main">
+
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="container hero-content">
+    <div class="hero-text">
+      <div class="hero-badges">
+        <span class="badge hero-badge dot">Research prototype</span>
+        <span class="badge hero-badge plain">Patent pending</span>
+        <span class="badge hero-badge plain">Apache-2.0</span>
+      </div>
+      <h1 id="hero-title">Fall detection at the edge, <em>privacy first.</em></h1>
+      <p class="hero-sub">A 2D LIDAR on the floor finds a person lying down from geometry alone. In an offline evaluation of two webcams with a detector running on the device, the counter webcam saw both end-on poses that a single scan plane misses, in every frame. The LIDAR detector runs live on a Jetson Orin Nano in the room. So far it has been measured on one subject in one room.</p>
+      <ul class="hero-points">
+        <li><span><strong>The LIDAR sees distances, not images.</strong> A person lying across its beam is a long, thin cluster of points about 2&nbsp;cm above the floor.</span></li>
+        <li><span><strong>Camera inference was evaluated offline.</strong> Inference ran on the Jetson, and the client posted frames only to localhost. What the server itself sends was then captured against bars declared in advance. The first capture failed; what it found, what was switched off and what still leaves are in <a href="#ev-8">Evidence, section 8</a>.</span></li>
+        <li><span><strong>Detection today; prediction is the next goal.</strong> Nothing here predicts falls yet. It is not a medical device, and it is not cleared by any regulator.</span></li>
+      </ul>
+      <div class="hero-ctas">
+        <a href="#evidence" class="btn btn-primary">See the evidence &#8595;</a>
+        <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar" class="btn btn-outline ext" rel="noopener">Code on GitHub</a>
+      </div>
+      <div class="hero-proof">
+        <div class="hero-proof-item"><span class="hero-proof-value">4 of 6</span><span class="hero-proof-label">lie-downs flagged (OBSERVE) within about 1&nbsp;s by the floor LIDAR; both misses were end-on, and live escalation to WARN failed</span></div>
+        <div class="hero-proof-item"><span class="hero-proof-value">0</span><span class="hero-proof-label">false alarms in 95&nbsp;s of walking</span></div>
+        <div class="hero-proof-item"><span class="hero-proof-value">33/33 &middot; 30/30</span><span class="hero-proof-label">end-on frames in which stock RF-DETR found the person (counter camera)</span></div>
+        <div class="hero-proof-item"><span class="hero-proof-value">0.7&ndash;4.0&nbsp;s</span><span class="hero-proof-label">after onset to WARN in those four lie-downs with the fixes on (offline replay; 3.3&ndash;6.5&nbsp;s on stillness alone). Not yet live.</span></div>
+      </div>
+      <p class="hero-qualifier">One subject, one room, one session: feasibility results, not recall estimates.</p>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-card">
+        <svg class="schematic" viewBox="0 0 400 270" role="img" aria-labelledby="schem-t schem-d" xmlns="http://www.w3.org/2000/svg">
+          <title id="schem-t">Schematic: what a floor-level 2D LIDAR sees</title>
+          <desc id="schem-d">Two top-down panels with the sensor at the bottom. Left, segment A: a person lying across the beam at 2.0 m shows up as a 1.64 m cluster and was flagged within about a second. Right, segment B: a person lying end-on with the feet toward the sensor shows only two sole clusters of about 0.3 m each at 0.9 m. The body is hidden in the shadow behind them, and the trial was missed.</desc>
+          <defs>
+            <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#FF6B6B" stroke-width="2" stroke-opacity="0.55"/></pattern>
+          </defs>
+          <g font-family="'JetBrains Mono', ui-monospace, monospace">
+            <!-- Panel A -->
+            <rect x="4" y="4" width="190" height="262" rx="10" fill="#1A2332" fill-opacity="0.35"/>
+            <text x="16" y="26" fill="#FFFFFF" font-size="14" font-weight="700">Across the beam</text>
+            <text x="16" y="42" fill="#FFFFFF" fill-opacity="0.72" font-size="12">segment A, 2.0 m</text>
+            <path d="M 24 226 A 75 75 0 0 1 174 226" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-dasharray="3 4"/>
+            <text x="150" y="222" fill="#FFFFFF" fill-opacity="0.72" font-size="11">1 m</text>
+            <path d="M 99 226 L 34 76 M 99 226 L 164 76 M 99 226 L 99 70" stroke="#2ECDA7" stroke-opacity="0.2"/>
+            <line x1="37" y1="80" x2="161" y2="80" stroke="#2ECDA7" stroke-width="7" stroke-linecap="round"/>
+            <text x="99" y="66" fill="#2ECDA7" font-size="13" font-weight="700" text-anchor="middle">1.64 m cluster</text>
+            <polygon points="99,216 92,232 106,232" fill="#FFFFFF"/>
+            <text x="99" y="250" fill="#2ECDA7" font-size="13" font-weight="700" text-anchor="middle">flagged within ~1 s</text>
+            <!-- Panel B -->
+            <rect x="206" y="4" width="190" height="262" rx="10" fill="#1A2332" fill-opacity="0.35"/>
+            <text x="218" y="26" fill="#FFFFFF" font-size="14" font-weight="700">End-on, feet first</text>
+            <text x="218" y="42" fill="#FFFFFF" fill-opacity="0.72" font-size="12">segment B, 0.9 m</text>
+            <polygon points="286,162 324,162 368,56 242,56" fill="url(#hatch)"/>
+            <text x="305" y="110" fill="#FFFFFF" font-size="12" text-anchor="middle">body hidden</text>
+            <text x="305" y="124" fill="#FFFFFF" font-size="12" text-anchor="middle">in the shadow</text>
+            <path d="M 226 226 A 75 75 0 0 1 376 226" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-dasharray="3 4"/>
+            <line x1="279" y1="165" x2="298" y2="161" stroke="#2ECDA7" stroke-width="7" stroke-linecap="round"/>
+            <line x1="312" y1="161" x2="331" y2="165" stroke="#2ECDA7" stroke-width="7" stroke-linecap="round"/>
+            <text x="305" y="185" fill="#2ECDA7" font-size="13" font-weight="700" text-anchor="middle">two ~0.3 m clusters</text>
+            <text x="305" y="201" fill="#2ECDA7" font-size="13" font-weight="700" text-anchor="middle">(soles)</text>
+            <polygon points="305,216 298,232 312,232" fill="#FFFFFF"/>
+            <text x="305" y="250" fill="#FF6B6B" font-size="13" font-weight="700" text-anchor="middle">missed: 0 events</text>
+          </g>
+        </svg>
+        <p class="schematic-note">Schematic, not live data. Top-down view, sensor at the bottom. Drawn from the floor trials of 2026-09-27 (segments A and B).</p>
+        <div class="hero-card-stats">
+          <div class="hero-card-stat"><div class="hero-card-stat-label">Sensor</div><div class="hero-card-stat-value">RPLIDAR C1 &middot; 2D &middot; 10&nbsp;Hz</div></div>
+          <div class="hero-card-stat"><div class="hero-card-stat-label">Scan plane</div><div class="hero-card-stat-value">~2&nbsp;cm, level</div></div>
+          <div class="hero-card-stat"><div class="hero-card-stat-label">Compute</div><div class="hero-card-stat-value">Jetson Orin Nano 8&nbsp;GB</div></div>
+          <div class="hero-card-stat"><div class="hero-card-stat-label">On the device today</div><div class="hero-card-stat-value mint">legacy detector</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problem" id="problem" aria-labelledby="problem-title">
+  <div class="container problem-grid">
+    <div>
+      <span class="section-label">The problem</span>
+      <h2 class="section-title" id="problem-title">In the U.S., falls are the leading cause of injury death among adults 65 and older.</h2>
+      <p class="section-subtitle">Part of the harm comes after the fall: a person who cannot get up and is not found. A detector in a resident&rsquo;s room has to notice someone on the floor while keeping images of them in the room. The LIDAR uses no images. The webcams added for its blind spot were tested with a detector on the device, and what that server sends off the device has been captured: in one captured run (one model, cameras off, no model download) the frames stayed on the device, and an aggregated usage record still leaves (<a href="#ev-8">Evidence, section 8</a>).</p>
+      <div class="problem-stats">
+        <div class="problem-stat">
+          <div class="problem-stat-value">43,000+</div>
+          <div class="problem-stat-label">deaths from falls among U.S. adults 65+ in 2024, the leading cause of injury death for that group</div>
+          <div class="problem-stat-source">CDC, <a href="https://www.cdc.gov/falls/about/index.html" class="ext" rel="noopener">About Older Adult Fall Prevention</a> (WISQARS)</div>
+        </div>
+        <div class="problem-stat">
+          <div class="problem-stat-value">14 million</div>
+          <div class="problem-stat-label">U.S. older adults (27.6%) reported a fall in the previous year (2020)</div>
+          <div class="problem-stat-source">Kakara et al., <a href="https://www.cdc.gov/mmwr/volumes/72/wr/mm7235a1.htm" class="ext" rel="noopener">MMWR 2023;72:938&ndash;943</a>. Self-reported; excludes people in long-term care, who are at higher risk.</div>
+        </div>
+        <div class="problem-stat">
+          <div class="problem-stat-value">$80.0B</div>
+          <div class="problem-stat-label">U.S. healthcare spending on non-fatal falls among older adults in 2020, most of it paid by Medicare</div>
+          <div class="problem-stat-source">Haddad et al., <a href="https://pubmed.ncbi.nlm.nih.gov/39029927/" class="ext" rel="noopener">Inj Prev 2024;30(4):272&ndash;276</a></div>
+        </div>
+        <div class="problem-stat">
+          <div class="problem-stat-value">30%</div>
+          <div class="problem-stat-label">of people over 90 who fell lay on the floor for an hour or more (20 of 66); 80% could not get up after at least one fall. Lying long was strongly associated with serious injury and hospital admission.</div>
+          <div class="problem-stat-source">Fleming &amp; Brayne, <a href="https://pubmed.ncbi.nlm.nih.gov/19015185/" class="ext" rel="noopener">BMJ 2008;337:a2227</a>. UK cohort, n&nbsp;=&nbsp;110, own homes or care homes.</div>
+        </div>
+      </div>
+    </div>
+    <div class="problem-right">
+      <h3>What the prototype is testing</h3>
+      <p>The target setting is senior-care rooms. No result comes from one yet.</p>
+      <ul class="problem-list">
+        <li><span class="icon" aria-hidden="true">1</span><span><strong>See a person lying down without images.</strong> A 2D LIDAR sees shapes, not faces. A person standing is a small slice of points; a person on the floor is a long, thin one.</span></li>
+        <li><span class="icon" aria-hidden="true">2</span><span><strong>Cover what one scan plane cannot see.</strong> Lying end-on to the beam hides the body. Two webcams with a stock detector are evaluated for exactly those poses.</span></li>
+        <li><span class="icon" aria-hidden="true">3</span><span><strong>Keep frames in the room.</strong> A hosted inference API was rejected because frames would leave the room (<a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-11" rel="noopener">DR-11</a>). Four network captures then checked what the on-device server sends. The first found a leak, now switched off; one usage record still leaves, by decision. The captures and their limits are in <a href="#ev-8">Evidence, section 8</a>.</span></li>
+        <li><span class="icon gold" aria-hidden="true">!</span><span><strong>Don&rsquo;t raise false alarms.</strong> There were 0 in 95&nbsp;s of walking so far. At floor level, furniture feet look like a lying person, which makes them the main false-alarm risk.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how" aria-labelledby="how-title">
+  <div class="container">
+    <div class="how-header center">
+      <span class="section-label">How it works</span>
+      <h2 class="section-title" id="how-title">What runs, what was tested offline, and what is still open.</h2>
+      <p class="section-subtitle">The LIDAR path runs live on the Jetson. The camera path has been measured on the same device, outside the alert path. Fusion is not built, and the verification stage is proprietary.</p>
+      <div class="legend" aria-label="Legend">
+        <span class="item"><span class="tag tag-live">Live</span> runs on the Jetson today</span>
+        <span class="item"><span class="tag tag-offline">Offline</span> evaluated on recordings</span>
+        <span class="item"><span class="tag tag-public">Public data</span> trained and scored on public datasets, not room frames</span>
+        <span class="item"><span class="tag tag-open">Open</span> decision not made, nothing built</span>
+        <span class="item"><span class="tag tag-prop">Proprietary</span> not public</span>
+      </div>
+    </div>
+
+    <div class="pipe">
+      <div class="lane lane-live">
+        <div class="lane-head"><span class="tag tag-live">Live</span><h3>LIDAR path: from distances to fall events</h3></div>
+        <ol class="flow" style="--n:6">
+          <li class="node"><h4>RPLIDAR C1</h4><p>2D, 10&nbsp;Hz, on the floor. The scan plane is about 2&nbsp;cm up.</p></li>
+          <li class="node"><h4>Background model</h4><p>A rolling median, plus a hold so that a still person is not absorbed into the background.</p></li>
+          <li class="node"><h4>Clustering</h4><p>DBSCAN, with a PCA shape for each cluster: its extent and how elongated it is.</p></li>
+          <li class="node"><h4>Tracker</h4><p>Nearest-centroid association from scan to scan.</p></li>
+          <li class="node"><h4>Fall heuristic</h4><p>Elongated and person-sized. Either a speed spike and then stillness, or down for a sustained time.</p></li>
+          <li class="node out"><h4><code>/fall_events</code></h4><p>OBSERVE and WARN, with a confidence.</p></li>
+        </ol>
+        <div class="fixes"><strong>Fixes behind default-off switches, tested offline, not enabled on the device:</strong> windowed stillness &middot; incident hold (replaces the one-WARN latch) &middot; association speed gate. With them, <code>min_range_m</code> is raised from 0.05 to 0.3 at the flip. The Jetson still runs the legacy detector until pre-declared replay bars are met.</div>
+      </div>
+
+      <div class="lane lane-offline">
+        <div class="lane-head"><span class="tag tag-offline">Offline</span><h3>Camera path: for the LIDAR&rsquo;s blind spot</h3></div>
+        <ol class="flow" style="--n:5">
+          <li class="node"><h4>Two webcams</h4><p>Logitech C920 on the counter (98&nbsp;cm, 15&deg; down). Logitech Brio 100 on the floor (4&nbsp;cm, level).</p></li>
+          <li class="node"><h4>Recorded in bags</h4><p>1280&times;720 at 30&nbsp;Hz, recorded alongside the LIDAR in rosbag2 bags. The 09-27 camera record is the original sqlite3 bag; bags are recorded as mcap from now on (DR-16).</p></li>
+          <li class="node"><h4>Frames extracted</h4><p>1 frame per second, for evaluation only.</p></li>
+          <li class="node"><h4>Stock RF-DETR</h4><p>COCO weights, no fine-tuning. Served by Roboflow Inference 1.7.2 on the Jetson, listening on 127.0.0.1:9001 only.</p></li>
+          <li class="node box-open"><h4><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-13" rel="noopener">D1</a>: boxes, keypoints, or a pose class</h4><p>Box shape failed (C3). A fine-tune that predicts the pose as a class passed on public data (<code>lying</code> 1.000 / 1.000 on a 73-image public test split; one training run, near-duplicate frames not checked, so an upper bound); room frames are next. The keypoint rescore plan is written and has not been run.</p><span class="tag tag-open">D1 open</span></li>
+        </ol>
+        <div class="fixes"><span class="tag tag-public">Public data</span> <strong>Fine-tuned on public data, measured on the device (2026-09-28):</strong> two RF-DETR models trained on Roboflow to predict the pose as a class run in the same local container at 78.7&nbsp;ms and 125.2&nbsp;ms per frame (serial, cameras off). While one served 580 frames, the LIDAR scan stream held 10.009&nbsp;Hz with no gap over 0.5&nbsp;s (one run). Their predictions on room frames were discarded by design, so no room accuracy exists yet.</div>
+      </div>
+
+      <div class="lane lane-down">
+        <div class="lane-head"><span class="tag tag-open">Not built</span><h3>Downstream: where evidence is combined and confirmed</h3></div>
+        <div class="down-rows">
+          <div>
+            <div class="down-row-label">Fusion</div>
+            <ol class="flow" style="--n:2">
+              <li class="node"><h4>LIDAR WARN + camera detections</h4><p>These are the inputs. Combining them needs the LIDAR-to-camera extrinsics, which are not measured yet.</p></li>
+              <li class="node box-open"><h4>Fusion</h4><p>Where it runs is an open decision, and nothing is built. The camera half exists as a time-on-floor Roboflow Workflow (seconds since a down-pose track entered a floor zone). It is validated structurally and ran once on the hosted API on one public image, which shows only that it executes. It has not been run on video.</p><span class="tag tag-open">D0 open</span></li>
+            </ol>
+          </div>
+          <div>
+            <div class="down-row-label">Verification</div>
+            <ol class="flow" style="--n:3">
+              <li class="node"><h4>LIDAR WARN</h4><p>In the system design, a WARN escalates to verification.</p></li>
+              <li class="node box-prop"><h4>V-JEPA verification stage</h4><p>Proprietary and not public. Shown only as a black box, and nothing here measures it.</p><span class="tag tag-prop">Proprietary</span></li>
+              <li class="node"><h4>ALERT &middot; CRITICAL</h4><p>Defined, but never emitted in this repository.</p></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="levels" role="list" aria-label="Alert levels">
+      <div class="level never" role="listitem"><div class="num">0</div><div class="name">NONE</div><div class="note">no event</div></div>
+      <div class="level emit" role="listitem"><div class="num">1</div><div class="name">OBSERVE</div><div class="note">emitted here</div></div>
+      <div class="level emit" role="listitem"><div class="num">2</div><div class="name">WARN</div><div class="note">emitted here</div></div>
+      <div class="level never" role="listitem"><div class="num">3</div><div class="name">ALERT</div><div class="note">defined, never emitted</div></div>
+      <div class="level never" role="listitem"><div class="num">4</div><div class="name">CRITICAL</div><div class="note">defined, never emitted</div></div>
+    </div>
+    <p class="levels-caption">Alert levels in the <code>FallEvent</code> message. This repository emits only levels 1 and 2.</p>
+
+    <div class="tech-stack" aria-label="Stack">
+      <span class="tech-tag">RPLIDAR C1</span><span class="tech-tag">Jetson Orin Nano 8 GB</span><span class="tech-tag">JetPack 6.2.1</span><span class="tech-tag">ROS 2 Humble</span><span class="tech-tag">Python 3.10</span><span class="tech-tag">DBSCAN</span><span class="tech-tag">RF-DETR (stock COCO)</span><span class="tech-tag">RF-DETR (fine-tuned, public data)</span><span class="tech-tag">Roboflow Train (NAS) + Model Evaluation</span><span class="tech-tag">Roboflow Inference 1.7.2</span><span class="tech-tag">mcap</span><span class="tech-tag">tcpdump</span><span class="tech-tag">pytest</span>
+    </div>
+  </div>
+</section>
+
+<section class="evidence" id="evidence" aria-labelledby="evidence-title">
+  <div class="container">
+    <span class="section-label">Evidence</span>
+    <h2 class="section-title" id="evidence-title">Field results, including what failed.</h2>
+    <p class="section-subtitle">The documents that report every number are linked at the end of this section. Each room result is one subject, one room, one session. Frames within a segment are near-duplicates, so these are feasibility results, not recall estimates.</p>
+
+    <div class="ev-block">
+      <h3>1. Height decides whether the LIDAR can see a fallen person</h3>
+      <p class="lead">A level scan plane above the floor passes over a person lying on it. Moving the sensor down to the floor fixed that for a person lying across or diagonal to the beam, but not end-on.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Mount</th><th scope="col">Person on the floor</th><th scope="col">False alarms</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Original height (09-25)</th><td><span class="res-miss">Invisible:</span> the scan toward the fall spot matched the empty room for 50&nbsp;s</td><td>not measured</td></tr>
+            <tr><th scope="row">Lowered (09-25)</th><td>Visible (extent 0.8 to 1.3&nbsp;m), but <span class="res-miss">no WARN</span>: stillness peaked at 0.4&nbsp;s</td><td>not measured</td></tr>
+            <tr><th scope="row">Counter, level, 121&nbsp;cm (09-26)</th><td><span class="res-miss">Lost for 39&nbsp;s</span> while both cameras kept the person in view</td><td class="num">0 in 165&nbsp;s</td></tr>
+            <tr><th scope="row">Floor, about 2&nbsp;cm (09-27)</th><td><span class="res-ok">Detected</span> across and diagonal to the beam; <span class="res-miss">missed</span> end-on</td><td class="num">0 in 95&nbsp;s of walking</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ev-block">
+      <h3>2. Floor trials with the legacy detector (<code>floor-trials-1</code>)</h3>
+      <p class="lead">There were six lie-downs and a walking baseline. Lying across or diagonal to the beam was flagged (OBSERVE) within about a second of going down, at every range tried (1.3 to 2.6&nbsp;m). Lying end-on, the plane saw only 0.22 to 0.33&nbsp;m of soles or head, and both of those trials were missed.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Segment</th><th scope="col">Pose</th><th scope="col">Cluster length</th><th scope="col">Events</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">A</th><td>across the beam, 2.0&nbsp;m</td><td class="num">1.64 m</td><td>350 OBSERVE, from onset to get-up</td></tr>
+            <tr><th scope="row">B</th><td><strong>end-on, feet toward the sensor</strong>, 0.9&nbsp;m</td><td class="num">0.33 m</td><td><span class="res-miss">none: missed</span></td></tr>
+            <tr><th scope="row">C</th><td>across, 2.6&nbsp;m</td><td class="num">1.62 m</td><td>one WARN at 165.3&nbsp;s (triggered by a jitter-made speed spike, DR-07), then <span class="res-warn">silent for 26&nbsp;s</span> while the person was still down</td></tr>
+            <tr><th scope="row">D</th><td>diagonal, 1.6&nbsp;m</td><td class="num">0.99 m</td><td>347 OBSERVE</td></tr>
+            <tr><th scope="row">E</th><td>diagonal, 1.3&nbsp;m</td><td class="num">0.92 m</td><td>335 OBSERVE</td></tr>
+            <tr><th scope="row">F</th><td><strong>end-on, head toward the sensor</strong>, 0.83&nbsp;m</td><td class="num">0.22 m</td><td><span class="res-miss">none: missed</span></td></tr>
+            <tr><th scope="row">W</th><td>standing and walking, 95&nbsp;s</td><td></td><td><span class="res-ok">0 false alarms</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ev-cards" style="margin-top:20px">
+        <div class="ev-card"><div class="big">4 of 6</div><p>lie-downs flagged: <strong>A, C, D, E</strong>, which were across or diagonal. Segment A&rsquo;s events start at 28.9&nbsp;s, and the segment starts at 28&nbsp;s. These are OBSERVE flags, not alarms.</p></div>
+        <div class="ev-card fail"><div class="big">1,131 of 1,132</div><p>events were OBSERVE. <strong>Escalation failed.</strong> Stillness never exceeded 3.4&nbsp;s, although each lie-down was held for about 30&nbsp;s, and one track went silent after its single WARN.</p></div>
+        <div class="ev-card"><div class="big">0</div><p>false alarms in 95&nbsp;s of walking. In the grid walk, tracking was continuous at all six stations, with zero dropouts and zero fall events.</p></div>
+      </div>
+    </div>
+
+    <div class="ev-block">
+      <h3>3. The field recording exposed two escalation bugs. The fixes are tested offline and not yet enabled.</h3>
+      <p class="lead">Every fix sits behind a configuration switch that defaults to the legacy behaviour. The replay harness runs the same detector code over the recorded bag on a laptop, without ROS.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Fix</th><th scope="col">Evidence (kind)</th><th scope="col">Record</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Incident hold instead of the one-WARN latch</th><td><strong>Replay</strong> of <code>floor-trials-1</code>: segment C holds WARN to 193&nbsp;s, every other segment is unchanged, and the walking baseline has 0 WARN either way. A spurious WARN would be held too.</td><td><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-07" rel="noopener">DR-07</a></td></tr>
+            <tr><th scope="row">Windowed stillness (0.25&nbsp;m over 1.5&nbsp;s)</th><td><strong>Unit tests</strong>: 12 stillness tests, including a boundary test that fails without the epsilon</td><td><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-09" rel="noopener">DR-09</a></td></tr>
+            <tr><th scope="row"><code>min_range_m</code> 0.3, shipped with it</th><td><strong>Replay</strong>: without it, the fixed config turns a 6&nbsp;cm clutter track into a WARN at 24&nbsp;s, before anyone lies down</td><td><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-09" rel="noopener">DR-09</a></td></tr>
+            <tr><th scope="row">Per-track time base and speed gate</th><td><strong>Unit tests</strong>. The motivation was 4.6&nbsp;m/s of &ldquo;motion&rdquo; that turned out to be association jumps between clusters.</td><td><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-08" rel="noopener">DR-08</a></td></tr>
+            <tr><th scope="row">All of the above behind legacy defaults</th><td><strong>Replay</strong>: the default config is byte-identical to the incident-hold commit on all 7 bags; legacy goldens pass</td><td><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-06" rel="noopener">DR-06</a></td></tr>
+            <tr><th scope="row">All of the above, switched on together</th><td><strong>Replay</strong> of <code>floor-trials-1</code>: WARN 0.7 to 4.0&nbsp;s after onset in A, C, D and E (3.3 to 6.5&nbsp;s on stillness alone); 0 events of any level while walking or standing</td><td><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-fixed-config-replay.md" rel="noopener">Results</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout"><strong>Not yet switched on.</strong> From the replay harness to the last fix, the test suite grew from 38 to 70 passing tests; at main today it is 130 passed, 1 skipped (the skip needs ROS). The replay above is not the pre-declared scoring that decides the switch (WARN in every lying segment, 0 WARN in every empty-room segment), which needs label files that do not exist yet. Its fastest WARNs come from the speed-spike rule, set off by centroid jitter in three of the four lie-downs (the repository had said that rule could not fire). On stillness alone, WARN comes 3.3 to 6.5&nbsp;s after onset. The device still runs the legacy detector.</div>
+    </div>
+
+    <div class="ev-block">
+      <h3>4. The blind spot, seen by the cameras</h3>
+      <p class="lead">Lying end-on with the feet toward the sensor, a person shows up on a floor-level LIDAR as two small clusters, and the detector raised 0 events. Stock RF-DETR, running on the Jetson, found the person on both cameras.</p>
+      <figure class="figure">
+        <img src="assets/blind-spot-B.jpg" width="1870" height="759" loading="lazy" alt="Segment B, t = 110 s: the floor LIDAR shows two small sole clusters and no event, while both cameras show the person lying end-on, boxed by RF-DETR.">
+        <figcaption><strong>Segment B, t = 110&nbsp;s.</strong> The floor LIDAR sees two sole clusters (0.31&nbsp;m and 0.28&nbsp;m). The rest of the body lies in the hatched shadow, which a 2&nbsp;cm scan plane cannot see past, and the segment had 0 fall events. RF-DETR-base (stock COCO, conf&nbsp;&ge;&nbsp;0.4) found the person in 33/33 frames on each camera. The frames are unaltered apart from the box overlay and one JPEG re-encode for publication; the figure is produced by <code>tools/bag_analysis/rfdetr_figures.py</code>. Source: <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-rfdetr-results.md" rel="noopener">RF-DETR results, section 4</a>. <a href="assets/blind-spot-B.jpg">Open the full-size figure</a>.</figcaption>
+      </figure>
+    </div>
+
+    <div class="ev-block">
+      <h3>5. Stock RF-DETR on the LIDAR&rsquo;s blind spot: conditions declared before the run</h3>
+      <p class="lead">The evaluation plan, with its pass bars, was committed at 16:38 and the results at 17:26 (PDT, 2026-09-27). The run used 580 frames at 1 frame per second, with three model sizes served locally on the Jetson.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Condition (declared before the run)</th><th scope="col">nano</th><th scope="col">base</th><th scope="col">medium</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">C1: person in &ge;&nbsp;90% of B and of F frames, on at least one camera</th><td><span class="res-ok">pass</span> (C920 33/33, 30/30)</td><td><span class="res-ok">pass</span></td><td><span class="res-ok">pass</span></td></tr>
+            <tr><th scope="row">C2: person in &ge;&nbsp;90% of walking frames, counter camera</th><td class="num"><span class="res-ok">pass</span> 90/90</td><td class="num"><span class="res-ok">pass</span> 90/90</td><td class="num"><span class="res-ok">pass</span> 90/90</td></tr>
+            <tr><th scope="row">C3: box width/height separates lying from standing</th><td><span class="res-miss">FAIL</span> (B, D, E)</td><td><span class="res-miss">FAIL</span></td><td><span class="res-miss">FAIL</span></td></tr>
+            <tr><th scope="row">C4: cost next to the running LIDAR stack (report only)</th><td class="num">107.9&nbsp;ms, 9.3&nbsp;fps</td><td class="num">126.9&nbsp;ms, 7.9&nbsp;fps</td><td class="num">126.9&nbsp;ms, 7.9&nbsp;fps</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="caveats">
+        <li><strong>The counter camera carries F.</strong> On the floor Brio, F was 26/30 (nano), 20/30 (base) and 30/30 (medium). B was 33/33 on both cameras.</li>
+        <li><strong>The walking boxes show hips and legs only.</strong> The counter camera cuts off heads, so C2 passes as a detection, not as a view of a standing person.</li>
+        <li><strong>C3 failed for every size.</strong> The median box width/height was 0.78 to 0.87 in lying segments B, D and E. The consequence was declared in advance: keypoints next. The first keypoint run was invalid under its own rule and was not scored. A rescore plan (v2) that fixes the class rule was written on 2026-09-28 and has not been run. A fine-tune that predicts the pose as a class is a third option (<a href="#ev-6">section 6</a>).</li>
+        <li><strong>C4 is a median serial client round trip,</strong> with one request in flight and the cameras stopped. It is not a throughput benchmark. The lowest free memory (<code>MemAvailable</code>) was 2,584&nbsp;MB. Whether inference disturbs the LIDAR under load was measured once on 2026-09-28, with a fine-tuned model: the scan stream held 10.009&nbsp;Hz with no gap over 0.5&nbsp;s while it served 580 frames (one run, cameras off; <a href="#ev-7">section 7</a>).</li>
+        <li><strong>Near-duplicate frames.</strong> At 1 frame per second, each segment on each camera is closer to one trial than to thirty.</li>
+        <li><strong>On 09-27 the privacy settings were reported, not verified, and one of them did not work.</strong> The client posted only to 127.0.0.1:9001, but the server was also posting a record of every request to Roboflow once a minute (by the Inference 1.7.2 code; the capture cannot read TLS), and the opt-out setting in the container command (<code>TELEMETRY_OPT_OUT</code>) does nothing in Inference 1.7.2. It was found and switched off on 2026-09-28 (PDT), and the switch was verified in one captured run (one model, cameras off, no model download captured); see <a href="#ev-8">section 8</a>.</li>
+      </ul>
+    </div>
+
+    <div class="ev-block" id="ev-6">
+      <h3>6. A fine-tuned class split, on public data only</h3>
+      <p class="lead">Box shape could not separate lying from standing (C3), so a third option for D1 was tested under a plan committed before any training started (2026-09-28, 11:30 PDT): fine-tune RF-DETR to predict the pose as a class. The data is public: three Roboflow Universe datasets, forked unchanged. The architecture search ran on one of them, the primary arm (arm A, 736 images), for 1&nbsp;h 59&nbsp;min. Arms B and C were plain RF-DETR nano comparison arms. Every model was trained and scored on Roboflow. No frame from the test room was uploaded, trained on or scored.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Condition (declared before the run)</th><th scope="col">Verdict</th><th scope="col">Bar</th><th scope="col">Measured</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">F1: <code>lying</code> precision and recall on the primary test split, at the threshold fixed on the valid split (0.75)</th><td><span class="res-ok">pass</span></td><td class="num">&ge;&nbsp;0.90 each</td><td class="num">1.000 / 1.000</td></tr>
+            <tr><th scope="row">F2: <code>lying</code> read as standing or sitting, or the reverse</th><td><span class="res-ok">pass</span></td><td class="num">&le;&nbsp;5% of 24 lying</td><td class="num">0 of 24</td></tr>
+            <tr><th scope="row">F3: <code>bed</code> and <code>lying</code> confused (report only)</th><td>reported</td><td>none</td><td>0 either way (16 bed, 24 lying)</td></tr>
+            <tr><th scope="row">F4: plain RF-DETR nano on two larger datasets, no architecture search (report only)</th><td>reported</td><td>none</td><td>URFD frames: <code>fall</code> 0.931 / 0.982, 0 swaps in 110. lying3: <code>lying</code> 0.910 / 0.950, 4 swaps in 299</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="caveats">
+        <li><strong>Small and public.</strong> 73 test images, 89 instances (24 lying, 11 sitting), one dataset of one author&rsquo;s rooms. Read the pass as not dead on arrival, not as a recall estimate.</li>
+        <li><strong>An upper bound.</strong> Nothing checked whether train and test share near-duplicate frames. Each arm has one scored training run, so seed variance is unmeasured (arm B ran twice by accident; the unscored duplicate moved test mAP@50 by 0.006).</li>
+        <li><strong>The errors are on the upright side.</strong> 4 standing instances were read as sitting and 1 was missed, with 0 false positives. <code>lying</code> stays 1.000 / 1.000 at every stored threshold from 0.11 to 0.87.</li>
+        <li><strong>Two evaluators.</strong> The model was picked on the search&rsquo;s own valid score (96.85 mAP@50-95); every number above is Roboflow Model Evaluation&rsquo;s (0.963 on the same split). Whether the rule would pick the same model under Model Evaluation is not known, because only two were evaluated.</li>
+        <li><strong>How the numbers were read.</strong> The 0.75 threshold comes from the valid split and was not tuned on test. Confusion matrices are stored at 0.1 steps only: F2 is read at 0.70 and 0.80, which agree, and the F4 swaps at 0.40. <code>bed</code> labels the furniture, so nothing here tests a person lying in a bed. Arm C&rsquo;s splits were rebalanced to 70/20/10 before versioning, because its fork had 6 test images.</li>
+        <li><strong>Licences.</strong> The datasets are CC BY 4.0 as their Universe uploaders state (the URFD copy was not checked against the original dataset&rsquo;s terms). The trained models are under Roboflow&rsquo;s Platform Model License (PML-1.0).</li>
+        <li><strong>Not a room result.</strong> The plan for room frames has not been written. Source: the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-plan.md" rel="noopener">fine-tune plan</a> and the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-results.md#3-arm-a-scored" rel="noopener">results, section 3</a>.</li>
+      </ul>
+    </div>
+
+    <div class="ev-block" id="ev-7">
+      <h3>7. On the device: speed, memory, and the LIDAR under load</h3>
+      <p class="lead">Later the same day (15:54 PDT), both fine-tuned models were pulled into the local Inference container on the Jetson and sent the 580 room frames of section 5, one request at a time, to 127.0.0.1:9001 only, with the cameras off. Their predictions were discarded by design: reading them would be a room result, which needs its own plan first.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Model</th><th scope="col">Input</th><th scope="col">Median round trip</th><th scope="col">Serial fps</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Fine-tuned, the fast child of the search (<code>e65db0</code>)</th><td class="num">288&times;288</td><td class="num">78.7&nbsp;ms</td><td class="num">12.7</td></tr>
+            <tr><th scope="row">Fine-tuned, the plan rule&rsquo;s pick (<code>00ba18</code>)</th><td class="num">640&times;640</td><td class="num">125.2&nbsp;ms</td><td class="num">8.0</td></tr>
+            <tr><th scope="row">Stock nano, measured 2026-09-27</th><td>not read</td><td class="num">107.9&nbsp;ms</td><td class="num">9.3</td></tr>
+            <tr><th scope="row">Stock base, measured 2026-09-27</th><td class="num">560&times;560</td><td class="num">126.9&nbsp;ms</td><td class="num">7.9</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="caveats">
+        <li><strong>Against the stock models.</strong> The fast child is 27% faster than stock nano, and the rule&rsquo;s pick costs what stock base and medium cost. The stock numbers are from 2026-09-27, measured the same way.</li>
+        <li><strong>Memory and the first call.</strong> The lowest free memory (<code>MemAvailable</code>) with both models resident was 2,799&nbsp;MB. Only that minimum is usable, and with the cameras off the load of live capture is absent from it. After a restart, a model not yet in the cache pays a download and load on its first call: 17.5&nbsp;s; with the weights already cached it was 1.8&nbsp;s. That download has never been captured on the network.</li>
+        <li><strong>The LIDAR under load, CL1 and CL2.</strong> CL1, <code>/scan</code> count within 10% of idle: 594 against 567 (+4.8%), <span class="res-ok">pass</span>. CL2, no <code>/scan</code> gap over 0.5&nbsp;s while the fast child served 580 frames: 0 (largest 0.105&nbsp;s), <span class="res-ok">pass</span>. Both recordings read 10.009&nbsp;Hz; the counts differ by the recorders&rsquo; spans. The bars were committed before the recording.</li>
+        <li><strong>One run of one model on one Jetson, cameras off.</strong> <code>/fall_events</code> stayed silent, and nobody was asked to be in the room. Nothing more is claimed about the detector under load.</li>
+        <li><strong>The speed figures are report only.</strong> F5 had no bar. It is a serial measurement with one request in flight, not a throughput benchmark. The LIDAR stack on the Jetson ran the branch <code>fix/background-absorption</code>, not <code>main</code>.</li>
+        <li><strong>Source.</strong> <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-results.md#5-f5-device-fit-report-only" rel="noopener">Fine-tune results, section 5</a>.</li>
+      </ul>
+    </div>
+
+    <div class="ev-block" id="ev-8">
+      <h3>8. What the on-device server sends: four network captures</h3>
+      <p class="lead">Running inference on the device (DR-11) keeps frames in the room only if nothing else carries them out. On the afternoon and evening of 2026-09-28 (PDT; the repository dates the last three captures 2026-09-29 UTC), four tcpdump captures on the Jetson tested that, each against bars committed before it ran. TLS was not read: the destinations and sizes come from the captures, and what the bytes contain comes from the Inference 1.7.2 source code.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Capture</th><th scope="col">Verdict</th><th scope="col">Bar (declared before the run)</th><th scope="col">Measured</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">1. A 580-frame run, with the container command as then written</th><td><span class="res-miss">FAIL</span></td><td>EG1: under 200,000 bytes to non-LAN addresses during the 580-frame loop</td><td>285,098 bytes, almost all one 280&nbsp;KB post to api.roboflow.com. A lower bound: the capture started 34&nbsp;s late</td></tr>
+            <tr><th scope="row">2. The same run, with that post switched off (<code>METRICS_ENABLED=False</code>)</th><td><span class="res-ok">pass</span></td><td>EG1</td><td>12,987 bytes, in exchanges of about 2.4&nbsp;KB every ~10&nbsp;s to api.roboflow.com</td></tr>
+            <tr><th scope="row">3. A container start with no request sent, the version check off (<code>DISABLE_VERSION_CHECK=True</code>)</th><td><span class="res-miss">FAIL</span></td><td>VC1: no GitHub lookup, and no connection from the container to any non-LAN address</td><td>No GitHub traffic, but two 0-byte handshakes to 1.1.1.1:80 (the online check of the ultralytics package, by its code)</td></tr>
+            <tr><th scope="row">4. A container start with no request sent, that check off too (<code>YOLO_OFFLINE=True</code>)</th><td><span class="res-ok">pass</span></td><td>VC1</td><td>No packet from the container to any non-LAN address in 32.6&nbsp;minutes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="caveats">
+        <li><strong>The second bar of each pair passed.</strong> EG2, every non-LAN destination is a Roboflow host, passed in captures 1 and 2. VC2, the server answers within 120&nbsp;s with the switch under test set, passed in captures 3 and 4: the first answer was seen 100&nbsp;s after the server process started in capture 3 and 45&nbsp;s after in capture 4. Both times are counted from that start, not from the container start, and in capture 3 the exact moment of the first answer was not captured.</li>
+        <li><strong>What capture 1 found.</strong> Until the post was switched off on the evening of 2026-09-28 (PDT), the server posted, once a minute, a record of every request, during every run of 2026-09-27 and 2026-09-28. It sent no frames and no boxes. The opt-out setting in the container command (<code>TELEMETRY_OPT_OUT=True</code>) does nothing in Inference 1.7.2. The bar was not moved. The capture saw 167 of the 580 frames, so 285,098 is a lower bound; that correction is written beside the result, not over it.</li>
+        <li><strong>Frames stayed on the device in capture 2.</strong> The full 166&nbsp;MB of frames went to the local container and 13&nbsp;KB left the device. One run, one model, cameras off. The model was already on the device, so no model download was captured.</li>
+        <li><strong>What still leaves.</strong> While the server answers requests, about 2.4&nbsp;KB goes to api.roboflow.com every ~10&nbsp;s: an aggregated usage record, with no image and no per-detection field. Its fields are listed under <a href="#status">Known limitations</a>. Whether that may leave a resident&rsquo;s room was a product decision: yes, for now (Jeremy Gracey, DR-11). No revisit trigger is set.</li>
+        <li><strong>An idle container.</strong> A container that is not asked anything sent nothing to any non-LAN address for the 32.6&nbsp;minutes it was watched. A model download has never been captured.</li>
+        <li><strong>Sources.</strong> <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-11" rel="noopener">DR-11</a>, the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-results.md#5-f5-device-fit-report-only" rel="noopener">fine-tune results, section 5</a>, and the container command, <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/jetson/inference-server-up.sh" rel="noopener"><code>jetson/inference-server-up.sh</code></a>.</li>
+      </ul>
+    </div>
+
+    <div class="doc-links" aria-label="Results documents on GitHub">
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-floor-mount-grid.md" rel="noopener">Floor trials, 2026-09-27</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-rfdetr-eval-plan.md" rel="noopener">RF-DETR plan (pre-declared)</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-rfdetr-results.md" rel="noopener">RF-DETR results and audit</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-rfdetr-keypoints-status.md" rel="noopener">Keypoint run: invalid, not scored</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-26-capture.md" rel="noopener">Capture night, 2026-09-26</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/ARCHITECTURE.md" rel="noopener">Architecture</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-plan.md" rel="noopener">Fine-tune plan (pre-declared)</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-results.md" rel="noopener">Fine-tune, device fit and network captures</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-egress-recapture-plan.md" rel="noopener">Egress re-capture plan</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-version-check-capture-plan.md" rel="noopener">Container-start capture plan: version check</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-yolo-offline-capture-plan.md" rel="noopener">Container-start capture plan: online check</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md" rel="noopener">Keypoint rescore plan v2 (not run)</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-11" rel="noopener">DR-11: what leaves the device</a>
+    </div>
+  </div>
+</section>
+
+<section class="process" id="process" aria-labelledby="process-title">
+  <div class="container">
+    <div class="center">
+      <span class="section-label">How we work</span>
+      <h2 class="section-title" id="process-title">Run like an experiment, and keep the failures in the record.</h2>
+      <p class="section-subtitle">Every evaluation is written down before it runs. It is analysed with code that replays the recording, attacked by a separate adversarial audit (run with Claude Code, not an external reviewer), and closed with a decision record.</p>
+    </div>
+    <ol class="how-steps" style="list-style:none">
+      <li class="how-step"><div class="how-step-num" aria-hidden="true">01</div><h3>Pre-declare</h3><p>The pass bars are committed before any result exists. The RF-DETR plan was committed at 16:38 and its results at 17:26 (PDT). On 2026-09-28 the fine-tune plan preceded its results by 2&nbsp;h 41&nbsp;min, and every network capture had its bars committed before it ran.</p></li>
+      <li class="how-step"><div class="how-step-num" aria-hidden="true">02</div><h3>Field trial</h3><p>A written runbook, positions measured with a tape and an angle gauge, labels typed per phase (they failed twice and were reconstructed from the camera frames, so the label window is now tested before recording), and a recorded bag.</p></li>
+      <li class="how-step"><div class="how-step-num" aria-hidden="true">03</div><h3>Replay</h3><p>The same detector code runs over the bag on a laptop. Goldens and legacy parity checks come first, then the fix.</p></li>
+      <li class="how-step"><div class="how-step-num" aria-hidden="true">04</div><h3>Adversarial audit</h3><p>A separate adversarial pass (run with Claude Code, not an external reviewer) re-derives the numbers. Its findings are written next to verdicts that are left unchanged.</p></li>
+      <li class="how-step"><div class="how-step-num" aria-hidden="true">05</div><h3>Decision record</h3><p>18 records (DR-00 to DR-17), each with its status, the options on record (or a note that none were written down) and its evidence; the open ones say what comes next.</p></li>
+    </ol>
+    <div class="process-notes">
+      <div class="note-card">
+        <h3>What the process caught</h3>
+        <ul>
+          <li>C3 failed for every model size. It is reported as a failure, and its consequence was written into the plan before the run.</li>
+          <li>The keypoint run failed its own validity check, so nothing was scored and no informal score was substituted.</li>
+          <li>The audit found that &ldquo;frames never leave the device&rdquo; was wrong as written, because frames were copied to a Mac for scoring. The results were corrected to &ldquo;the client posted only to localhost&rdquo;.</li>
+          <li>The first network capture failed its pre-declared bar. By the Inference 1.7.2 code (TLS was not read), the server was posting a record of every request once a minute, which the container command as then written did not stop. The bar stayed where it was, and the fix was checked by a second pre-declared capture (one run, one model, cameras off; no model download captured).</li>
+          <li>That second capture showed the first had started 34&nbsp;s late; the correction is written beside the first result, not over it.</li>
+          <li>A start-up check failed because its bar was wider than the switch under test. It had caught a second probe, which was switched off and verified by a fourth capture (an idle container, watched for 32.6&nbsp;minutes).</li>
+        </ul>
+      </div>
+      <div class="note-card">
+        <h3>Governing the tools, including the AI</h3>
+        <p>The code and most of the documents were written with Claude Code as a collaborator. Its authority is limited by structure, not by instructions: a pre-push hook blocks every push unless it is explicitly allowed, and on the Jetson a scoped sudoers rule allows only service control, clocks, a power-mode query and shutdown. Jeremy Gracey ran the hardware, made every decision and owns the results. More in <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/PROCESS.md" rel="noopener">PROCESS.md</a> and <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md" rel="noopener">DECISIONS.md</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="open dark" id="open-source" aria-labelledby="open-title">
+  <div class="container">
+    <div class="center">
+      <span class="section-label">Open source and upstream</span>
+      <h2 class="section-title" id="open-title">The LIDAR path and its evidence are public.</h2>
+      <p class="section-subtitle">The detector, the test tools and the field evidence are published under Apache-2.0. The verification stage is not.</p>
+    </div>
+    <div class="open-grid">
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <h3>Public under Apache-2.0</h3>
+        <ul>
+          <li>LIDAR fall detector (ROS 2 Humble, ROS-free core)</li>
+          <li>Replay harness, RF-DETR scorer and figure scripts</li>
+          <li>Field-test protocols, results, the audits and 18 decision records</li>
+          <li>Tests that run with no ROS and no hardware</li>
+          <li>The on-device runners (<code>jetson/rf_eval.py</code>, <code>jetson/f5_device_fit.py</code>) and the container command with its privacy switches (<code>jetson/inference-server-up.sh</code>)</li>
+          <li>The fine-tune plan and results, Roboflow&rsquo;s evaluation extracts and the network-capture summaries (no frames)</li>
+          <li>A time-on-floor Roboflow Workflow, the camera half of D0 (not run on video)</li>
+        </ul>
+        <p style="margin-top:14px"><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar" class="ext" rel="noopener">github.com/JeremyGracey-AI/prevera-guardian-lidar</a></p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <h3>Not public</h3>
+        <ul>
+          <li>The V-JEPA verification stage: proprietary and patent pending (there is only an interface stub)</li>
+          <li>Raw recordings, extracted frames, model predictions on room frames, and the packet captures</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 012 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg></div>
+        <h3>Upstream fix: roboflow/inference#3072</h3>
+        <p>With the documented read-only container command, the JetPack 6.2.0 Inference image returned HTTP 500 for every RF-DETR request. The pull request adds one ENV line that sets <code>TRITON_CACHE_DIR</code>, plus a unit test. With the variable set at runtime, all three RF-DETR sizes returned predictions (the image itself was not rebuilt).</p>
+        <p style="margin-top:10px"><a href="https://github.com/roboflow/inference/pull/3072" class="ext" rel="noopener">roboflow/inference#3072</a></p>
+        <span class="pr-state">Open, review required, as of 2026-09-29</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="roadmap" id="roadmap" aria-labelledby="roadmap-title">
+  <div class="container">
+    <div class="center">
+      <span class="section-label">Roadmap</span>
+      <h2 class="section-title" id="roadmap-title">Everything on this list is future work.</h2>
+      <p class="section-subtitle">Column 1 follows the repository&rsquo;s roadmap. Column 2 is the founder&rsquo;s funding ask. The last column is not built.</p>
+    </div>
+    <div class="road-cols">
+      <div class="road-col">
+        <span class="tag tag-open">Next: engineering</span>
+        <h3>Close the open items</h3>
+        <ol>
+          <li><strong>Finish spot memory (across a re-spawn) and time-based spike memory, then switch the fixes on</strong>, but only against the pre-declared bars (WARN in every lying segment, 0 WARN in every empty-room segment), then deploy with a rollback tag. Until spike memory exists, the spike rule fires mostly on centroid jitter rather than on the fall itself.</li>
+          <li><strong>D1:</strong> run the keypoint rescore (plan v2, written 2026-09-28), and write the room-frame plan for the fine-tuned class split before it runs. Either needs a counter-camera view that shows the whole body.</li>
+          <li><strong>Fusion (D0):</strong> measure the chosen placement on the device, recording the LIDAR during the run.</li>
+          <li><strong>Privacy, structurally:</strong> done for active learning (off in every request), the container environment (versioned), the per-request pingback, the version check and the start-up probe, the last three verified by capture (one run, one model, cameras off; the two start-up switches on an idle container). The aggregated usage record may leave, for now (Jeremy Gracey, DR-11). Left: a capture that covers a model download.</li>
+          <li><strong>More evidence:</strong> measure the LIDAR-to-camera extrinsics, then run labelled trials with more subjects, ranges and rooms.</li>
+          <li><strong>Revisit 3D sensing</strong> with those numbers.</li>
+        </ol>
+      </div>
+      <div class="road-col">
+        <span class="tag tag-future">Then: what the raise funds</span>
+        <h3>Pilots, then prediction</h3>
+        <ul>
+          <li>Supervised pilots at <strong>2 to 3 selected sites</strong>, $500K per site (at most $1.5M for three).</li>
+          <li><strong>Prediction is the goal:</strong> moving from detecting a fall to flagging rising risk before one. It is not built, and the system does not have the technology for it yet; building it is what the raise is for.</li>
+          <li>The pilots would be research, with supervision in place. The system stays a research prototype, not a medical device.</li>
+        </ul>
+      </div>
+      <div class="road-col later">
+        <span class="tag tag-future">Later: not built</span>
+        <h3>Features, not yet designed</h3>
+        <ul>
+          <li>A care-team app (see the <a href="#concept" style="color:var(--teal)">UI concept</a>, which uses fictional data)</li>
+          <li>EHR integration</li>
+          <li>A path toward HIPAA-aligned deployment</li>
+          <li>WiFi sensing as a camera-free modality. Nothing here measures it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="status" id="status" aria-labelledby="status-title">
+  <div class="container">
+    <div class="center">
+      <span class="section-label">Status and safety</span>
+      <h2 class="section-title" id="status-title">Read this before relying on anything above.</h2>
+    </div>
+    <div class="status-grid">
+      <div class="status-box">
+        <h3>Status</h3>
+        <ul>
+          <li>A research prototype, measured on one subject in one room.</li>
+          <li>Not a medical device. Not cleared by any regulator. Not to be relied on to detect falls.</li>
+          <li>Patent pending. The V-JEPA verification stage is proprietary, and nothing here claims how it performs.</li>
+          <li>Apache-2.0 for everything in the public repository.</li>
+        </ul>
+      </div>
+      <div class="limits">
+        <h3>Known limitations</h3>
+        <ul>
+          <li><strong>End-on blind spot.</strong> A single 2D plane cannot see a person lying end-on. The cameras covered it in the trials, but fusion is not built.</li>
+          <li><strong>Escalation is legacy.</strong> The Jetson runs the legacy detector; the fixes are tested offline only.</li>
+          <li><strong>Furniture feet</strong> look like a lying person at floor level (elongated and still). They have raised no alarm so far, but they are the main false-alarm risk once stillness works.</li>
+          <li><strong>Camera privacy has been checked by capture, and one gap remains.</strong> Until 2026-09-28 the server posted a record of every request (class and confidence per detection, API key, hostname, IP, MAC) once a minute; that is switched off and verified by capture (one run, one model, cameras off). An aggregated usage record (API key in clear, hashed hostname and IP, counts; no image, no per-detection field) still leaves every ~10&nbsp;s while inferring, by Jeremy Gracey&rsquo;s decision (DR-11), for now. The fields are from the Inference 1.7.2 code, since the captures cannot read TLS. A model download has never been captured.</li>
+          <li><strong>The camera views are unauthenticated.</strong> Since 2026-09-28 they listen on the loopback address by default and are opened through an ssh tunnel; exposing them to the network is an explicit setting for a trusted bench. The camera topic stays reachable to anyone who can join the ROS domain on the local network.</li>
+          <li><strong>The fine-tuned class split is measured on public data only.</strong> 73 test images from one dataset, one training run, near-duplicate frames not checked: an upper bound, and not a room result.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="name-note">The name comes from <span class="pre">Pre</span>vention + <span class="pre">A</span>wareness. Prevention is the long-term aim; what exists today is a detection prototype.</p>
+  </div>
+</section>
+
+<section class="cta dark" id="involved" aria-labelledby="involved-title">
+  <div class="container">
+    <div class="center">
+      <span class="section-label">Work with us</span>
+      <h2 class="section-title" id="involved-title">Two ways to get involved.</h2>
+      <p class="section-subtitle">The repository is public, so you can check it before you get in touch.</p>
+    </div>
+    <div class="ask-grid">
+      <div class="ask-card">
+        <h3>Collaborate, contribute, or join</h3>
+        <p>For engineers and researchers in sensing, computer vision, ROS or care settings:</p>
+        <ul>
+          <li>Run the tests. They need no ROS and no hardware.</li>
+          <li>Open an issue or a pull request against the decisions that are still open (D0, D1).</li>
+          <li>Hiring conversations are welcome.</li>
+        </ul>
+        <div class="btns">
+          <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar" class="btn btn-primary ext" rel="noopener">Open the repository</a>
+          <a href="mailto:jeremy.a.gracey@gmail.com?subject=PREVERA%20GUARDIAN%2BAI%20-%20Collaboration" class="btn btn-outline">Email</a>
+        </div>
+      </div>
+      <div class="ask-card">
+        <div class="num">$500K <small>per site</small></div>
+        <h3>Fund supervised pilots, then prediction</h3>
+        <p>The ask is $500K per site for supervised pilots at 2 to 3 selected sites, at most $1.5M for three. The pilots are also where the prediction work starts; prediction is not built yet. This is the founder&rsquo;s ask, not a measured result or a projection.</p>
+        <p class="ask-note">The pilots would run under supervision. The system stays a research prototype, not a medical device.</p>
+        <div class="btns">
+          <a href="mailto:jeremy.a.gracey@gmail.com?subject=PREVERA%20GUARDIAN%2BAI%20-%20Supervised%20pilots" class="btn btn-primary">Email about pilots</a>
+        </div>
+      </div>
+    </div>
+    <p class="contact-line">Jeremy Gracey, MS &middot; <a href="mailto:jeremy.a.gracey@gmail.com">jeremy.a.gracey@gmail.com</a> &middot; <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar" rel="noopener">GitHub</a></p>
+  </div>
+</section>
+
+<section class="demo" id="concept" aria-labelledby="concept-title">
+  <div class="container">
+    <div class="demo-box">
+      <span class="badge">UI concept &middot; fictional data</span>
+      <h2 id="concept-title">App UI concept</h2>
+      <p>This is a clickable mock of a possible staff app. <strong>Apart from the author&rsquo;s own name on the Profile screen, every resident, staff member, alert, score and number in it is invented. It is not connected to the detector.</strong> None of the features it shows are implemented; the risk scores and gait trends are the kind of output the prediction work aims at:</p>
+      <p class="not-built-label" id="nb-label">Shown in the concept, not implemented</p>
+      <div class="not-built" role="list" aria-labelledby="nb-label">
+        <span role="listitem">gait and mobility trends</span><span role="listitem">fall-risk scores</span><span role="listitem">response times</span><span role="listitem">care-team messaging</span><span role="listitem">real-time dashboard</span>
+      </div>
+      <p style="font-size:.88rem">The concept page loads React, ReactDOM and Babel from unpkg.com, at pinned versions with integrity hashes.</p>
+      <a href="demo.html" class="btn btn-primary">Open the UI concept (fictional data)</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-chip"><img src="assets/logo.png" alt="PREVERA GUARDIAN+AI" width="134" height="34"></span>
+        <p>A privacy-first fall-detection research prototype: a floor-level 2D LIDAR, plus an on-device camera detector evaluated offline. Not a medical device. Patent pending.</p>
+      </div>
+      <div class="footer-col"><h2>On this page</h2><ul><li><a href="#how">How it works</a></li><li><a href="#evidence">Evidence</a></li><li><a href="#process">How we work</a></li><li><a href="#roadmap">Roadmap</a></li><li><a href="#concept">UI concept</a></li></ul></div>
+      <div class="footer-col"><h2>Repository</h2><ul><li><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar" rel="noopener">README</a></li><li><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/ARCHITECTURE.md" rel="noopener">Architecture</a></li><li><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md" rel="noopener">Decisions</a></li><li><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/PROCESS.md" rel="noopener">Process</a></li><li><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/NOTICE" rel="noopener">NOTICE</a></li></ul></div>
+      <div class="footer-col"><h2>Contact</h2><ul><li><a href="mailto:jeremy.a.gracey@gmail.com">jeremy.a.gracey@gmail.com</a></li><li><a href="https://github.com/JeremyGracey-AI" rel="noopener">github.com/JeremyGracey-AI</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Jeremy Gracey / PREVERA &middot; Apache-2.0 &middot; Patent pending</p>
+      <p>No analytics or trackers. Fonts load from Google Fonts.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav');
+  function onScroll(){nav.classList.toggle('scrolled',window.scrollY>40)}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  var toggle=document.getElementById('menuToggle');
+  var links=document.getElementById('navLinks');
+  var menuIcon=toggle.querySelector('.menu-icon');
+  var closeIcon=toggle.querySelector('.close-icon');
+  function setMenu(open){
+    links.classList.toggle('show',open);nav.classList.toggle('open',open);
+    toggle.setAttribute('aria-expanded',open?'true':'false');
+    toggle.setAttribute('aria-label',open?'Close menu':'Open menu');
+    menuIcon.style.display=open?'none':'block';closeIcon.style.display=open?'block':'none';
+  }
+  toggle.addEventListener('click',function(){setMenu(!links.classList.contains('show'))});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&links.classList.contains('show')){setMenu(false);toggle.focus()}});
+  links.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){if(links.classList.contains('show'))setMenu(false)})});
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduce&&'IntersectionObserver' in window){
+    var els=document.querySelectorAll('.how-step,.node,.ev-card,.feature-card,.road-col,.ask-card,.problem-stat');
+    var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';obs.unobserve(e.target)}})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    els.forEach(function(el){el.style.opacity='0';el.style.transform='translateY(16px)';el.style.transition='opacity .6s ease,transform .6s ease';obs.observe(el)});
+  }
+})();
+</script>
+</body>
+</html>

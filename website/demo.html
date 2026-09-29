@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Prevera Guardian+AI mobile app UI concept (fictional data; not connected to the detector)">
+  <title>Prevera Guardian+AI — App UI Concept</title>
+  <link rel="canonical" href="https://preveraguard.com/demo.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.9/babel.min.js" integrity="sha384-oLbIC13I/8DNBviftYPfOFQS5DC2WUmwk0SyIPmnzu1Ui+vYyATSSBJiJ5ETa4o/" crossorigin="anonymous"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #0a0f18;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #1a2332;
+      border-bottom: 1px solid #2a3a4e;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      flex: 1;
+    }
+    header a {
+      color: #0d7377;
+      text-decoration: none;
+      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #0d737710;
+      transition: all 0.2s;
+    }
+    header a:hover {
+      background: #0d737720;
+    }
+    .container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow: auto;
+    }
+    .phone-frame {
+      width: 390px;
+      max-width: 100%;
+      height: 844px;
+      max-height: 90vh;
+      background: #0f1923;
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 2px #2a3a4e;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .legend {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #8b9db5;
+    }
+    .legend-items {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 10px;
+      }
+      .phone-frame {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 390 / 844;
+      }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    input::placeholder { color: #5A6B80; }
+    ::-webkit-scrollbar { width: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Prevera Guardian+AI</h1>
+    <a href="index.html">← Back to Site</a>
+  </header>
+  <div role="note" style="background:#3a2a00;color:#ffd98a;border-bottom:1px solid #6b5000;padding:10px 24px;font-size:13px;line-height:1.5">
+    <strong>UI concept, fictional data.</strong> Apart from the author's own name on the Profile screen, every name, room, resident, staff member, message and number on
+    these screens is invented. The app is not connected to the detector, and the gait, mobility
+    and risk-score features it shows are not implemented: the LIDAR detector emits OBSERVE and WARN events only.
+    The risk scores and gait trends show where the prediction work is aimed; nothing in the system predicts falls today.
+  </div>
+
+  <div class="container">
+    <div id="root"></div>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ─── Color Palette ───
+    const NAVY = "#1A2332";
+    const TEAL = "#0D7377";
+    const MINT = "#2ECDA7";
+    const DARK_BG = "#0F1923";
+    const CARD_BG = "#1E2A3A";
+    const CARD_BORDER = "#2A3A4E";
+    const TEXT_PRIMARY = "#FFFFFF";
+    const TEXT_SECONDARY = "#8B9DB5";
+    const TEXT_MUTED = "#5A6B80";
+    const SUCCESS = "#2ECDA7";
+    const WARNING = "#F5A623";
+    const DANGER = "#E74C5F";
+    const INFO = "#4A9EF5";
+
+    // ─── Mock Data ───
+    const ROOMS = [
+      { id: 1, name: "Room 101", resident: "Margaret T.", risk: "high", status: "active", lastEvent: "Gait irregularity detected", lastEventTime: "2 min ago", mobility: 34, fallRisk: 82, trend: "up" },
+      { id: 2, name: "Room 102", resident: "Robert K.", risk: "medium", status: "active", lastEvent: "Normal activity", lastEventTime: "15 min ago", mobility: 67, fallRisk: 45, trend: "down" },
+      { id: 3, name: "Room 103", resident: "Dorothy M.", risk: "low", status: "active", lastEvent: "Resting", lastEventTime: "1 hr ago", mobility: 78, fallRisk: 18, trend: "stable" },
+      { id: 4, name: "Room 105", resident: "James W.", risk: "medium", status: "active", lastEvent: "Bathroom visit", lastEventTime: "8 min ago", mobility: 55, fallRisk: 52, trend: "up" },
+      { id: 5, name: "Room 106", resident: "Helen B.", risk: "low", status: "offline", lastEvent: "Sensor offline", lastEventTime: "30 min ago", mobility: 71, fallRisk: 22, trend: "stable" },
+      { id: 6, name: "Room 108", resident: "Frank L.", risk: "high", status: "alert", lastEvent: "FALL DETECTED", lastEventTime: "Just now", mobility: 28, fallRisk: 91, trend: "up" },
+    ];
+
+    const ALERTS = [
+      { id: 1, type: "fall", room: "Room 108", resident: "Frank L.", time: "Just now", message: "Fall detected - Immediate response required", severity: "critical", acknowledged: false },
+      { id: 2, type: "gait", room: "Room 101", resident: "Margaret T.", time: "2 min ago", message: "Gait irregularity - Stride length decreased 23%", severity: "warning", acknowledged: false },
+      { id: 3, type: "risk", room: "Room 105", resident: "James W.", time: "15 min ago", message: "Fall risk score increased to 52 (was 38)", severity: "info", acknowledged: true },
+      { id: 4, type: "sensor", room: "Room 106", resident: "Helen B.", time: "30 min ago", message: "LIDAR sensor offline - Check connection", severity: "warning", acknowledged: true },
+    ];
+
+    const MESSAGES = [
+      { id: 1, channel: "Shift Handoff", lastMessage: "Night shift: Room 101 patient had restless night, increased monitoring recommended.", time: "6:45 AM", unread: 2, members: 8 },
+      { id: 2, channel: "Care Team - Floor 1", lastMessage: "PT session for Room 103 rescheduled to 2pm.", time: "9:12 AM", unread: 0, members: 12 },
+      { id: 3, channel: "Incident Reports", lastMessage: "Room 108 fall incident documented. Response time: 45 seconds.", time: "Just now", unread: 1, members: 6 },
+      { id: 4, channel: "Family Updates", lastMessage: "Margaret T.'s daughter requesting weekly mobility report.", time: "Yesterday", unread: 0, members: 4 },
+    ];
+
+    const CHAT_MESSAGES = [
+      { id: 1, sender: "Sarah Chen, RN", role: "Charge Nurse", time: "6:45 AM", text: "Night shift handoff: Room 101 (Margaret T.) had a restless night. Attempted to get out of bed 3 times. LIDAR caught each attempt and we were able to assist. Recommend increased monitoring for day shift.", avatar: "SC" },
+      { id: 2, sender: "Dr. Patel", role: "Attending", time: "7:02 AM", text: "Thanks Sarah. Let's review her medication schedule — the restlessness might be related to the new sleep aid dosage. Can we pull up her 7-day mobility trend?", avatar: "DP" },
+      { id: 3, sender: "Guardian AI", role: "System", time: "7:03 AM", text: "📊 7-day mobility trend for Room 101 (Margaret T.): Mobility score declined from 52 → 34. Gait velocity decreased 18%. Stride length shortened 23%. Fall risk score: 82 (High). Recommendation: Physical therapy reassessment.", avatar: "AI", isSystem: true },
+      { id: 4, sender: "Mike Torres, PT", role: "Physical Therapy", time: "7:15 AM", text: "I'll do an assessment this morning. The declining stride length is concerning — that's often a precursor. Can we schedule a care plan review for tomorrow?", avatar: "MT" },
+      { id: 5, sender: "You", role: "CNA", time: "7:20 AM", text: "I'll keep a close eye on her this shift. She was asking for her walker earlier — should I encourage more supervised walks?", avatar: "JG", isOwn: true },
+    ];
+
+    // ─── Icon Component ───
+    function Icon({ name, size = 20, color = "#fff" }) {
+      const s = size;
+      const icons = {
+        shield: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+        activity: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+        alertTriangle: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+        messageSquare: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+        users: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+        settings: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m2.98 2.98l4.24 4.24M1 12h6m6 0h6m-16.78 7.78l4.24-4.24m2.98-2.98l4.24-4.24M4.22 19.78l4.24-4.24m2.98-2.98l4.24-4.24"/></svg>,
+        chevronRight: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
+        chevronLeft: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>,
+        check: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
+        wifi: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.94 0"/></svg>,
+        wifiOff: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.84 16.84A5.5 5.5 0 0 0 8.29 8.29m9.26 9.26A9.968 9.968 0 0 0 5.64 5.64m9.26 9.26L5.64 5.64"/></svg>,
+        bell: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+        bellRing: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="6" x2="1" y2="1"/><line x1="23" y1="6" x2="23" y2="1"/></svg>,
+        phone: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+        clock: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+        mapPin: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+        barChart3: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="12" y1="3" x2="12" y2="21"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="6" y1="9" x2="6" y2="21"/></svg>,
+        trendingUp: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 17"/><polyline points="23 6 23 12 17 12"/></svg>,
+        trendingDown: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="23 18 23 12 17 12"/></svg>,
+        send: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+        paperclip: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M21.5 2v19a2 2 0 0 1-2 2H4.5a2 2 0 0 1-2-2V2m3 0h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6"/></svg>,
+        search: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+        menu: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+        x: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+        home: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+        user: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+        logOut: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M10 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m7-4l4-4m0 0l-4-4m4 4H9"/></svg>,
+        qrCode: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="4" height="4"/></svg>,
+        checkCircle2: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+        circle: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>,
+        arrowRight: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+        arrowLeft: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+        camera: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+        heart: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+        zap: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+        eye: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+        eyeOff: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
+        lock: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+        mail: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+        star: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+        alertCircle: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+        loader2: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" style={{animation: 'spin 1s linear infinite'}}><circle cx="12" cy="12" r="10"/></svg>,
+        refreshCw: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"/></svg>,
+        filter: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+        moreVertical: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>,
+        chevronDown: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
+        plus: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+      };
+      return icons[name] || <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>;
+    }
+
+    // ─── Utility Components ───
+    function PhoneFrame({ children }) {
+      return (
+        <div style={{
+          width: 390, maxWidth: "100%", height: 844, maxHeight: "90vh",
+          background: DARK_BG, borderRadius: 40, overflow: "hidden",
+          boxShadow: "0 25px 80px rgba(0,0,0,0.5), 0 0 0 2px #2A3A4E",
+          position: "relative", display: "flex", flexDirection: "column",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        }}>
+          <div style={{
+            height: 50, padding: "12px 24px 0", display: "flex",
+            justifyContent: "space-between", alignItems: "center", flexShrink: 0
+          }}>
+            <span style={{ color: TEXT_PRIMARY, fontSize: 15, fontWeight: 600 }}>9:41</span>
+            <div style={{
+              width: 125, height: 32, background: "#000", borderRadius: 20,
+              position: "absolute", left: "50%", transform: "translateX(-50%)", top: 8
+            }} />
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <Icon name="wifi" size={15} color={TEXT_PRIMARY} />
+              <div style={{ width: 25, height: 12, border: `1px solid ${TEXT_PRIMARY}`, borderRadius: 3, position: "relative" }}>
+                <div style={{ position: "absolute", left: 1, top: 1, bottom: 1, width: "75%", background: SUCCESS, borderRadius: 1 }} />
+              </div>
+            </div>
+          </div>
+          {children}
+        </div>
+      );
+    }
+
+    function Badge({ count, color = DANGER }) {
+      if (!count) return null;
+      return (
+        <div style={{
+          position: "absolute", top: -4, right: -4,
+          background: color, borderRadius: 10, minWidth: 18, height: 18,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 700, color: "#FFF", padding: "0 5px"
+        }}>{count}</div>
+      );
+    }
+
+    function RiskBadge({ risk }) {
+      const colors = { high: DANGER, medium: WARNING, low: SUCCESS };
+      return (
+        <span style={{
+          background: `${colors[risk]}20`, color: colors[risk],
+          padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+          textTransform: "uppercase", letterSpacing: 0.5
+        }}>{risk}</span>
+      );
+    }
+
+    function StatCard({ iconName, label, value, trend, color = TEAL }) {
+      return (
+        <div style={{
+          background: CARD_BG, borderRadius: 16, padding: "16px 14px",
+          border: `1px solid ${CARD_BORDER}`, flex: 1, minWidth: 0
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ background: `${color}20`, borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon name={iconName} size={18} color={color} />
+            </div>
+            {trend && (
+              trend === "up" ? <Icon name="trendingUp" size={14} color={DANGER} /> :
+              trend === "down" ? <Icon name="trendingDown" size={14} color={SUCCESS} /> : null
+            )}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: TEXT_PRIMARY, marginBottom: 2 }}>{value}</div>
+          <div style={{ fontSize: 11, color: TEXT_SECONDARY }}>{label}</div>
+        </div>
+      );
+    }
+
+    // ─── Screen: Dashboard ───
+    function DashboardScreen({ onRoomTap, onAlertTap }) {
+      const [filter, setFilter] = useState("all");
+      const filtered = filter === "all" ? ROOMS : ROOMS.filter(r => r.risk === filter);
+
+      return (
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px" }}>
+          <div style={{ padding: "16px 0 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: TEXT_PRIMARY }}>Dashboard</div>
+              <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>Floor 1 · 6 rooms monitored</div>
+            </div>
+            <div style={{ position: "relative", cursor: "pointer" }} onClick={onAlertTap}>
+              <Icon name="bellRing" size={24} color={DANGER} />
+              <Badge count={2} />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            <StatCard iconName="shield" label="Active Rooms" value="5" color={TEAL} />
+            <StatCard iconName="alertTriangle" label="Active Alerts" value="2" trend="up" color={DANGER} />
+            <StatCard iconName="activity" label="Avg Risk Score" value="52" trend="down" color={WARNING} />
+          </div>
+
+          <div onClick={onAlertTap} style={{
+            background: `linear-gradient(135deg, ${DANGER}20, ${DANGER}10)`,
+            border: `1px solid ${DANGER}40`, borderRadius: 14, padding: "14px 16px",
+            marginBottom: 16, display: "flex", alignItems: "center", gap: 12, cursor: "pointer"
+          }}>
+            <div style={{ background: DANGER, borderRadius: 12, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 2s infinite" }}>
+              <Icon name="alertTriangle" size={22} color="#FFF" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: DANGER }}>FALL DETECTED — Room 108</div>
+              <div style={{ fontSize: 12, color: TEXT_SECONDARY }}>Frank L. · Response team notified · Just now</div>
+            </div>
+            <Icon name="chevronRight" size={18} color={TEXT_MUTED} />
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[["all", "All"], ["high", "High Risk"], ["medium", "Medium"], ["low", "Low"]].map(([key, label]) => (
+              <button key={key} onClick={() => setFilter(key)} style={{
+                background: filter === key ? TEAL : CARD_BG,
+                color: filter === key ? "#FFF" : TEXT_SECONDARY,
+                border: `1px solid ${filter === key ? TEAL : CARD_BORDER}`,
+                borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 500,
+                cursor: "pointer", transition: "all 0.2s"
+              }}>{label}</button>
+            ))}
+          </div>
+
+          {filtered.map(room => (
+            <div key={room.id} onClick={() => onRoomTap(room)} style={{
+              background: CARD_BG, borderRadius: 16, padding: 16,
+              border: `1px solid ${room.status === "alert" ? DANGER + "60" : CARD_BORDER}`,
+              marginBottom: 10, cursor: "pointer", transition: "all 0.2s",
+              ...(room.status === "alert" ? { boxShadow: `0 0 20px ${DANGER}20` } : {})
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: TEXT_PRIMARY }}>{room.name}</span>
+                    <RiskBadge risk={room.risk} />
+                  </div>
+                  <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>{room.resident}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {room.status === "offline" ? <Icon name="wifiOff" size={14} color={TEXT_MUTED} /> :
+                   room.status === "alert" ? <Icon name="alertTriangle" size={14} color={DANGER} /> :
+                   <div style={{ width: 8, height: 8, borderRadius: 4, background: SUCCESS }} />}
+                  <Icon name="chevronRight" size={16} color={TEXT_MUTED} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: TEXT_MUTED, marginBottom: 2 }}>Mobility</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ width: 60, height: 4, background: "#0F1923", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ width: `${room.mobility}%`, height: "100%", background: room.mobility > 60 ? SUCCESS : room.mobility > 40 ? WARNING : DANGER, borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 11, color: TEXT_SECONDARY }}>{room.mobility}</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: TEXT_MUTED, marginBottom: 2 }}>Fall Risk</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: room.fallRisk > 70 ? DANGER : room.fallRisk > 40 ? WARNING : SUCCESS }}>{room.fallRisk}</span>
+                    {room.trend === "up" && <Icon name="trendingUp" size={12} color={DANGER} />}
+                    {room.trend === "down" && <Icon name="trendingDown" size={12} color={SUCCESS} />}
+                  </div>
+                </div>
+                <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                  <div style={{ fontSize: 11, color: TEXT_MUTED, marginBottom: 2 }}>Last Event</div>
+                  <div style={{ fontSize: 11, color: TEXT_SECONDARY }}>{room.lastEventTime}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ─── Screen: Room Detail ───
+    function RoomDetailScreen({ room, onBack }) {
+      const hours = Array.from({ length: 24 }, (_, i) => ({
+        hour: `${String(i).padStart(2, "0")}:00`,
+        risk: Math.max(10, Math.min(95, room.fallRisk + Math.sin(i * 0.5) * 25 + (Math.random() - 0.5) * 10)),
+        mobility: Math.max(10, Math.min(95, room.mobility + Math.cos(i * 0.3) * 20 + (Math.random() - 0.5) * 10))
+      }));
+
+      return (
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px" }}>
+          <div style={{ padding: "16px 0 12px", display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={onBack} style={{ background: CARD_BG, border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Icon name="arrowLeft" size={20} color={TEXT_PRIMARY} />
+            </button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: TEXT_PRIMARY }}>{room.name}</div>
+              <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>{room.resident}</div>
+            </div>
+            <RiskBadge risk={room.risk} />
+          </div>
+
+          <div style={{ background: CARD_BG, borderRadius: 16, padding: 18, border: `1px solid ${CARD_BORDER}`, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SECONDARY, marginBottom: 12 }}>CURRENT STATUS</div>
+            <div style={{ display: "flex", gap: 20 }}>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{ fontSize: 36, fontWeight: 700, color: room.fallRisk > 70 ? DANGER : room.fallRisk > 40 ? WARNING : SUCCESS }}>{room.fallRisk}</div>
+                <div style={{ fontSize: 11, color: TEXT_MUTED }}>Fall Risk Score</div>
+              </div>
+              <div style={{ width: 1, background: CARD_BORDER }} />
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{ fontSize: 36, fontWeight: 700, color: room.mobility > 60 ? SUCCESS : room.mobility > 40 ? WARNING : DANGER }}>{room.mobility}</div>
+                <div style={{ fontSize: 11, color: TEXT_MUTED }}>Mobility Score</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: CARD_BG, borderRadius: 16, padding: 18, border: `1px solid ${CARD_BORDER}`, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SECONDARY, marginBottom: 12 }}>24-HOUR RISK TREND</div>
+            <div style={{ height: 120, display: "flex", alignItems: "flex-end", gap: 2 }}>
+              {hours.filter((_, i) => i % 2 === 0).map((h, i) => (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                  <div style={{
+                    width: "100%", height: `${h.risk}%`, borderRadius: "4px 4px 0 0",
+                    background: h.risk > 70 ? `linear-gradient(180deg, ${DANGER}, ${DANGER}60)` :
+                      h.risk > 40 ? `linear-gradient(180deg, ${WARNING}, ${WARNING}60)` :
+                      `linear-gradient(180deg, ${SUCCESS}, ${SUCCESS}60)`,
+                    transition: "height 0.3s"
+                  }} />
+                  {i % 3 === 0 && <span style={{ fontSize: 8, color: TEXT_MUTED }}>{h.hour.split(":")[0]}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: CARD_BG, borderRadius: 16, padding: 16, border: `1px solid ${CARD_BORDER}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SECONDARY, marginBottom: 12 }}>RECENT EVENTS</div>
+            {[
+              { time: "2m ago", event: "Gait irregularity detected", severity: "warning" },
+              { time: "8m ago", event: "Got out of bed", severity: "info" },
+              { time: "14m ago", event: "Returned to bed", severity: "info" },
+            ].map((evt, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, paddingBottom: 10, ...(i < 2 ? { borderBottom: `1px solid ${CARD_BORDER}`, marginBottom: 10 } : {}) }}>
+                <Icon name="clock" size={14} color={evt.severity === "warning" ? WARNING : INFO} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: TEXT_PRIMARY }}>{evt.event}</div>
+                  <div style={{ fontSize: 10, color: TEXT_MUTED }}>{evt.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Screen: Alerts ───
+    function AlertsScreen() {
+      const [alerts, setAlerts] = useState(ALERTS);
+
+      const acknowledge = (id) => {
+        setAlerts(prev => prev.map(a => a.id === id ? { ...a, acknowledged: true } : a));
+      };
+
+      const severityColors = { critical: DANGER, warning: WARNING, info: INFO };
+      const severityIcons = { critical: "alertTriangle", warning: "alertCircle", info: "activity" };
+
+      return (
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px" }}>
+          <div style={{ padding: "16px 0 12px" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: TEXT_PRIMARY }}>Alerts</div>
+            <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>{alerts.filter(a => !a.acknowledged).length} unacknowledged</div>
+          </div>
+
+          {alerts.map(alert => {
+            const iconName = severityIcons[alert.severity];
+            const color = severityColors[alert.severity];
+            return (
+              <div key={alert.id} style={{
+                background: CARD_BG, borderRadius: 16, padding: 16,
+                border: `1px solid ${!alert.acknowledged ? color + "40" : CARD_BORDER}`,
+                marginBottom: 10, opacity: alert.acknowledged ? 0.6 : 1,
+                ...(alert.severity === "critical" && !alert.acknowledged ? { boxShadow: `0 0 20px ${DANGER}15` } : {})
+              }}>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{
+                    background: `${color}20`, borderRadius: 12, width: 44, height: 44,
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                  }}>
+                    <Icon name={iconName} size={22} color={color} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: TEXT_PRIMARY }}>{alert.room}</span>
+                      <span style={{ fontSize: 11, color: TEXT_MUTED }}>{alert.time}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: TEXT_SECONDARY, marginBottom: 8 }}>{alert.message}</div>
+                    {!alert.acknowledged && (
+                      <button onClick={() => acknowledge(alert.id)} style={{
+                        background: color, color: "#FFF", border: "none", borderRadius: 8,
+                        padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer"
+                      }}>Acknowledge</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // ─── Screen: Chat ───
+    function ChatScreen({ onChannelSelect }) {
+      const [selectedChannel, setSelectedChannel] = useState(null);
+      const [message, setMessage] = useState("");
+
+      if (selectedChannel) {
+        return (
+          <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px 0 12px", display: "flex", alignItems: "center", gap: 12 }}>
+              <button onClick={() => setSelectedChannel(null)} style={{ background: CARD_BG, border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <Icon name="arrowLeft" size={20} color={TEXT_PRIMARY} />
+              </button>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: TEXT_PRIMARY }}>{selectedChannel.channel}</div>
+                <div style={{ fontSize: 12, color: TEXT_SECONDARY }}>{selectedChannel.members} members</div>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflow: "auto", marginBottom: 12 }}>
+              {CHAT_MESSAGES.map((msg, i) => (
+                <div key={i} style={{
+                  marginBottom: 12, display: "flex",
+                  flexDirection: msg.isOwn ? "row-reverse" : "row",
+                  gap: 8, alignItems: "flex-end"
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 16,
+                    background: msg.isSystem ? INFO : msg.isOwn ? TEAL : CARD_BG,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 600, color: TEXT_PRIMARY, flexShrink: 0
+                  }}>{msg.avatar}</div>
+                  <div style={{ flex: 1, maxWidth: "80%" }}>
+                    <div style={{ display: "flex", gap: 4, marginBottom: 2, flexDirection: msg.isOwn ? "row-reverse" : "row" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_PRIMARY }}>{msg.sender}</span>
+                      <span style={{ fontSize: 10, color: TEXT_MUTED }}>{msg.time}</span>
+                    </div>
+                    <div style={{
+                      background: msg.isOwn ? TEAL : msg.isSystem ? INFO + "20" : CARD_BG,
+                      color: msg.isOwn || msg.isSystem ? "#FFF" : TEXT_PRIMARY,
+                      padding: "10px 12px", borderRadius: 12, fontSize: 12,
+                      wordBreak: "break-word"
+                    }}>{msg.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, paddingBottom: 12 }}>
+              <input type="text" placeholder="Type a message..." value={message} onChange={(e) => setMessage(e.target.value)} style={{
+                flex: 1, background: CARD_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 20,
+                padding: "10px 16px", color: TEXT_PRIMARY, fontSize: 13, outline: "none"
+              }} />
+              <button style={{ background: TEAL, border: "none", borderRadius: 20, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <Icon name="send" size={18} color="#FFF" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px" }}>
+          <div style={{ padding: "16px 0 12px" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: TEXT_PRIMARY }}>Messages</div>
+            <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>{MESSAGES.filter(m => m.unread > 0).length} unread</div>
+          </div>
+
+          {MESSAGES.map(msg => (
+            <div key={msg.id} onClick={() => setSelectedChannel(msg)} style={{
+              background: CARD_BG, borderRadius: 16, padding: 16,
+              border: `1px solid ${CARD_BORDER}`, marginBottom: 10, cursor: "pointer",
+              transition: "all 0.2s", ...(msg.unread > 0 ? { borderLeftColor: TEAL, borderLeftWidth: 3 } : {})
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: TEXT_PRIMARY }}>{msg.channel}</span>
+                  {msg.unread > 0 && <Badge count={msg.unread} color={TEAL} />}
+                </div>
+                <span style={{ fontSize: 11, color: TEXT_MUTED }}>{msg.time}</span>
+              </div>
+              <div style={{ fontSize: 12, color: TEXT_SECONDARY, marginBottom: 4 }}>{msg.lastMessage}</div>
+              <div style={{ fontSize: 11, color: TEXT_MUTED }}>Members: {msg.members}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ─── Screen: Setup Wizard ───
+    function SetupWizardScreen() {
+      const [step, setStep] = useState(0);
+      const steps = [
+        { title: "Facility Info", icon: "mapPin", description: "Configure your facility details" },
+        { title: "Scan Devices", icon: "camera", description: "Scan QR codes for LIDAR sensors" },
+        { title: "Calibrate", icon: "zap", description: "Calibrate detection zones" },
+        { title: "Add Team", icon: "users", description: "Invite care team members" },
+        { title: "Go Live", icon: "checkCircle2", description: "Complete setup" },
+      ];
+
+      return (
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px" }}>
+          <div style={{ padding: "16px 0 12px" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: TEXT_PRIMARY }}>Setup Wizard</div>
+            <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>Step {step + 1} of {steps.length}</div>
+          </div>
+
+          <div style={{ background: CARD_BG, borderRadius: 16, padding: 16, border: `1px solid ${CARD_BORDER}`, marginBottom: 16 }}>
+            {steps.map((s, i) => (
+              <div key={i} style={{
+                display: "flex", gap: 12, paddingBottom: 16,
+                ...(i < steps.length - 1 ? { borderBottom: `1px solid ${CARD_BORDER}`, marginBottom: 16 } : {})
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 18,
+                  background: i < step ? SUCCESS : i === step ? TEAL : TEXT_MUTED,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: i === step ? "#FFF" : "#000", fontWeight: 600, flexShrink: 0
+                }}>
+                  {i < step ? <Icon name="check" size={18} color="#000" /> : i + 1}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: i === step ? TEAL : TEXT_PRIMARY }}>{s.title}</div>
+                  <div style={{ fontSize: 12, color: TEXT_SECONDARY }}>{s.description}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: CARD_BG, borderRadius: 16, padding: 20, border: `1px solid ${CARD_BORDER}`, textAlign: "center", marginBottom: 16 }}>
+            <Icon name={steps[step].icon} size={48} color={TEAL} />
+            <div style={{ fontSize: 18, fontWeight: 600, color: TEXT_PRIMARY, marginTop: 12, marginBottom: 8 }}>{steps[step].title}</div>
+            <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>Follow the prompts to complete this step</div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} style={{
+              flex: 1, background: step === 0 ? TEXT_MUTED + "40" : CARD_BG,
+              border: `1px solid ${CARD_BORDER}`, borderRadius: 12, padding: "12px 16px",
+              color: TEXT_PRIMARY, fontSize: 14, fontWeight: 600, cursor: step === 0 ? "not-allowed" : "pointer"
+            }}>Back</button>
+            <button onClick={() => setStep(Math.min(steps.length - 1, step + 1))} style={{
+              flex: 1, background: TEAL, border: "none", borderRadius: 12, padding: "12px 16px",
+              color: "#FFF", fontSize: 14, fontWeight: 600, cursor: "pointer"
+            }}>Next</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Screen: Profile ───
+    function ProfileScreen() {
+      const [loggedIn, setLoggedIn] = useState(true);
+
+      return (
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 100px" }}>
+          <div style={{ padding: "16px 0 12px" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: TEXT_PRIMARY }}>Profile</div>
+          </div>
+
+          {loggedIn ? (
+            <>
+              <div style={{ background: CARD_BG, borderRadius: 16, padding: 20, border: `1px solid ${CARD_BORDER}`, marginBottom: 16, textAlign: "center" }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: 32,
+                  background: TEAL, display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 24, fontWeight: 700, color: "#FFF", margin: "0 auto 12px"
+                }}>JG</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: TEXT_PRIMARY }}>Jeremy Gracey</div>
+                <div style={{ fontSize: 12, color: TEXT_SECONDARY }}>Administrator</div>
+              </div>
+
+              <div style={{ background: CARD_BG, borderRadius: 16, border: `1px solid ${CARD_BORDER}`, marginBottom: 16, overflow: "hidden" }}>
+                {[
+                  { icon: "user", label: "Account Settings" },
+                  { icon: "lock", label: "Security" },
+                  { icon: "bell", label: "Notifications" },
+                  { icon: "mail", label: "Email Preferences" },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "16px", borderBottom: i < 3 ? `1px solid ${CARD_BORDER}` : "none",
+                    cursor: "pointer"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ background: TEAL + "20", borderRadius: 10, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon name={item.icon} size={18} color={TEAL} />
+                      </div>
+                      <span style={{ fontSize: 14, color: TEXT_PRIMARY }}>{item.label}</span>
+                    </div>
+                    <Icon name="chevronRight" size={16} color={TEXT_MUTED} />
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={() => setLoggedIn(false)} style={{
+                width: "100%", background: DANGER, border: "none", borderRadius: 12,
+                padding: "12px 16px", color: "#FFF", fontSize: 14, fontWeight: 600, cursor: "pointer"
+              }}>Log Out</button>
+            </>
+          ) : (
+            <div style={{ textAlign: "center", paddingTop: "40px" }}>
+              <Icon name="logOut" size={48} color={TEXT_MUTED} />
+              <div style={{ fontSize: 16, fontWeight: 600, color: TEXT_PRIMARY, marginTop: 16, marginBottom: 8 }}>Logged Out</div>
+              <div style={{ fontSize: 12, color: TEXT_SECONDARY, marginBottom: 24 }}>You have been logged out</div>
+              <button onClick={() => setLoggedIn(true)} style={{
+                width: "100%", background: TEAL, border: "none", borderRadius: 12,
+                padding: "12px 16px", color: "#FFF", fontSize: 14, fontWeight: 600, cursor: "pointer"
+              }}>Log Back In</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Main App Component ───
+    function App() {
+      const [currentScreen, setCurrentScreen] = useState("dashboard");
+      const [selectedRoom, setSelectedRoom] = useState(null);
+
+      return (
+        <PhoneFrame>
+          {currentScreen === "dashboard" && (
+            <DashboardScreen
+              onRoomTap={(room) => {
+                setSelectedRoom(room);
+                setCurrentScreen("roomDetail");
+              }}
+              onAlertTap={() => setCurrentScreen("alerts")}
+            />
+          )}
+          {currentScreen === "roomDetail" && selectedRoom && (
+            <RoomDetailScreen
+              room={selectedRoom}
+              onBack={() => setCurrentScreen("dashboard")}
+            />
+          )}
+          {currentScreen === "alerts" && (
+            <AlertsScreen />
+          )}
+          {currentScreen === "chat" && (
+            <ChatScreen />
+          )}
+          {currentScreen === "setup" && (
+            <SetupWizardScreen />
+          )}
+          {currentScreen === "profile" && (
+            <ProfileScreen />
+          )}
+
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
+            background: DARK_BG, borderTop: `1px solid ${CARD_BORDER}`,
+            display: "flex", justifyContent: "space-around", alignItems: "center", flexShrink: 0
+          }}>
+            {[
+              { screen: "dashboard", icon: "home", label: "Dashboard" },
+              { screen: "alerts", icon: "bell", label: "Alerts" },
+              { screen: "chat", icon: "messageSquare", label: "Messages" },
+              { screen: "setup", icon: "zap", label: "Setup" },
+              { screen: "profile", icon: "user", label: "Profile" },
+            ].map(tab => (
+              <button key={tab.screen} onClick={() => setCurrentScreen(tab.screen)} style={{
+                flex: 1, background: "transparent", border: "none",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                cursor: "pointer", padding: "8px 0 16px",
+                borderTop: currentScreen === tab.screen ? `2px solid ${TEAL}` : "none",
+                color: currentScreen === tab.screen ? TEAL : TEXT_MUTED
+              }}>
+                <Icon name={tab.icon} size={20} color={currentScreen === tab.screen ? TEAL : TEXT_MUTED} />
+                <span style={{ fontSize: 10, fontWeight: 600 }}>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </PhoneFrame>
+      );
+    }
+
+    // Support both React 18 createRoot and legacy render
+    const rootEl = document.getElementById("root");
+    if (ReactDOM.createRoot) {
+      ReactDOM.createRoot(rootEl).render(<App />);
+    } else {
+      ReactDOM.render(<App />, rootEl);
+    }
+  </script>
+</body>
+</html>
