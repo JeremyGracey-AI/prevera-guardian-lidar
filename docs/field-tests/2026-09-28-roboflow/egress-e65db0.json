@@ -1,7 +1,23 @@
 {
- "capture": "tcpdump -i any -n 'not port 22 and not host 127.0.0.1' on the Jetson, 23:40 to 23:42 UTC 2026-09-28; text via tcpdump -r -n -q -tt; parsed by tools/jetson/egress_summary.py",
- "runner": "f5_device_fit.py e65db0 --confidence 0.56, 580 frames, started_utc 2026-09-28T23:40:39Z, run_s 47.4, latency_ms_median 77.6",
- "windows": {
+ "capture": {
+  "command_jeremy_sudo": "tcpdump -i any -n -Z jeremy -w /opt/nvme/reports/egress-e65db0.pcap 'not port 22 and not host 127.0.0.1'",
+  "span_utc": "about 23:40:00 to 23:42:xx 2026-09-28 (Ctrl-C after the run)",
+  "text": "tcpdump -r egress-e65db0.pcap -n -q -tt > egress-e65db0.txt  (14971 lines)",
+  "scoring": "tools/jetson/egress_summary.py egress-e65db0.txt --t0 T0 --t1 T1 [--lan ...]  (defaults: /22 prefixes, self 192.168.4.60,192.168.4.39)"
+ },
+ "runner": {
+  "command": "python3 ~/f5_device_fit.py jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0 --confidence 0.56",
+  "t_start": 1790638838.622,
+  "t_end": 1790638887.346,
+  "started_utc": "2026-09-28T23:40:39Z",
+  "run_s": 47.4,
+  "frames_answered": 580,
+  "errors": 0,
+  "first_call_s": 0.1,
+  "latency_ms_median": 77.6,
+  "note": "first_call_s 0.1: the model was resident, no pull happened in this capture; warm-ups (3 requests) precede started_utc"
+ },
+ "windows_lan_22": {
   "loop [started_utc, +run_s]": {
    "t0": 1790638839.0,
    "t1": 1790638886.4,
@@ -10,7 +26,14 @@
    "by_destination": {
     "151.101.65.195:443": 285098
    },
-   "unparsed_lines": 77,
+   "container_leg_bytes": 82263346,
+   "other_non_lan_bytes": 0,
+   "other_endpoints": {},
+   "unparsed_lines": 69,
+   "unparsed_kinds": {
+    "ARP,": 40,
+    "ifindex": 29
+   },
    "lines": 14971
   },
   "whole run [t_start, t_end]": {
@@ -21,17 +44,55 @@
    "by_destination": {
     "151.101.65.195:443": 285098
    },
-   "unparsed_lines": 77,
+   "container_leg_bytes": 82267438,
+   "other_non_lan_bytes": 0,
+   "other_endpoints": {},
+   "unparsed_lines": 69,
+   "unparsed_kinds": {
+    "ARP,": 40,
+    "ifindex": 29
+   },
    "lines": 14971
   },
   "whole capture": {
+   "t0": 0.0,
+   "t1": 9900000000.0,
    "out_bytes_non_lan": 295120,
    "in_bytes_non_lan": 75614,
    "by_destination": {
     "151.101.65.195:443": 287535,
     "151.101.1.195:443": 7585
    },
-   "unparsed_lines": 77,
+   "container_leg_bytes": 82365474,
+   "other_non_lan_bytes": 0,
+   "other_endpoints": {},
+   "unparsed_lines": 69,
+   "unparsed_kinds": {
+    "ARP,": 40,
+    "ifindex": 29
+   },
+   "lines": 14971
+  }
+ },
+ "windows_lan_24_as_the_plan_wrote_it": {
+  "loop": {
+   "t0": 1790638839.0,
+   "t1": 1790638886.4,
+   "out_bytes_non_lan": 285098,
+   "in_bytes_non_lan": 37682,
+   "by_destination": {
+    "151.101.65.195:443": 285098
+   },
+   "container_leg_bytes": 82263346,
+   "other_non_lan_bytes": 2996,
+   "other_endpoints": {
+    "192.168.4.40:59384 > 192.168.7.255:13305": 2996
+   },
+   "unparsed_lines": 69,
+   "unparsed_kinds": {
+    "ARP,": 40,
+    "ifindex": 29
+   },
    "lines": 14971
   }
  },
@@ -41,18 +102,39 @@
   "1790638883": 280086,
   "1790638904": 2437
  },
- "dns_in_capture": {
-  "A? api.roboflow.com.": 48,
-  "A 151.101.65.195": 24,
-  "A 151.101.1.195": 24,
-  "A? connectivity-check.ubuntu.com.": 5
+ "dns_and_connections": {
+  "commands": [
+   "tcpdump -r egress-e65db0.pcap -n 'udp port 53' | grep ' A? api.roboflow.com' | awk '{print $2}' | sort | uniq -c",
+   "tcpdump -r egress-e65db0.pcap -n 'tcp[tcpflags] & (tcp-syn) != 0 and tcp[tcpflags] & (tcp-ack) == 0 and (host 151.101.65.195 or host 151.101.1.195)' | awk '{print $2}' | sort | uniq -c"
+  ],
+  "A_queries_api.roboflow.com_per_interface": {
+   "enP8p1s0": 8,
+   "docker0": 8,
+   "veth79bb483": 8
+  },
+  "AAAA_queries_lines_all_interfaces": 24,
+  "query_times_utc_on_enP8p1s0": [
+   "23:41:13",
+   "23:41:22",
+   "23:41:23",
+   "23:41:23",
+   "23:41:33",
+   "23:41:34",
+   "23:41:43",
+   "23:41:44"
+  ],
+  "tcp_connections_to_api_addresses": 8,
+  "dns_answers": {
+   "151.101.65.195": true,
+   "151.101.1.195": true
+  },
+  "note": "-i any shows each container packet on up to three interfaces (veth, docker0, the LAN interface); counts per interface are the real ones"
  },
- "sni_strings_in_pcap": {
-  "api.roboflow.com": 24
- },
- "usage_db_after_run": "/opt/nvme/inference-cache/cache/usage.db: table usage 0 rows, api_keys_plans 1 row (2026-09-27), file mtime 23:41 UTC",
+ "ipv6": "the Jetson holds four scope-global IPv6 addresses, all fd0c::/16 ULA; other_non_lan_bytes is 0, so nothing left over IPv6",
+ "usage_db_after_run": "/opt/nvme/inference-cache/cache/usage.db: table usage 0 rows, api_keys_plans 1 row (2026-09-27), file mtime 23:41 UTC (python3 sqlite3 read as jeremy)",
  "bars": {
-  "EG1 (< 200000 bytes outbound to non-LAN during the loop)": "FAIL: 285098",
+  "EG1 (< 200000 bytes outbound to non-LAN during the loop)": "FAIL: 285098 (identical under /24)",
   "EG2 (every non-LAN destination is a Roboflow host)": "PASS: 151.101.65.195 and 151.101.1.195 are the capture's own DNS answers for api.roboflow.com"
- }
+ },
+ "attribution": "one 280086-byte post at 23:41:23 UTC to api.roboflow.com: the model-monitoring pingback (Inference 1.7.2 env.py METRICS_ENABLED default True, METRICS_INTERVAL 60, METRICS_URL {API_BASE_URL}/inference-stats; pingback.py post_data), one record per inference in the last 60 s; the ~2.4 KB exchanges every ~10 s: the usage collector (usage_tracking, flush_interval 10). See results section 5."
 }

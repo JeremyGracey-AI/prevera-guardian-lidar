@@ -24,5 +24,7 @@ def test_token_is_read_only():
 
 def test_shell_check_uses_sh_for_the_sh_hook():
     run = _load()["jobs"]["pytest"]["steps"][-1]["run"]
-    assert "sh -n tools/git-hooks/pre-push" in run
-    assert "tools/git-hooks/pre-push" not in run.split("sh -n")[0], "the #!/bin/sh hook is not parsed by bash"
+    lines = [l.strip() for l in run.splitlines() if l.strip()]
+    assert "sh -n tools/git-hooks/pre-push" in lines, "the #!/bin/sh hook gets its own sh -n line"
+    bash_lines = [l for l in lines if "bash -n" in l]
+    assert bash_lines and all("pre-push" not in l for l in bash_lines), "the hook is not in any bash -n loop"

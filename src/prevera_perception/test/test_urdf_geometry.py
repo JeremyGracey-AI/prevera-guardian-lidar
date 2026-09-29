@@ -56,3 +56,14 @@ def test_mast_only_when_the_housing_would_float():
 def test_launch_file_exposes_the_argument():
     text = LAUNCH.read_text()
     assert '"lidar_mount_height"' in text and "lidar_mount_height:=" in text
+
+
+def test_launch_file_passes_the_urdf_as_a_string_parameter():
+    """launch_ros on Humble sniffs a bare Command value with yaml.safe_load; the URDF's header comment (a colon
+    followed by a space) makes that raise TypeError, so the value must be declared a string (review I4)."""
+    import yaml
+    with pytest.raises(yaml.YAMLError):
+        yaml.safe_load(_expand().toxml())
+    text = LAUNCH.read_text()
+    assert "ParameterValue(" in text and "value_type=str" in text
+    assert "from launch_ros.parameter_descriptions import ParameterValue" in text

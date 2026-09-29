@@ -50,3 +50,34 @@ def test_any_interface_direction_letters_parse_and_the_container_leg_does_not_co
                        self_ip="192.168.4.60,192.168.4.39")
     assert s["unparsed_lines"] == 0
     assert s["out_bytes_non_lan"] == 100 and s["by_destination"] == {"151.101.65.195:443": 100}
+
+
+# --- review I2: nothing with a non-LAN endpoint may pass through the parser uncounted ---
+def _s(lines):
+    return egress_summary(lines, t0=0, t1=1e12, lan="192.168.4.,192.168.5.,192.168.6.,192.168.7.",
+                          self_ip="192.168.4.60,192.168.4.39")
+
+
+def test_icmp_without_ports_from_self_counts_its_length():
+    s = _s(["1790640000.1 IP 192.168.4.60 > 8.8.8.8: ICMP echo request, id 1, seq 1, length 64"])
+    assert s["unparsed_lines"] == 0 and s["out_bytes_non_lan"] == 64 and s["by_destination"] == {"8.8.8.8": 64}
+
+
+def test_traffic_between_two_addresses_that_are_neither_self_nor_lan_is_counted_as_other():
+    s = _s(["1790640000.1 IP6 2001:db8::1.443 > 2001:db8::2.5000: tcp 100",
+            "1790640000.2 IP 10.9.9.9.1234 > 151.101.65.195.443: tcp 7"])
+    assert s["out_bytes_non_lan"] == 0 and s["other_non_lan_bytes"] == 107
+    assert set(s["other_endpoints"]) == {"2001:db8::1:443 > 2001:db8::2:5000", "10.9.9.9:1234 > 151.101.65.195:443"}
+
+
+def test_container_leg_is_the_positive_control_not_egress():
+    s = _s(["1790640000.1 docker0 Out IP 172.17.0.1.40076 > 172.17.0.2.9001: tcp 100000",
+            "1790640000.2 veth79bb483 P   IP 172.17.0.2.40018 > 151.101.65.195.443: tcp 500"])
+    assert s["out_bytes_non_lan"] == 0 and s["other_non_lan_bytes"] == 0
+    assert s["container_leg_bytes"] == 100500
+
+
+def test_unparsed_lines_are_characterised():
+    s = _s(["1790640000.1 enP8p1s0 B   ARP, Request who-has 192.168.4.56 tell 192.168.4.56, length 60",
+            "1790640000.2 enP8p1s0 B   ifindex 4 24:2d:6c:e0:01:14"])
+    assert s["unparsed_lines"] == 2 and s["unparsed_kinds"] == {"ARP,": 1, "ifindex": 1}

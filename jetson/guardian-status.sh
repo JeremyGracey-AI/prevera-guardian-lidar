@@ -7,8 +7,8 @@ ok(){ printf "  %-28s %s\n" "$1" "$2"; }
 echo "GUARDIAN status  $(date '+%F %T')  up $(uptime -p | sed 's/up //')"
 ok "lidar driver (want 1)"   "$(pgrep -c -x sllidar_node)"
 ok "fall detector (want 1)"  "$(pgrep -fc 'prevera_perception/lib/prevera_perception/[f]all_detector')"
-ok "foxglove_bridge :8765"   "$(ss -ltn | grep -q ':8765 ' && echo listening || echo DOWN)"
-ok "rosbridge :9090"         "$(ss -ltn | grep -q ':9090 ' && echo listening || echo DOWN)"
+ok "foxglove_bridge :8765"   "$(ss -ltn | awk '$4 ~ /:8765$/ {print "listening on " $4; f=1} END {if (!f) print "DOWN"}' | head -1)"
+ok "rosbridge :9090"         "$(ss -ltn | awk '$4 ~ /:9090$/ {print "listening on " $4; f=1} END {if (!f) print "DOWN"}' | head -1)"
 ok "/dev/rplidar"            "$(ls -l /dev/rplidar 2>/dev/null | awk '{print $NF}' || echo MISSING)"
 N=$(timeout 6 ros2 topic echo --no-daemon --qos-reliability best_effort /scan sensor_msgs/msg/LaserScan --field header.stamp.sec 2>/dev/null | grep -c '^[0-9]')
 ok "/scan msgs in ~5 s (≈50)" "$N"

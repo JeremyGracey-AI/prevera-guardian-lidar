@@ -308,8 +308,10 @@ findings, and how each is handled above:
   with a confidence interval.
 - **Privacy:** it is not verified that active learning and telemetry were off. `rf_eval.py` does not pass
   `disable_active_learning`, `usage.db` was written after the last run, and there is no egress capture.
-  Follow-up 2026-09-28: verified for one run of a fine-tuned model, and telemetry was **not** off, `TELEMETRY_OPT_OUT`
-  being inert in 1.7.2 ([fine-tune results, section 5](2026-09-28-roboflow-finetune-results.md), EG1/EG2).
+  Follow-up 2026-09-28: verified for one run of a fine-tuned model, and telemetry was **not** off: the model-monitoring
+  pingback posted a record of every request to `api.roboflow.com` once a minute, and `TELEMETRY_OPT_OUT` is inert in
+  1.7.2 ([fine-tune results, section 5](2026-09-28-roboflow-finetune-results.md), EG1/EG2). The same was true of
+  every run in this document.
 - **Code and co-load:** `rf_eval.py` was on the Jetson only until 2026-09-28, when a verbatim copy entered the repo
   as [`jetson/rf_eval.py`](../../jetson/rf_eval.py). The LIDAR co-load effect was not measured during these runs (no
   bag); it was measured on 2026-09-28 for a fine-tuned model ([fine-tune results, section 5](2026-09-28-roboflow-finetune-results.md)).
