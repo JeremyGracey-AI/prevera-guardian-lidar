@@ -47,30 +47,38 @@ confidence the device-fit run used. It is not tuned on room frames, and it is no
 [DR-11](../DECISIONS.md#dr-11). When this was written the running server was the process the last capture
 recorded, with its inspect line
 ([`yolo-offline-capture.json`](2026-09-28-roboflow/yolo-offline-capture.json), `container`); the results say
-whether that still held at the run. The runner posts to `127.0.0.1:9001` and nowhere else. This run is not
-captured on the network. What DR-11 records as still leaving during inference, the usage collector's aggregated
-record, is expected to leave during this run as well. If the model is not resident the first request pulls it
-from the platform, and a pull has never been captured. Nothing here measures either again.
+whether that still held at the run. The runner posts to `127.0.0.1:9001` and nowhere else, and does not honour
+proxy settings. This run is not captured on the network. What DR-11 records as still leaving during inference,
+the usage collector's aggregated record, is expected to leave during this run as well. If the model is not in
+memory the first request loads it: from the cache volume when it is there, as on 09-28, and from the platform
+when it is not, and a pull has never been captured. Nothing here measures either again.
 
 **Runner and scorer.** [`jetson/rf_room_eval.py`](../../jetson/rf_room_eval.py) sends one request per manifest
 frame and writes each frame's predictions as returned (class, confidence, box), with no rate and no verdict. It
-never writes over a file. [`tools/bag_analysis/score_room_frames.py`](../../tools/bag_analysis/score_room_frames.py)
-reads that file, decides whether the run is valid and applies the definitions below. Both are committed with this
-plan, with their tests (`src/prevera_perception/test/test_room_frames.py`), before the run.
+never writes over a file, and it has no smoke mode: every run asks all 580 frames, so there is no small run to
+look at first. A run that is interrupted still writes the rows it has and says it is not complete.
+[`tools/bag_analysis/score_room_frames.py`](../../tools/bag_analysis/score_room_frames.py) reads that file, decides
+whether the run is valid and applies the definitions below. Both are committed with this plan, with their tests
+(`src/prevera_perception/test/test_room_frames.py`), before the run.
 
 **A valid run.** A run gets a verdict only when all of this holds, and the scorer checks each item:
 
-- the file names this model, confidence 0.56, the loopback URL and no frame limit, and says the run is complete;
-- its manifest md5 and frame digest are the two above;
-- it holds the 580 manifest frames once each, in the fourteen groups of the table and no other;
+- the file names this model, confidence 0.56, the loopback URL and server 1.7.2, and says the run is complete;
+- its manifest md5 and frame digest are the two above, and its digest of the rows matches the rows;
+- it holds the 580 manifest files once each, in the manifest's order, in the fourteen groups of the table;
 - no request failed;
-- every prediction has a class and a confidence, and every class is one of the four. Another name means the
-  harness does not match the model, which is a defect of the harness and not a reading.
+- every prediction has a class and a confidence, and every class is one of the four.
 
-A run that is not valid gets no verdict. Its file is kept, it is reported with the scorer's reasons, and the run is
-repeated whole under a new file name. **The first valid run is the result, and a valid run is not repeated.**
-Predictions are not looked at to decide validity: the scorer prints its reasons from counts, names and the
-runner's own record.
+A run that is not valid gets no verdict, and the scorer shows no reading from it: it prints its reasons, which
+come from counts, names and the runner's own record, and nothing else. The file is kept and reported, and the run
+is repeated whole under a new file name. **The first valid run is the result, and a valid run is not repeated.**
+One reason has a different exit. A class name outside the four means the harness does not match the model; the
+names and their counts are then already seen, so the run cannot be scored under this plan and a new plan is
+written before the scorer changes.
+
+These checks read the runner's record of itself. They catch the wrong model, the wrong threshold, a partial run
+and a file patched by hand. They cannot show who wrote a file, so the results give the command as it was run and
+the sha256 of the file as it left the Jetson.
 
 **What a frame reads.** Of the boxes at confidence 0.56 or more whose class is `standing`, `sitting` or `lying`,
 the frame reads the class of the most confident one. `bed` labels furniture and is never a reading. No such box:

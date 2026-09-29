@@ -13,15 +13,18 @@ extract is committed). Read-only; stdout; stdlib only. Everything is recomputed 
 Exit status: 0 when the run is valid (whatever the verdicts), 2 when it is not.
 
 A run is VALID, and gets a verdict, only when all of this holds. Otherwise the scorer prints the reasons and
-no verdict; the file is reported and kept, and the run is repeated whole under a new file name.
-  * The summary names the declared model, the declared confidence, the loopback URL and no `--limit`,
-    and says the run is complete with 580 frames requested and 580 answered.
-  * The summary's manifest md5 and frame digest are the declared ones.
-  * The frames are exactly the manifest's: 580 rows, no file twice, only the segments and cameras below,
-    each group with its declared count.
+nothing else: no reading, no count of readings and no verdict. The file is reported and kept.
+  * The summary names the declared model, the declared confidence, the loopback URL and server 1.7.2, and
+    says the run is complete with 580 frames requested and 580 answered. Values are compared with their types.
+  * The summary's manifest md5 and frame digest are the declared ones, and its digest of the rows is the
+    digest of the rows in the file.
+  * The rows are the manifest's 580 files, in the manifest's order, in the fourteen declared groups with
+    their declared counts.
   * No row carries a request error.
   * Every prediction has a class name and a number for its confidence, and every class name is one of
     `bed`, `standing`, `sitting`, `lying`. Another name means the harness does not match the model.
+These checks read the runner's own record of the run. They catch the wrong model, the wrong threshold, a
+partial run and a file patched by hand; they cannot show who wrote a file.
 
 Definitions, applied exactly as the plan states them (thresholds are the plan's, not tuned):
   * Pose classes are `standing`, `sitting` and `lying`, compared exactly as the model returns them. `bed`
@@ -45,6 +48,7 @@ Definitions, applied exactly as the plan states them (thresholds are the plan's,
   distribution of readings and the number of `bed` boxes per group.
 """
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -54,6 +58,8 @@ CONF = 0.56
 URL = "http://127.0.0.1:9001"
 MANIFEST_MD5 = "9da67efcc98c6ffd2bbbeb4fb1d82d1d"
 FRAMES_SHA256 = "a6d168682234a74af0a01c3c790baf1961e3795a4a0d060d7aa428d2b27d6cc7"  # frame bytes, manifest order
+FILES_SHA256 = "34ff824c94479bcc64d8a9f7217c6497346c8ed22a04b62b4ac09cb70d43dfc0"   # file names, one per line
+SERVER = "1.7.2"
 POSES = ("standing", "sitting", "lying")
 CLASSES = POSES + ("bed",)
 READINGS = ("lying", "standing", "sitting", "none", "tie", "error")
@@ -90,6 +96,15 @@ def reading(predictions, conf=CONF):
     return classes.pop() if len(classes) == 1 else "tie"
 
 
+def names_digest(frames):
+    return hashlib.sha256("\n".join(str(f.get("file")) for f in frames).encode()).hexdigest()
+
+
+def rows_digest(frames):
+    """As jetson/rf_room_eval.py computes it: sha256 of the rows as canonical JSON."""
+    return hashlib.sha256(json.dumps(frames, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
 def frame_defects(frames):
     """Why these rows are not the declared 580 frames answered once each, as a list of sentences."""
     out, seen, counts, other, malformed, errors = [], set(), {}, {}, [], []
@@ -108,6 +123,8 @@ def frame_defects(frames):
                 other[p["class"]] = other.get(p["class"], 0) + 1
     if len(frames) != FRAMES:
         out.append(f"{len(frames)} rows, the manifest has {FRAMES}")
+    if names_digest(frames) != FILES_SHA256:
+        out.append("the rows are not the manifest's files in the manifest's order")
     for key in sorted(counts, key=str):
         seg, cam = key
         if seg not in EXPECTED or cam not in CAMERAS:
@@ -126,14 +143,17 @@ def frame_defects(frames):
     return out
 
 
-def summary_defects(summary):
+def summary_defects(summary, frames):
     """Why this file is not the declared run, read from what the runner recorded about itself."""
-    want = {"model": MODEL, "confidence": CONF, "url": URL, "limit": None, "complete": True,
+    want = {"model": MODEL, "confidence": CONF, "url": URL, "server_version": SERVER, "complete": True,
             "frames_requested": FRAMES, "frames_answered": FRAMES, "errors": 0,
             "manifest_md5": MANIFEST_MD5, "frames_sha256": FRAMES_SHA256}
     missing = object()
-    return [f"summary {k} is {summary.get(k, 'missing')!r}, declared {v!r}"
-            for k, v in want.items() if summary.get(k, missing) != v]
+    out = [f"summary {k} is {summary.get(k, 'missing')!r}, declared {v!r}" for k, v in want.items()
+           if type(summary.get(k, missing)) is not type(v) or summary.get(k, missing) != v]
+    if summary.get("rows_sha256") != rows_digest(frames):
+        out.append("summary rows_sha256 is not the digest of the rows in the file")
+    return out
 
 
 def score(frames, summary=None, conf=CONF):
@@ -152,10 +172,11 @@ def score(frames, summary=None, conf=CONF):
                                      if well_formed(p) and p["class"] == "bed" and p["confidence"] >= conf)
         read.append((f.get("segment"), f.get("camera"), f.get("file"), r))
 
-    invalid = frame_defects(frames) + (summary_defects(summary) if summary is not None else [])
+    invalid = frame_defects(frames) + (summary_defects(summary, frames) if summary is not None else [])
     out = {"confidence": conf, "frames": len(read), "valid": not invalid, "invalid": invalid, "cells": cells,
            "r1": None, "r2": None, "failing": []}
-    if invalid:
+    if invalid:                                        # rows and errors per group, and no reading
+        out["cells"] = {k: {"n": c["n"], "error": c["error"]} for k, c in cells.items()}
         return out
 
     def clears(seg, cam):
@@ -178,18 +199,18 @@ def score(frames, summary=None, conf=CONF):
 def report(summary, s):
     lines = [f"model {summary.get('model')} · confidence sent {summary.get('confidence')} · scored at {CONF}",
              f"rows {s['frames']} · answered {summary.get('frames_answered')} · errors {summary.get('errors')}"
-             f" · started {summary.get('started_utc')}", "",
-             f"{'group':<9}{'n':>4}{'lying':>7}{'rate':>8}  " + "".join(f"{r:>10}" for r in READINGS[1:])
-             + f"{'bed boxes':>11}"]
+             f" · started {summary.get('started_utc')}", ""]
+    if not s["valid"]:
+        lines.append("INVALID RUN: no verdict on R1 or R2, and no reading is shown.")
+        lines += [f"  - {why}" for why in s["invalid"]]
+        return lines
+    lines.append(f"{'group':<9}{'n':>4}{'lying':>7}{'rate':>8}  " + "".join(f"{r:>10}" for r in READINGS[1:])
+                 + f"{'bed boxes':>11}")
     for key in sorted(s["cells"]):
         c = s["cells"][key]
         lines.append(f"{key:<9}{c['n']:>4}{c['lying']:>7}{pct(c['lying'], c['n']):>8}  "
                      + "".join(f"{c[r]:>10}" for r in READINGS[1:]) + f"{c['bed_boxes']:>11}")
     lines.append("")
-    if not s["valid"]:
-        lines.append("INVALID RUN: no verdict on R1 or R2. The table above is what the file holds, not a result.")
-        lines += [f"  - {why}" for why in s["invalid"]]
-        return lines
     r1, r2 = s["r1"], s["r2"]
     lines.append(f"R1 blind spot reads lying (one camera, B and F each >= 80 %): {'PASS' if r1['pass'] else 'FAIL'}"
                  f" · carried by {', '.join(r1['carried_by']) or 'no camera'}"
@@ -207,9 +228,14 @@ def main():
     ap.add_argument("results", type=Path)
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
-    data = json.loads(a.results.read_text())
-    summary = data.get("summary", {})
-    s = score(data.get("frames", []), summary)
+    try:
+        data = json.loads(a.results.read_text())
+        summary, frames = data["summary"], data["frames"]
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        print(f"INVALID RUN: no verdict on R1 or R2, and no reading is shown.\n"
+              f"  - the file cannot be read as a run ({type(e).__name__})")
+        sys.exit(2)
+    s = score(frames, summary)
     print(json.dumps({"summary": summary, "score": s}, indent=1) if a.json else "\n".join(report(summary, s)))
     sys.exit(0 if s["valid"] else 2)
 
