@@ -1,0 +1,22 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A1A2E"/>
+      <stop offset="100%" stop-color="#0E2A3F"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square base -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- PREVERA logomark — stroke weights bumped for small-size legibility -->
+  <g transform="translate(4, 4) scale(0.56)">
+    <g transform="translate(4, 2)">
+      <!-- Shield (left half) — heavier stroke + brighter fill so it reads at 16px -->
+      <path d="M46 8L16 24V50C16 70 28 82 46 92" fill="#0C7B93" fill-opacity="0.35" stroke="#3FB6CC" stroke-width="4" stroke-linejoin="round"/>
+      <!-- Eye lens (right half) -->
+      <path d="M46 28Q76 28 90 50Q76 72 46 72" fill="#38D9A9" fill-opacity="0.18" stroke="#38D9A9" stroke-width="4"/>
+      <!-- Pupil — solid teal core with bright mint highlight -->
+      <circle cx="46" cy="50" r="9" fill="#0C7B93"/>
+      <circle cx="48" cy="48" r="2.6" fill="#5EEAD4"/>
+    </g>
+  </g>
+</svg>
