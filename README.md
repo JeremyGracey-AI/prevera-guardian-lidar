@@ -94,8 +94,9 @@ flowchart LR
 
 ## Key results
 
-All numbers link to the document that reports them. One subject, one room, one session each: these are feasibility
-results, not recall estimates.
+All numbers link to the document that reports them. The LIDAR and stock-camera results are one subject, one room,
+one session each. The fine-tune accuracy results are on a public test split; no room frame was trained on or scored.
+All are feasibility results, not recall estimates.
 
 ### Where the LIDAR can see a fallen person
 
