@@ -295,8 +295,9 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   re-capture of 2026-09-29 with `METRICS_ENABLED=False` ([`jetson/inference-server-up.sh`](jetson/inference-server-up.sh))
   showed that post gone, the frames staying on the device (166 MB in, 13 KB out over 580 frames), and two channels
   still open: the usage collector's aggregated record every ~10 s (API key in clear, hashed hostname and IP, counts)
-  and a version check to GitHub at container start, itself switched off and verified by a third capture that found
-  one more start-time probe, ultralytics' 0-byte handshake to `1.1.1.1:80` (`YOLO_OFFLINE=True`, unverified)
+  and a version check to GitHub at container start. Two more start captures the same night switched that check off
+  (`DISABLE_VERSION_CHECK=True`), found ultralytics' 0-byte handshake to `1.1.1.1:80` and switched it off too
+  (`YOLO_OFFLINE=True`): a container that is not asked anything now says nothing to anyone
   ([DR-11](docs/DECISIONS.md#dr-11),
   [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)). Whether the usage record may
   leave a resident's room at all was a product decision, not a setting: yes, for now (Jeremy, 2026-09-29, DR-11).
@@ -318,8 +319,8 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
    `/scan` during the run.
 4. Close the privacy gap structurally: done for active learning (in the request), the container environment (in
    the repo), the pingback (`METRICS_ENABLED=False`) and the version check (`DISABLE_VERSION_CHECK=True`), both
-   verified by capture; the usage collector's aggregated record may leave for now (Jeremy, 2026-09-29); left: a start
-   capture with `YOLO_OFFLINE=True`, and a capture that covers a model pull.
+   verified by capture, as is `YOLO_OFFLINE=True`; the usage collector's aggregated record may leave for now
+   (Jeremy, 2026-09-29); left: a capture that covers a model pull.
 5. Measure the LIDAR-to-camera extrinsics and update the URDF; labelled trials with more subjects, ranges and rooms.
 6. Revisit the 3D-sensor question with those numbers.
 7. The goal after detection: fall-risk prediction, flagging rising risk before a fall. Not built; nothing in this

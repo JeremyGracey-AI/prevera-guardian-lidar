@@ -1,0 +1,127 @@
+{
+ "plan": "docs/field-tests/2026-09-29-yolo-offline-capture-plan.md (commit 37b2390, 2026-09-29 03:08 UTC, before the run)",
+ "what_changed": "~/inference-server-up.sh on the Jetson replaced by the repo's c332945 version (md5 ee37a0ebcc81e40f7aca17970616fbeb; the b3bd929 and f41c8be copies kept beside it): one added line, -e YOLO_OFFLINE=True. Same image, cache volume, key file. No request sent to the server during the capture",
+ "capture": {
+  "command_jeremy_sudo": "tcpdump -i any -n -Z jeremy -w /opt/nvme/reports/yolo-offline.pcap 'not port 22 and not host 127.0.0.1'  (journal: sudo at 03:11:25 UTC)",
+  "first_packet": {
+   "epoch": 1790651485.368358,
+   "utc": "03:11:25"
+  },
+  "last_packet": {
+   "epoch": 1790653439.99108,
+   "utc": "03:43:59"
+  },
+  "span_s": 1954.6,
+  "pcap_bytes": 11592429,
+  "text": "tcpdump -r yolo-offline.pcap -n -q -tt > yolo-offline.txt  (33808 lines)",
+  "scoring": "tools/jetson/egress_summary.py yolo-offline.txt --t0 0 --t1 9999999999  (defaults: /22 prefixes, self 192.168.4.60,192.168.4.39); container attribution: lines with 172.17.0.2 as source",
+  "note": "the plan asked for at least 120 s after /info; the capture ran 31.6 minutes after it, which only widens the window in which a start-time probe could have appeared"
+ },
+ "container": {
+  "command": "sudo ~/inference-server-up.sh (Jeremy, terminal 2, after the capture was listening)",
+  "uvicorn_started_utc": "03:11:36 (ps lstart of the container's uvicorn process, pid 16863)",
+  "info_answering_utc": "03:12:21 at the agent's poll, 45 s after the uvicorn start (polls every 6 s from 03:11:44; the ten host-side SYNs to 172.17.0.2:9001 in the capture are those polls plus the script's own check)",
+  "inspect_line_as_pasted": "readonly=true ports={\"9001/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"9001\"}]} MAX_ACTIVE_MODELS=2 ACTIVE_LEARNING_ENABLED=False TELEMETRY_OPT_OUT=True METRICS_ENABLED=False DISABLE_VERSION_CHECK=True YOLO_OFFLINE=True TRITON_CACHE_DIR=/tmp/triton-cache",
+  "id": "fb296e6716b0d889eab6361598bd6cac4355ffa4676eab6915106c3b3ac8f464"
+ },
+ "whole_capture_lan_22": {
+  "out_bytes_non_lan": 1266,
+  "in_bytes_non_lan": 1154,
+  "by_destination": {
+   "91.189.91.98:80": 87,
+   "91.189.91.58:80": 87,
+   "91.189.91.62:80": 174,
+   "91.189.91.96:80": 174,
+   "100.34.187.168:123": 48,
+   "185.125.190.99:80": 174,
+   "185.125.190.101:80": 174,
+   "91.189.91.60:80": 87,
+   "91.189.91.57:80": 174,
+   "91.189.91.64:80": 87
+  },
+  "container_leg_bytes": 2598148,
+  "other_non_lan_bytes": 11240,
+  "other_endpoints": {
+   ":: > ff02::16": 56,
+   ":: > ff02::1:ff76:67a0": 32,
+   ":: > ff02::1:ff95:7eb2": 3504,
+   ":: > ff02::1:ff95:5d92": 3504,
+   ":: > ff02::1:ff95:e332": 3480,
+   "0.0.0.0:68 > 255.255.255.255:67": 600,
+   ":: > ff02::1:ffb5:c5ab": 32,
+   ":: > ff02::1:ffa7:b16f": 32
+  },
+  "unparsed_lines": 2428,
+  "unparsed_kinds": {
+   "ifindex": 1187,
+   "ARP,": 1237,
+   "Null": 4
+  },
+  "lines": 33808
+ },
+ "dns_names_queried_all_interfaces": {
+  "connectivity-check.ubuntu.com": "26 A + 19 AAAA (NetworkManager, host OS)",
+  "api.github.com": 0,
+  "api.roboflow.com": 0,
+  "anything else": 0
+ },
+ "outbound_bytes_non_lan_by_second": {
+  "03:12:57": {
+   "91.189.91.98:80": 87
+  },
+  "03:12:58": {
+   "91.189.91.58:80": 87
+  },
+  "03:17:57": {
+   "91.189.91.62:80": 87
+  },
+  "03:17:58": {
+   "91.189.91.96:80": 87
+  },
+  "03:20:51": {
+   "100.34.187.168:123": 48
+  },
+  "03:22:58": {
+   "185.125.190.99:80": 87,
+   "185.125.190.101:80": 87
+  },
+  "03:27:58": {
+   "91.189.91.60:80": 87,
+   "185.125.190.99:80": 87
+  },
+  "03:32:57": {
+   "91.189.91.57:80": 87
+  },
+  "03:32:58": {
+   "185.125.190.101:80": 87
+  },
+  "03:37:58": {
+   "91.189.91.62:80": 87,
+   "91.189.91.96:80": 87
+  },
+  "03:42:58": {
+   "91.189.91.64:80": 87,
+   "91.189.91.57:80": 87
+  },
+  "total": 1266,
+  "note": "fourteen 87-byte connectivity checks and one 48-byte NTP exchange, all the host's"
+ },
+ "from_the_container_172.17.0.2": {
+  "packets_to_any_non_LAN_address": 0,
+  "tcp_syns_anywhere": 0,
+  "dns_queries": 0,
+  "unique_destinations": "172.17.0.1 only (the host's /info polls, DNAT of 127.0.0.1:9001)",
+  "inbound_from_outside_lan": 0
+ },
+ "container_leg_note": "2.6 MB, almost all 172.17.0.1 > 239.255.0.1:17900 UDP: ROS 2 DDS discovery for domain 42 multicast onto the docker bridge by the LIDAR stack, as in the earlier captures; not egress",
+ "bars": {
+  "VC1 (zero DNS queries for api.github.com and zero TCP connections from 172.17.0.2 to any non-LAN address)": "PASS: 0 and 0; no packet at all from the container to a non-LAN address in 32.6 minutes",
+  "VC2 (/info within 120 s of docker run; YOLO_OFFLINE=True on the inspect line)": "PASS: /info at 45 s; YOLO_OFFLINE=True printed beside the other seven flags"
+ },
+ "predictions": {
+  "1 VC1 PASS with 0 connections": "confirmed",
+  "2 VC2 PASS, /info about 100 s": "/info at 45 s, sooner than predicted (the cache volume was warm from the start 14 minutes earlier)",
+  "3 only host connectivity checks": "confirmed, plus one NTP exchange the plan allowed for elsewhere; nothing from the container",
+  "4 nothing model-sized comes in": "confirmed: 1,154 bytes in from outside the LAN in 32.6 minutes"
+ }
+}

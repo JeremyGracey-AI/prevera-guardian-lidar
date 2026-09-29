@@ -55,7 +55,7 @@ flowchart LR
 | [DR-08](#dr-08) | Per-track time base and an association speed gate | implemented, default off |
 | [DR-09](#dr-09) | Windowed stillness, shipped together with `min_range_m` 0.3 | stillness implemented, default off; `min_range_m` deferred to the flip |
 | [DR-10](#dr-10) | Add two webcams and a stock camera detector for the LIDAR's blind spots | accepted; evaluated offline, not in the alert path |
-| [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback and version check off (both verified 2026-09-29); usage record may leave, for now (Jeremy, 2026-09-29); ultralytics online probe off, capture pending |
+| [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback, version check and ultralytics probe off, each verified by capture 2026-09-29; usage record may leave, for now (Jeremy, 2026-09-29); model pull never captured |
 | [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR open |
 | [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (2026-09-28), room frames next |
 | [DR-14](#dr-14) | **D0**: where fusion runs | open |
@@ -323,9 +323,11 @@ flowchart LR
   API key in clear, hashed hostname and IP, model id and frame counts, no per-detection field; and, at every
   container start, a version check to `api.github.com` (`DISABLE_VERSION_CHECK=True` turns it off; verified by a
   [container-start capture](field-tests/2026-09-29-version-check-capture-plan.md) at 02:57 UTC, VC2 PASS), which
-  also found ultralytics' `is_online()` handshake to `1.1.1.1:80`, 0 bytes, twice per start (VC1 FAIL as declared;
-  `YOLO_OFFLINE=True` added to the script, not yet verified by a capture). **Decision (Jeremy, 2026-09-29): yes,
-  for now**, the aggregated usage record may leave; no revisit trigger was set.
+  also found ultralytics' `is_online()` handshake to `1.1.1.1:80`, 0 bytes, twice per start (VC1 FAIL as declared);
+  with `YOLO_OFFLINE=True` a [fourth capture](field-tests/2026-09-29-yolo-offline-capture-plan.md) at 03:11 UTC saw
+  nothing leave the container in 32.6 minutes (VC1, VC2 PASS). A container that is not asked anything now says
+  nothing to anyone. **Decision (Jeremy, 2026-09-29): yes, for now**, the aggregated usage record may leave once
+  requests arrive; no revisit trigger was set.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
 - **Options on record:** a hosted inference API, rejected because frames would leave the room. No cost or latency
@@ -357,8 +359,9 @@ flowchart LR
   `METRICS_COLLECTOR_BASE_URL` / `TELEMETRY_API_USAGE_ENDPOINT_URL`, each with its own pre-declared capture. The
   version-check capture ran at 02:57 UTC ([results, section 5, "Container start"](field-tests/2026-09-28-roboflow-finetune-results.md)):
   no GitHub lookup, no connection; two 0-byte TCP handshakes to `1.1.1.1:80` from the container instead, ultralytics'
-  import-time online check, VC1 FAIL as written. Still owed: a start capture with `YOLO_OFFLINE=True`, and a capture
-  that covers a model pull. The evaluation plan's "frames never leave the device"
+  import-time online check, VC1 FAIL as written; the start capture with `YOLO_OFFLINE=True` at 03:11 UTC then passed
+  both bars with zero packets from the container to any non-LAN address. Still owed: a capture that covers a model
+  pull. The evaluation plan's "frames never leave the device"
   was wrong as written on 09-27 (frames were copied to the Mac for scoring); the results document corrects it and
   leaves the plan as committed. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
   over 0.5 s while `e65db0` served 580 frames (CL1, CL2 PASS,

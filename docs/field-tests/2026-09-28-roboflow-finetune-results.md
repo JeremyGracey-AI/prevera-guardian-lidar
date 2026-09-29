@@ -373,11 +373,27 @@ Whole capture: 348 bytes out to non-LAN addresses, all four the host's 87-byte c
 - **Predictions.** (1) *VC1 PASS with 0 bytes*: wrong on connections, right on GitHub and on bytes. (2) *VC2 PASS,
   about 60 s*: PASS, at the 100 s poll. (3) *Only host-OS traffic*: wrong, the two container connections above.
   (4) *Nothing model-sized comes in*: confirmed, 316 bytes in 400 s.
-- **What the three captures add up to for a container start** (by the code, each checked by capture except the
-  last): the model-monitoring pingback, off with `METRICS_ENABLED=False` (verified 01:09 UTC); the GitHub version
-  check, off with `DISABLE_VERSION_CHECK=True` (verified 02:57 UTC); ultralytics' `1.1.1.1:80` handshake, off with
-  `YOLO_OFFLINE=True` (not yet verified); and, once requests arrive, the usage collector's aggregated record, which
-  stays by Jeremy's decision of 2026-09-29 (DR-11).
+**Container start with `YOLO_OFFLINE=True` (2026-09-29, 03:11 UTC; [plan](2026-09-29-yolo-offline-capture-plan.md)
+committed at 03:08 UTC, bars unchanged).** Same procedure: Jeremy's `tcpdump` at 03:11:25, `sudo ~/inference-server-up.sh`
+at `c332945` (inspect line: the seven flags of the previous start plus `YOLO_OFFLINE=True`; container `fb296e67…`), `uvicorn` up at 03:11:36, no request sent, capture to 03:43:59, 32.6
+minutes ([extract](2026-09-28-roboflow/yolo-offline-capture.json); pcap at `/opt/nvme/reports/yolo-offline.pcap`).
+Whole capture: 1,266 bytes out to non-LAN addresses, fourteen 87-byte connectivity checks and one 48-byte NTP
+exchange, all the host's; 1,154 bytes in; 0 DNS queries other than `connectivity-check.ubuntu.com`.
+
+- **VC1, zero GitHub lookups and zero TCP connections from `172.17.0.2` to any non-LAN address: PASS.** Not one packet
+  left the container for a non-LAN address in 32.6 minutes; its only peer was the host (`172.17.0.1`, the `/info`
+  polls). Zero SYNs from the container anywhere.
+- **VC2, `/info` within 120 s and the flag on the inspect line: PASS.** `/info` answered at 45 s; the flag is on the line.
+- **Predictions.** (1) *VC1 PASS with 0 connections*: confirmed. (2) *VC2 PASS at about 100 s*: 45 s, sooner (the
+  cache volume was warm from the start 14 minutes earlier). (3) *Only the host's connectivity checks*: confirmed,
+  plus one NTP exchange. (4) *Nothing model-sized comes in*: confirmed.
+- **What the three start-time captures add up to** (by the code, each now checked by capture): the model-monitoring
+  pingback, off with `METRICS_ENABLED=False` (verified 01:09 UTC); the GitHub version check, off with
+  `DISABLE_VERSION_CHECK=True` (verified 02:57 UTC); ultralytics' `1.1.1.1:80` handshake, off with `YOLO_OFFLINE=True`
+  (verified 03:11 UTC); and, once requests arrive, the usage collector's aggregated record, which stays by Jeremy's
+  decision of 2026-09-29 (DR-11). With the `c332945` command, **a container that is not asked anything says nothing
+  to anyone for as long as we watched**, and one that is asked something reports aggregated counts with the API key
+  to Roboflow every ~10 s. Still never captured: a model pull.
 
 **For D0** the round trip to carry forward is **79 ms** (`e65db0`) or **125 ms** (`00ba18`) per frame, serial, one
 camera, cameras off, with about 2.8 GB of headroom with both resident, replacing the stock models' 108 to 127 ms.
@@ -420,8 +436,9 @@ camera, cameras off, with about 2.8 GB of headroom with both resident, replacing
   (EG1 PASS at 12,987 bytes, EG2 PASS) confirmed that flag stops it and left the usage collector's aggregated
   ~2.4 KB every ~10 s (API key in clear, hashed hostname and IP, counts) and a version check to GitHub at container
   start; a third capture of one container start (VC1 FAIL, VC2 PASS) verified `DISABLE_VERSION_CHECK=True` and found
-  ultralytics' 0-byte `1.1.1.1:80` handshake, switched off with `YOLO_OFFLINE=True` but not yet verified. TLS keeps
-  the content unread; the fields are the code's. No capture covered a model pull. The NAS
+  ultralytics' 0-byte `1.1.1.1:80` handshake; a fourth, with `YOLO_OFFLINE=True`, saw nothing leave the container in
+  32.6 minutes (VC1 PASS). TLS keeps the content unread; the fields are the code's. No capture covered a model
+  pull. The NAS
   latencies elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict
   the device.
 - **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
