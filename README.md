@@ -165,7 +165,7 @@ the audit's caveats, is in the [results](docs/field-tests/2026-09-27-rfdetr-resu
 |---|---|---|
 | F1: `lying` precision and recall ≥ 0.90 | 1.000 / 1.000 (`00ba18` at the valid-optimal threshold 0.75; 1.000 / 1.000 at every stored threshold from 0.11 to 0.87) | **pass** |
 | F2: `lying` read as upright in ≤ 5 % of lying instances | 0 of 24 | **pass** |
-| F5: device fit (report only; serial, one request in flight, `127.0.0.1` only, cameras off) | `e65db0` 78.7 ms, 12.7 fps, 288x288; `00ba18` 125.2 ms, 8.0 fps, 640x640; lowest `MemAvailable` 2,799 MB with both resident | reported |
+| F5: device fit (report only; serial, one request in flight, `127.0.0.1` only, cameras off) | `e65db0` 78.7 ms, 12.7 fps, 288x288; `00ba18` 125.2 ms, 8.0 fps, 640x640; lowest `MemAvailable` during F5 2,799 MB with both resident (2,517 MB during the co-load run, with the recorder running) | reported |
 | CL1, CL2: co-load (one run, `e65db0` only, cameras off) | 594 scans against 567 idle; no `/scan` gap over 0.5 s | **pass** |
 
 Public data only: arm A, one Universe dataset, 73 test images with 89 instances, 24 of them `lying`. One training
@@ -329,7 +329,7 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   still open: the usage collector's aggregated record every ~10 s (API key in clear, hashed hostname and IP, counts)
   and a version check to GitHub at container start. Two more start captures the same night switched that check off
   (`DISABLE_VERSION_CHECK=True`), found ultralytics' 0-byte handshake to `1.1.1.1:80` and switched it off too
-  (`YOLO_OFFLINE=True`): a container that is not asked anything now said nothing to anyone for as long as it was
+  (`YOLO_OFFLINE=True`): a container that is not asked anything said nothing to anyone for as long as it was
   watched (32.6 minutes, idle; a model pull has never been captured)
   ([DR-11](docs/DECISIONS.md#dr-11),
   [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)). Whether the usage record may

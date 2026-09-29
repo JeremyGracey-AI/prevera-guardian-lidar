@@ -89,8 +89,9 @@ The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jets
 | `6460492` (17:26) | [RF-DETR results](field-tests/2026-09-27-rfdetr-results.md), scorer and figures | C1, C2 pass; C3 fails for every model size, so keypoints next (D1). An audit relabelled "inference-only" time as server processing and corrected the "frames never leave the device" subtitle. |
 | `2bab653` (17:36) | [Keypoint check plan](field-tests/2026-09-27-rfdetr-keypoints-plan.md), **committed before any keypoint inference** | The run (00:44 UTC, i.e. 17:44 local) failed its own validity check 9(c): [status note](field-tests/2026-09-27-rfdetr-keypoints-status.md). |
 
-Upstream, the same day: [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) (open), one line that
-sets `TRITON_CACHE_DIR` in the Jetson 6.2.0 image; see [DECISIONS.md, DR-12](DECISIONS.md#dr-12).
+Upstream, the same day: [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) (open), a one-line
+fix that sets `TRITON_CACHE_DIR` in the Jetson 6.2.0 image, plus a unit test; see
+[DECISIONS.md, DR-12](DECISIONS.md#dr-12).
 
 Written up after the fact: the evidence run behind `36ca654` replayed all seven bags under the legacy, fixed and
 fixed + hold configs. Its `floor-trials-1` result (WARN 0.7 to 4.0 s after onset in the four visible lie-downs, none
@@ -128,7 +129,7 @@ Five plans committed before their runs; two bars failed and stay in the record a
 | `c143b5a` (19:28) | **DR-11 decision recorded**: the usage collector's aggregated record may leave, for now (Jeremy) | What that accepts, by the code: API key in clear, hashed hostname and IP, model id, counts; no per-detection field. [Version-check capture plan](field-tests/2026-09-29-version-check-capture-plan.md) before the run. |
 | `6a8a8b1` (20:08) | **Container-start capture: VC1 FAIL, VC2 PASS** | No GitHub lookup (the flag works); two 0-byte TCP handshakes to `1.1.1.1:80` from the container: ultralytics' `is_online()` at import. The bar stands. |
 | `c332945`, `37b2390` | `YOLO_OFFLINE=True` on the script (test first); [its capture plan](field-tests/2026-09-29-yolo-offline-capture-plan.md) | |
-| `2e6d582` (21:07) | **Container-start capture with `YOLO_OFFLINE=True`: VC1, VC2 PASS** | Zero packets from the container to any non-LAN address in 32.6 minutes. A container that is not asked anything now said nothing to anyone for as long as it was watched (32.6 minutes, idle; a model pull has never been captured). 130 passed, 1 skipped. |
+| `2e6d582` (21:07) | **Container-start capture with `YOLO_OFFLINE=True`: VC1, VC2 PASS** | Zero packets from the container to any non-LAN address for as long as it was watched (32.6 minutes, idle; a model pull has never been captured). 130 passed, 1 skipped. |
 
 Not done, on purpose: no room frame, bag or field data went to Roboflow or any hosted API; no Active Learning; no
 new decision record; nothing about the V-JEPA stage. Still owed on the privacy side: a capture that covers a model
