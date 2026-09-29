@@ -17,8 +17,13 @@
 #                                                                    verified by the 2026-09-29 re-capture (EG1 PASS)
 #   -e DISABLE_VERSION_CHECK=True                                    stops the GET to api.github.com (inference's
 #                                                                    release check at import) seen twice per container
-#                                                                    start in the 2026-09-29 capture; added after that
-#                                                                    capture, not yet verified by one
+#                                                                    start in the 2026-09-29 capture; verified by the
+#                                                                    container-start capture the same night (VC1: no
+#                                                                    GitHub lookup, no connection)
+#   -e YOLO_OFFLINE=True                                             stops ultralytics' is_online() at import, a TCP
+#                                                                    handshake to 1.1.1.1:80 twice per container start
+#                                                                    (VC1 FAIL, 2026-09-29); added after that capture,
+#                                                                    not yet verified by one
 # What still leaves with all of the above: the usage collector's aggregated record every ~10 s while inferring
 # (API key in clear, hashed hostname and IP, model id, frame counts). No switch turns it off short of OFFLINE_MODE=True
 # or a local sink (METRICS_COLLECTOR_BASE_URL); that is DR-11's open decision, not this script's to make.
@@ -38,11 +43,12 @@ docker run -d --name inference-server --runtime nvidia --read-only \
   -e TELEMETRY_OPT_OUT=True \
   -e METRICS_ENABLED=False \
   -e DISABLE_VERSION_CHECK=True \
+  -e YOLO_OFFLINE=True \
   --security-opt=no-new-privileges --cap-drop=ALL --cap-add=NET_BIND_SERVICE \
   roboflow/roboflow-inference-server-jetson-6.2.0:latest
 sleep 20
 # Print the settings that matter and nothing else (the env-file's key is filtered out by the grep).
 docker inspect inference-server --format 'readonly={{.HostConfig.ReadonlyRootfs}} ports={{json .HostConfig.PortBindings}} {{join .Config.Env " "}}' \
-  | tr ' ' '\n' | grep -E '^(readonly=|ports=|ACTIVE_LEARNING|TELEMETRY|TRITON|MAX_ACTIVE|METRICS_ENABLED|DISABLE_VERSION_CHECK)'
+  | tr ' ' '\n' | grep -E '^(readonly=|ports=|ACTIVE_LEARNING|TELEMETRY|TRITON|MAX_ACTIVE|METRICS_ENABLED|DISABLE_VERSION_CHECK|YOLO_OFFLINE)'
 curl -s -m 10 http://127.0.0.1:9001/info || echo "server not answering yet; retry /info in a minute"
 echo
