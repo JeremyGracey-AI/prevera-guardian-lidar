@@ -326,8 +326,9 @@ flowchart LR
   [container-start capture](field-tests/2026-09-29-version-check-capture-plan.md) at 02:57 UTC, VC2 PASS), which
   also found ultralytics' `is_online()` handshake to `1.1.1.1:80`, 0 bytes, twice per start (VC1 FAIL as declared);
   with `YOLO_OFFLINE=True` a [fourth capture](field-tests/2026-09-29-yolo-offline-capture-plan.md) at 03:11 UTC saw
-  nothing leave the container in 32.6 minutes (VC1, VC2 PASS). A container that is not asked anything now said
-  nothing to anyone for as long as it was watched (32.6 minutes, idle; a model pull has never been captured).
+  no packet leave the container for any non-LAN address in 32.6 minutes, with no request sent (VC1, VC2 PASS). A
+  container that is not asked anything now said nothing to anyone for as long as it was watched (32.6 minutes, idle;
+  a model pull has never been captured).
   **Decision (Jeremy, 2026-09-29): yes, for now**, the aggregated usage record may leave once
   requests arrive; no revisit trigger was set.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
