@@ -5,6 +5,11 @@
   "text": "tcpdump -r egress-e65db0.pcap -n -q -tt > egress-e65db0.txt  (14971 lines)",
   "scoring": "tools/jetson/egress_summary.py egress-e65db0.txt --t0 T0 --t1 T1 [--lan ...]  (defaults: /22 prefixes, self 192.168.4.60,192.168.4.39)"
  },
+ "capture_correction_2026-09-29": {
+  "span_utc_as_measured": "first packet 1790638873.054125 = 23:41:13.05 UTC, last 1790638922.155607 = 23:42:02 UTC; the runner's t_start was 1790638838.622 = 23:40:38.62 UTC, so this capture began 34.4 s into the run and holds the last 13.4 s of the 47.4 s loop (167 of 580 frames: 167 SYNs to :9001 on docker0, 40.67 MB of frame payload per copy against 166.24 MB for the full set)",
+  "what_it_changes": "EG1's 285,098 bytes is a lower bound over 28 % of the loop plus the one pingback post; the FAIL stands. The 82 MB 'positive control' is 167 frames, not the loop's; 'the capture saw them' was wrong for 413 of them. The 'span_utc' line above is left as written",
+  "found_by": "the re-capture of 2026-09-29 (egress-recapture-e65db0.json, earlier_capture_coverage_finding)"
+ },
  "runner": {
   "command": "python3 ~/f5_device_fit.py jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0 --confidence 0.56",
   "t_start": 1790638838.622,

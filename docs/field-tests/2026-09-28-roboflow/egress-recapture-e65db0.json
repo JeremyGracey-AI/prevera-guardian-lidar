@@ -1,0 +1,374 @@
+{
+ "plan": "docs/field-tests/2026-09-28-egress-recapture-plan.md (commit a8d7e85, 2026-09-29 00:37:54 UTC, before the run)",
+ "what_changed": "the container was restarted with jetson/inference-server-up.sh at f41c8be (the DR-11 hardened command plus METRICS_ENABLED=False); same image, cache volume, key file, capture, runner, scorer and windows as the 23:40 UTC capture",
+ "capture": {
+  "command_jeremy_sudo": "tcpdump -i any -n -Z jeremy -w /opt/nvme/reports/egress-recapture-e65db0.pcap 'not port 22 and not host 127.0.0.1'",
+  "first_packet": {
+   "epoch": 1790643448.011072,
+   "utc": "2026-09-29T00:57:28Z"
+  },
+  "last_packet": {
+   "epoch": 1790645504.134312,
+   "utc": "2026-09-29T01:31:44Z"
+  },
+  "span_s": 2056.1,
+  "pcap_bytes": 352933041,
+  "text": "tcpdump -r egress-recapture-e65db0.pcap -n -q -tt > egress-recapture-e65db0.txt  (86288 lines)",
+  "scoring": "tools/jetson/egress_summary.py egress-recapture-e65db0.txt --t0 T0 --t1 T1  (defaults: /22 prefixes, self 192.168.4.60,192.168.4.39)",
+  "note": "the capture began 11.9 minutes before the runner and ran 21.6 minutes after it, so a 60 s pingback interval would have fired at least 20 times inside it"
+ },
+ "container": {
+  "script": "jetson/inference-server-up.sh @ f41c8be, run by Jeremy as `sudo ~/inference-server-up.sh` (twice; the running container is the second, id fe09cefa...)",
+  "docker_inspect_as_pasted": "readonly=true ports={\"9001/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"9001\"}]} TRITON_CACHE_DIR=/tmp/triton-cache MAX_ACTIVE_MODELS=2 ACTIVE_LEARNING_ENABLED=False TELEMETRY_OPT_OUT=True METRICS_ENABLED=False",
+  "starts_seen_in_capture_utc": [
+   "01:06:35 (first container, removed before the run)",
+   "01:07:34 (the running container)"
+  ],
+  "starts_seen_how": "each start is marked by the container's two GET requests to api.github.com (the version check, below), on the removed veth ('?') and on veth94759b4"
+ },
+ "runner": {
+  "command": "python3 ~/f5_device_fit.py jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0 --confidence 0.56  (via ~/recapture_run.sh, key from ~/.roboflow.env)",
+  "t_start": 1790644159.174619,
+  "t_end": 1790644209.910651,
+  "started_utc": "2026-09-29T01:09:21Z",
+  "run_s": 47.5,
+  "frames_answered": 580,
+  "errors": 0,
+  "first_call_s": 1.8,
+  "latency_ms_median": 77.4,
+  "latency_ms_p90": 81.7,
+  "server_time_ms_median": 59.6,
+  "mem_avail_idle_mb": 4472,
+  "mem_avail_min_mb": 3521,
+  "note": "first_call_s 1.8: fresh container, the weights loaded from the cache volume on the first call (no pull: nothing model-sized came in); only e65db0 was resident, hence 4.5 GB free instead of 2.6 GB with both children; warm-ups (3 requests) precede started_utc; figures in f5-egress-recapture-e65db0.json"
+ },
+ "windows_lan_22": {
+  "loop [started_utc, +run_s]": {
+   "t0": 1790644161.0,
+   "t1": 1790644208.5,
+   "out_bytes_non_lan": 12987,
+   "in_bytes_non_lan": 56495,
+   "by_destination": {
+    "151.101.65.195:443": 8114,
+    "151.101.1.195:443": 4873
+   },
+   "container_leg_bytes": 333663304,
+   "other_non_lan_bytes": 0,
+   "other_endpoints": {},
+   "unparsed_lines": 2508,
+   "unparsed_kinds": {
+    "ifindex": 1245,
+    "ARP,": 1247,
+    "Null": 16
+   },
+   "lines": 86288
+  },
+  "whole run [t_start, t_end]": {
+   "t0": 1790644159.174619,
+   "t1": 1790644209.910651,
+   "out_bytes_non_lan": 12987,
+   "in_bytes_non_lan": 56495,
+   "by_destination": {
+    "151.101.65.195:443": 8114,
+    "151.101.1.195:443": 4873
+   },
+   "container_leg_bytes": 336699720,
+   "other_non_lan_bytes": 0,
+   "other_endpoints": {},
+   "unparsed_lines": 2508,
+   "unparsed_kinds": {
+    "ifindex": 1245,
+    "ARP,": 1247,
+    "Null": 16
+   },
+   "lines": 86288
+  },
+  "after the run [t_end, end of capture]": {
+   "t0": 1790644209.910651,
+   "t1": 9900000000.0,
+   "out_bytes_non_lan": 3305,
+   "in_bytes_non_lan": 10038,
+   "by_destination": {
+    "151.101.65.195:443": 2435,
+    "91.189.91.96:80": 87,
+    "91.189.91.62:80": 87,
+    "91.189.91.97:80": 87,
+    "91.189.91.98:80": 87,
+    "91.189.91.61:80": 261,
+    "91.189.91.60:80": 174,
+    "91.189.91.64:80": 87
+   },
+   "container_leg_bytes": 1742950,
+   "other_non_lan_bytes": 8722,
+   "other_endpoints": {
+    ":: > ff02::1:ff95:7eb2": 2448,
+    ":: > ff02::1:ff95:5d92": 2424,
+    ":: > ff02::1:ff95:e332": 2448,
+    "0.0.0.0:68 > 255.255.255.255:67": 1222,
+    ":: > ff02::16": 116,
+    ":: > ff02::1:ffd7:7cfd": 32,
+    ":: > ff02::1:ff35:7004": 32
+   },
+   "unparsed_lines": 2508,
+   "unparsed_kinds": {
+    "ifindex": 1245,
+    "ARP,": 1247,
+    "Null": 16
+   },
+   "lines": 86288
+  },
+  "whole capture": {
+   "t0": 0.0,
+   "t1": 9900000000.0,
+   "out_bytes_non_lan": 20101,
+   "in_bytes_non_lan": 108549,
+   "by_destination": {
+    "185.125.190.100:80": 261,
+    "91.189.91.98:80": 174,
+    "91.189.91.60:80": 348,
+    "100.34.187.168:123": 48,
+    "140.82.116.5:443": 3152,
+    "1.1.1.1:80": 0,
+    "91.189.91.62:80": 174,
+    "151.101.65.195:443": 10549,
+    "151.101.1.195:443": 4873,
+    "91.189.91.96:80": 87,
+    "91.189.91.97:80": 87,
+    "91.189.91.61:80": 261,
+    "91.189.91.64:80": 87
+   },
+   "container_leg_bytes": 338771548,
+   "other_non_lan_bytes": 18980,
+   "other_endpoints": {
+    ":: > ff02::1:ff95:e332": 4656,
+    ":: > ff02::1:ff95:5d92": 4704,
+    ":: > ff02::1:ff95:7eb2": 4680,
+    ":: > ff02::1:ff3e:83ee": 48,
+    ":: > ff02::1:ffb3:b529": 24,
+    ":: > ff02::1:ffca:996f": 24,
+    "0.0.0.0:68 > 255.255.255.255:67": 4296,
+    ":: > ff02::16": 228,
+    ":: > ff02::1:ffd2:559f": 32,
+    ":: > ff02::1:fffd:8caf": 32,
+    ":: > ff02::1:ff7c:b8c5": 32,
+    ":: > ff02::1:ffd9:e6ac": 32,
+    ":: > ff02::1:ffd7:7cfd": 64,
+    ":: > ff02::1:ff35:7004": 64,
+    ":: > ff02::1:ffb5:c5ab": 32,
+    ":: > ff02::1:ffa7:b16f": 32
+   },
+   "unparsed_lines": 2508,
+   "unparsed_kinds": {
+    "ifindex": 1245,
+    "ARP,": 1247,
+    "Null": 16
+   },
+   "lines": 86288
+  }
+ },
+ "outbound_bytes_non_lan_by_second_whole_capture": {
+  "1790643477 00:57:57": {
+   "185.125.190.100:80": 87
+  },
+  "1790643478 00:57:58": {
+   "185.125.190.100:80": 87
+  },
+  "1790643777 01:02:57": {
+   "91.189.91.98:80": 87
+  },
+  "1790643779 01:02:59": {
+   "91.189.91.60:80": 174
+  },
+  "1790643858 01:04:18": {
+   "100.34.187.168:123": 48
+  },
+  "1790643995 01:06:35": {
+   "140.82.116.5:443": 788
+  },
+  "1790644037 01:07:17": {
+   "140.82.116.5:443": 788
+  },
+  "1790644054 01:07:34": {
+   "140.82.116.5:443": 788
+  },
+  "1790644077 01:07:57": {
+   "91.189.91.62:80": 87
+  },
+  "1790644078 01:07:58": {
+   "185.125.190.100:80": 87
+  },
+  "1790644093 01:08:13": {
+   "140.82.116.5:443": 788
+  },
+  "1790644163 01:09:23": {
+   "151.101.65.195:443": 804,
+   "151.101.1.195:443": 2436
+  },
+  "1790644174 01:09:34": {
+   "151.101.65.195:443": 2436
+  },
+  "1790644184 01:09:44": {
+   "151.101.65.195:443": 2437
+  },
+  "1790644194 01:09:54": {
+   "151.101.1.195:443": 2437
+  },
+  "1790644205 01:10:05": {
+   "151.101.65.195:443": 2437
+  },
+  "1790644215 01:10:15": {
+   "151.101.65.195:443": 2435
+  },
+  "1790644376 01:12:56": {
+   "91.189.91.96:80": 87
+  },
+  "1790644378 01:12:58": {
+   "91.189.91.62:80": 87
+  },
+  "1790644676 01:17:56": {
+   "91.189.91.97:80": 87
+  },
+  "1790644678 01:17:58": {
+   "91.189.91.98:80": 87
+  },
+  "1790644976 01:22:56": {
+   "91.189.91.61:80": 87
+  },
+  "1790644977 01:22:57": {
+   "91.189.91.61:80": 87
+  },
+  "1790644978 01:22:58": {
+   "91.189.91.60:80": 87,
+   "91.189.91.61:80": 87
+  },
+  "1790645276 01:27:56": {
+   "91.189.91.64:80": 87
+  },
+  "1790645278 01:27:58": {
+   "91.189.91.60:80": 87
+  },
+  "total": 20101,
+  "note": "every second with at least one payload byte from a Jetson address to a non-LAN address; the loop is 01:09:21 to 01:10:08"
+ },
+ "dns_and_connections": {
+  "commands": [
+   "tcpdump -r egress-recapture-e65db0.pcap -n 'udp port 53' | grep ' A? api.roboflow.com' | awk '{print $2}' | sort | uniq -c",
+   "tcpdump -r egress-recapture-e65db0.pcap -n 'tcp[tcpflags] & (tcp-syn) != 0 and tcp[tcpflags] & (tcp-ack) == 0 and (host 151.101.65.195 or host 151.101.1.195)' | awk '{print $2}' | sort | uniq -c",
+   "answers matched to queries by DNS transaction id on enP8p1s0 (tcpdump prints the query name only on the query line)"
+  ],
+  "A_queries_api.roboflow.com_per_interface": {
+   "enP8p1s0": 7,
+   "docker0": 7,
+   "veth94759b4": 7
+  },
+  "AAAA_queries_lines_all_interfaces": 21,
+  "query_times_utc_on_enP8p1s0": [
+   "01:09:23",
+   "01:09:23",
+   "01:09:34",
+   "01:09:44",
+   "01:09:54",
+   "01:10:05",
+   "01:10:15"
+  ],
+  "tcp_connections_to_api_addresses": 7,
+  "syn_times_utc_on_enP8p1s0": [
+   "01:09:23 151.101.65.195",
+   "01:09:23 151.101.1.195",
+   "01:09:34 151.101.65.195",
+   "01:09:44 151.101.65.195",
+   "01:09:54 151.101.1.195",
+   "01:10:05 151.101.65.195",
+   "01:10:15 151.101.65.195"
+  ],
+  "dns_answers": {
+   "api.roboflow.com": [
+    "151.101.1.195",
+    "151.101.65.195",
+    "2620:0:890::100 (AAAA, unused)"
+   ],
+   "api.github.com": [
+    "140.82.116.5"
+   ],
+   "connectivity-check.ubuntu.com": [
+    "185.125.190.100",
+    "91.189.91.60",
+    "91.189.91.61",
+    "91.189.91.62",
+    "91.189.91.64",
+    "91.189.91.96",
+    "91.189.91.97",
+    "91.189.91.98",
+    "(and others in the same answer)"
+   ]
+  },
+  "other_names_queried": {
+   "connectivity-check.ubuntu.com": "26 A + 20 AAAA, NetworkManager, every 5 min per interface",
+   "api.github.com": "12 lines (A and AAAA, three interfaces each): 4 queries, all from the container"
+  },
+  "note": "-i any shows each container packet on up to three interfaces (veth, docker0, the LAN interface); counts per interface are the real ones"
+ },
+ "non_roboflow_destinations_whole_capture": {
+  "140.82.116.5:443 api.github.com": {
+   "bytes_out": 3152,
+   "connections": 4,
+   "when_utc": [
+    "01:06:35",
+    "01:07:17",
+    "01:07:34",
+    "01:08:13"
+   ],
+   "from": "the container (172.17.0.2), two per container start",
+   "what": "Inference 1.7.2 version check: GET https://api.github.com/repos/roboflow/inference/releases/latest at import of inference.core (inference/core/__init__.py, get_latest_release_version; VERSION_CHECK_MODE default 'once'); off with DISABLE_VERSION_CHECK=True (env.py), also implied by OFFLINE_MODE or SECURE_GATEWAY; not set in inference-server-up.sh as run tonight (f41c8be)"
+  },
+  "91.189.91.x:80, 185.125.190.100:80 connectivity-check.ubuntu.com": {
+   "bytes_out": 1479,
+   "what": "Ubuntu NetworkManager connectivity checks, one 87-byte HTTP request per interface every 5 minutes, host OS, not the container"
+  },
+  "100.34.187.168:123": {
+   "bytes_out": 48,
+   "what": "one NTP exchange at 01:04:18, host OS"
+  },
+  "1.1.1.1:80": {
+   "bytes_out": 0,
+   "what": "a bare SYN, no payload"
+  },
+  "other_endpoints": "IPv6 neighbour solicitations from :: to ff02::1:ff.. and DHCP discovers 0.0.0.0:68 > 255.255.255.255:67: link-scope, never routed, and with an unspecified source they can come from any host on the link, not only the Jetson; the scorer files them under other_non_lan_bytes because it cannot place them, not because they left; 0 of them fall in any run window"
+ },
+ "earlier_capture_coverage_finding": {
+  "claim_in_egress-e65db0.json": "span_utc: about 23:40:00 to 23:42:xx",
+  "measured_2026-09-29": "first packet in egress-e65db0.pcap is 1790638873.054125 = 23:41:13.05 UTC; the runner's t_start was 1790638838.622 = 23:40:38.62 UTC, so the capture began 34.4 s into the run and covered the last 13.4 s of the 47.4 s loop",
+  "evidence": {
+   "syns_to_9001_on_docker0": {
+    "egress-e65db0.pcap": 167,
+    "egress-recapture-e65db0.pcap": 593
+   },
+   "frame_payload_host_to_container_one_copy_bytes": {
+    "egress-e65db0.pcap": 40671118,
+    "egress-recapture-e65db0.pcap": 166236189
+   },
+   "frames_on_disk": {
+    "count": 580,
+    "jpeg_bytes": 124664680,
+    "base64_bytes": 166219573
+   },
+   "tcp_sequence_gaps_inside_seen_connections": "none (captured payload equals the sequence-space span in every connection of the 23:41 capture)",
+   "broadcast_chatter_in_this_capture_from_its_first_second": "yes, so an -i any capture that had started at 23:40:00 would hold packets from 23:40:00"
+  },
+  "consequence": "the 23:41 capture's EG1 figure, 285,098 bytes, is a lower bound over 28 % of the loop plus the one pingback post; the FAIL stands. Its 'positive control' of 82.3 MB was 167 of 580 frames, not the loop's frames; the results and DR-11 sentences that say the capture saw the frames are corrected beside the originals, not over them",
+  "cause": "not recoverable from the data; the order of the two commands that evening is the likely one (the runner was started before the capture was up)"
+ },
+ "usage_db_after_run": "/opt/nvme/inference-cache/cache/usage.db: table usage 0 rows, api_keys_plans 1 row, file mtime 01:10:15 UTC = the last usage flush (python3 sqlite3 read-only as jeremy)",
+ "what_still_leaves_by_the_code": "every ~10 s while requests arrive, one POST to api.roboflow.com/usage/inference: a list of aggregated payloads per API key with the key in the JSON body and as a Bearer header, sha256 of the hostname, sha256 of the IP, exec_session_id, resource_id (the model id), processed_frames, fps, source_duration, megapixel_buckets, execution_duration, python and inference versions, enterprise flag (inference/usage_tracking/collector.py empty_usage_dict, system_info, _offload_to_api; payload_helpers.py send_usage_payload). No per-detection field, no image. TLS keeps the bytes unread; the field list is the code's, the ~2.4 KB per exchange is the capture's",
+ "bars": {
+  "EG1 (< 200000 bytes outbound to non-LAN during the loop)": "PASS: 12987",
+  "EG2 (every non-LAN destination is a Roboflow host)": "PASS: 151.101.65.195 and 151.101.1.195 are the capture's own DNS answers for api.roboflow.com; nothing else received a byte in the loop"
+ },
+ "predictions": {
+  "1 the 280 KB post does not recur": "confirmed: the largest single second of egress in 34 minutes is 3,240 bytes (01:09:23, two usage exchanges); no post over 2.5 KB to any address; the pingback attribution stands",
+  "2 under 20,000 bytes in the loop, all usage-collector exchanges of ~2.4 KB every ~10 s": "confirmed: 12,987 bytes in six connections at 01:09:23 (x2), :34, :44, :54, 01:10:05, then one more at 01:10:15 after the loop; EG1 PASS, EG2 PASS",
+  "3 model resident, first call under a second, no pull captured": "half right: no pull (56 KB came in during the loop, nothing model-sized), but the first call took 1.8 s, not under a second: the container was fresh and loaded the weights from the cache volume. The pull gap stays open",
+  "4 container leg about 82 MB as before": "wrong, and informative: 333.7 MB (2 x 166.2 MB in, 2 x 0.5 MB out, -i any counts docker0 and the veth); the 82 MB figure came from a capture that began 34 s into its run (earlier_capture_coverage_finding)"
+ },
+ "container_leg_note": "the container-leg bucket also holds 172.17.0.1 > 239.255.0.1:17900 UDP, about 1.4 KB/s: ROS 2 DDS discovery for domain 42 (7400 + 250 x 42) that the LIDAR stack multicasts on every interface, the docker bridge included; multicast, not egress, and 1.7 MB of the 21.6 minutes after the run; the same multicast leaves the Jetson's LAN interfaces too (first and last packets of the capture), the DDS exposure ARCHITECTURE section 7 already lists"
+}

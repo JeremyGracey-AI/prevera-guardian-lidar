@@ -250,6 +250,14 @@ with every command; [runner figures](2026-09-28-roboflow/f5-egress-e65db0.json);
   cannot read TLS**: the attribution rests on the size, the 60 s cadence, the 8 DNS lookups and 8 TCP connections
   to `api.roboflow.com` in the capture, and the code; a re-capture with `METRICS_ENABLED=False` is the test that
   would confirm it (handoff, next item 1).
+- **Correction (2026-09-29), written beside EG1, not over it.** The re-capture below showed that this capture began
+  late: its first packet is at 23:41:13.05 UTC, 34.4 s after the runner's first request (23:40:38.62 UTC), so it
+  holds the last 13.4 s of the 47.4 s loop, 167 of the 580 frames (167 SYNs to port 9001 on `docker0`; 40.7 MB of
+  frame payload against 166.2 MB for the full set, which is 124.7 MB of JPEG in base64). The extract's "about
+  23:40:00 to 23:42" was wrong. What changes: 285,098 bytes is a lower bound over 28 % of the loop plus the one
+  pingback post, so the FAIL stands; "82.3 MB of them (the positive control: the capture saw them)" was true of 167
+  frames, not of the loop. The [extract](2026-09-28-roboflow/egress-e65db0.json) carries the same correction under
+  `capture_correction_2026-09-29`, its original lines untouched.
 - **EG2, every non-LAN destination is a Roboflow host: PASS.** Both addresses seen are the capture's own DNS answers
   for `api.roboflow.com` (8 A queries, seen on three interfaces each with `-i any`, and `api.roboflow.com` as the
   TLS server name). The operating system's `connectivity-check.ubuntu.com` lookups carried no bytes in any window.
@@ -270,6 +278,74 @@ with every command; [runner figures](2026-09-28-roboflow/f5-egress-e65db0.json);
   is Jeremy's decision, not a setting.**
 - Not verified: a capture during a model pull (the weights download, and whatever accompanies it). This capture had
   the model resident.
+
+**Egress, re-capture with `METRICS_ENABLED=False` (2026-09-29; [plan](2026-09-28-egress-recapture-plan.md) committed
+at 00:37 UTC, bars and windows unchanged from EG1/EG2).** Jeremy restarted the container with
+[`jetson/inference-server-up.sh`](../../jetson/inference-server-up.sh) (the DR-11 command with that one flag added;
+`docker inspect` showed `readonly=true`, `127.0.0.1:9001`, `ACTIVE_LEARNING_ENABLED=False`, `TELEMETRY_OPT_OUT=True`,
+`METRICS_ENABLED=False`, `TRITON_CACHE_DIR`, `MAX_ACTIVE_MODELS=2`), started the same `tcpdump` at 00:57:28 UTC, and
+the agent ran the same 580-frame `e65db0` pass at 01:09:21 UTC (47.5 s, 77.4 ms median, 0 errors; only `e65db0`
+resident this time, 4.5 GB free). The capture ran until 01:31:44 UTC: 11.9 minutes before the run and 21.6 after it,
+so a 60 s pingback interval would have fired at least twenty times inside it. Same scorer, same `/22` prefixes
+([extract](2026-09-28-roboflow/egress-recapture-e65db0.json) with the per-second profile, DNS and connection counts
+and every command; [runner figures](2026-09-28-roboflow/f5-egress-recapture-e65db0.json); pcap on the Jetson at
+`/opt/nvme/reports/egress-recapture-e65db0.pcap`, 353 MB).
+
+| Window | Bytes out, non-LAN | Bytes in, non-LAN | Destinations | Container leg (frames in) | Other non-LAN |
+|---|---|---|---|---|---|
+| the 580-frame loop (47.5 s) | **12,987** | 56,495 | `151.101.65.195:443`, `151.101.1.195:443` | 333.7 MB | 0 |
+| whole run (first call to last response) | 12,987 | 56,495 | same | 336.7 MB | 0 |
+| after the run (21.6 min) | 3,305 | 10,038 | `151.101.65.195:443` once, then `connectivity-check.ubuntu.com` | 1.7 MB (DDS multicast, see below) | link-scope only |
+| whole capture (34.3 min) | 20,101 | 108,549 | the two above, `api.github.com`, Ubuntu connectivity checks, one NTP | 338.8 MB | link-scope only |
+
+- **EG1, under 200,000 bytes outbound during the loop: 12,987, PASS.** Six connections to `api.roboflow.com`, at
+  01:09:23 (two), :34, :44, :54 and 01:10:05, of 804 to 2,437 bytes each, then one more of 2,435 bytes at 01:10:15
+  after the last request, and nothing to Roboflow for the remaining 21.5 minutes. The pingback posts every 60 s
+  whether or not there were requests (`pingback.py`, `post_data`), so about 34 posts were due in this capture had
+  the flag not taken; the seven usage flushes are the only connections to Roboflow in it. `usage.db`'s mtime is that
+  last flush (01:10:15; `usage` table still 0 rows).
+- **EG2, every non-LAN destination is a Roboflow host: PASS.** Both addresses are the capture's own DNS answers for
+  `api.roboflow.com` (7 A queries on each of three interfaces, answers matched to queries by transaction id; the AAAA
+  answer `2620:0:890::100` was never used). Nothing else received a byte in the loop or the run.
+- **Predictions, one by one.** (1) *The 280 KB post does not recur*: confirmed; the largest second of egress in 34
+  minutes is 3,240 bytes, so the pingback attribution stands and `METRICS_ENABLED=False` is what turns it off.
+  (2) *Under 20,000 bytes in the loop, all usage-collector exchanges*: confirmed, 12,987 bytes in ~2.4 KB exchanges
+  every ~10 s. (3) *Model resident, first call under a second, no pull*: half right. No pull (56 KB came in during
+  the loop, nothing model-sized), but the first call took 1.8 s, not 0.1 s: the container was fresh and loaded the
+  weights from the cache volume. The pull gap stays open. (4) *Container leg about 82 MB as before*: wrong, and
+  informative: 333.7 MB, which is 2 × 166.2 MB in (the 124.7 MB of JPEG as base64, seen on `docker0` and the veth)
+  plus 2 × 0.5 MB of responses. That is the whole set, and it exposed the coverage gap in the 23:41 capture recorded
+  above under EG1. The bucket also holds 1.4 KB/s of `172.17.0.1 > 239.255.0.1:17900`, ROS 2 DDS discovery for
+  domain 42 (7400 + 250 × 42) that the LIDAR stack multicasts on every interface, the docker bridge included:
+  multicast, not egress, and the exposure [ARCHITECTURE, section 7](../ARCHITECTURE.md#7-ports-and-exposure) already lists.
+- **What still leaves, by the code** (TLS keeps the bytes unread; the sizes are the capture's, the fields are
+  `inference/usage_tracking/collector.py` `empty_usage_dict`, `system_info`, `_offload_to_api` and
+  `payload_helpers.py` `send_usage_payload` in 1.7.2): every ~10 s while requests arrive, one POST to
+  `api.roboflow.com/usage/inference` carrying, per API key, the **key in clear** (in the JSON body and as a Bearer
+  header), the sha256 of the hostname and of the IP, an execution session id, the model id, `processed_frames`, fps,
+  source duration, megapixel buckets, execution duration, Python and Inference versions and an enterprise flag.
+  Aggregated: no per-detection field, no class, no confidence, no image. `TelemetrySettings` (`env_prefix`
+  `telemetry_`) has no off switch; `TELEMETRY_API_USAGE_ENDPOINT_URL` or `METRICS_COLLECTOR_BASE_URL` can point it at
+  a local sink, `OFFLINE_MODE=True` stops it with the caveats recorded under EG1.
+- **A third channel, found outside the loop.** Four connections to `api.github.com` (`140.82.116.5`, the capture's
+  DNS answer), 788 bytes out each, two per container start (01:06:35 and 01:07:17 for the first container, 01:07:34
+  and 01:08:13 for the running one), from the container's address: the **version check**, `GET
+  https://api.github.com/repos/roboflow/inference/releases/latest` at import of `inference.core`
+  (`inference/core/__init__.py`, `get_latest_release_version`; `VERSION_CHECK_MODE` defaults to `once`). No key and
+  no data in it, but a request to a third party from the inference container at every start, which
+  `DISABLE_VERSION_CHECK=True` turns off (`env.py`; `OFFLINE_MODE` and `SECURE_GATEWAY` imply it). It was not set in
+  the script as run tonight; the flag is added to `inference-server-up.sh` after this capture and is **not yet
+  verified by a capture**.
+- **The rest of the 20,101 bytes** is the host operating system, none of it Inference: one 87-byte
+  `connectivity-check.ubuntu.com` request per interface every 5 minutes (NetworkManager, 1,479 bytes in all), one NTP
+  exchange (48 bytes) and one bare SYN to `1.1.1.1:80`. The "other" bucket outside the run windows is IPv6 neighbour
+  solicitations from `::` and DHCP discovers from `0.0.0.0`: link-scope frames with no source address, which any host
+  on the link can have sent; the scorer counts them because it cannot place them, and none fall in a run window.
+- **What is verified for DR-11 after this run:** with `METRICS_ENABLED=False` the per-request record (class,
+  confidence, key, hostname, IP, MAC) no longer leaves; what leaves during inference is the usage collector's
+  aggregated ~2.4 KB every ~10 s with the API key in clear, and at container start the version check to GitHub.
+  Frames did not leave (the full 166 MB went to the container, 13 KB came out). One run, one child, cameras off, no
+  pull captured.
 
 **For D0** the round trip to carry forward is **79 ms** (`e65db0`) or **125 ms** (`00ba18`) per frame, serial, one
 camera, cameras off, with about 2.8 GB of headroom with both resident, replacing the stock models' 108 to 127 ms.
@@ -306,10 +382,12 @@ camera, cameras off, with about 2.8 GB of headroom with both resident, replacing
 - **F5 is serial, one camera, cameras off.** The Jetson figures in section 5 are one request in flight at a time
   with no capture running. Co-load was measured once (CL1, CL2 in section 5): the scan stream held 10 Hz with no
   dropout during one `e65db0` run; the detector's behaviour under load beyond a silent `/fall_events` is not
-  claimed. Egress was captured for one run (EG1 FAIL, EG2 PASS, section 5): what leaves is, by size, cadence and
-  the code, the model-monitoring pingback (one record per request, class and confidence per detection, key in
-  clear), which no setting in the DR-11 command turns off; TLS keeps the content unread, and the re-capture with
-  `METRICS_ENABLED=False` that would confirm it has not run. The NAS
+  claimed. Egress was captured for two runs (section 5): the first (EG1 FAIL, EG2 PASS, and it began 34 s late)
+  showed the model-monitoring pingback (one record per request, class and confidence per detection, key in
+  clear) leaving once a minute under the DR-11 command as written; the re-capture with `METRICS_ENABLED=False`
+  (EG1 PASS at 12,987 bytes, EG2 PASS) confirmed that flag stops it and left the usage collector's aggregated
+  ~2.4 KB every ~10 s (API key in clear, hashed hostname and IP, counts) and a version check to GitHub at container
+  start. TLS keeps the content unread; the fields are the code's. No capture covered a model pull. The NAS
   latencies elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict
   the device.
 - **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
