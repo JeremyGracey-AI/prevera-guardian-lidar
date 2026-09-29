@@ -18,6 +18,7 @@ timeline
     2026-09-25 : First field test on the Jetson : Foreground-hold fix : No WARN ever fires
     2026-09-26 : Replay-harness plan (three critique rounds) : ROS-free core extracted : Capture night, two cameras added
     2026-09-27 : Floor mount and floor trials : Harness, incident hold, speed gate, windowed stillness : RF-DETR evaluation, keypoint check pre-declared
+    2026-09-28 : Fine-tuned class split passes on public data : F5, co-load and four egress captures on the Jetson : Three telemetry channels found and switched off, v0.1.0
 ```
 
 ## Test suite over time
@@ -32,6 +33,10 @@ timeline
 | `337641f` incident hold | 46 passed, 1 skipped | commit body |
 | `ef87137` speed gate, per-track dt | 57 passed, 1 skipped | commit body |
 | `fc73c11` windowed stillness | **70 passed, 1 skipped** | commit body; re-run in this repository |
+| `6bf7127` PR #1, fine-tune branch and review fixes | 96 passed, 1 skipped | README at the merge |
+| `3adcd15` PR #3, gaps branch (co-load, egress, CI, URDF) | 124 passed, 1 skipped | README at the merge; CI |
+| `efc8b43` PR #4, egress re-capture | 129 passed, 1 skipped | README at the merge; CI |
+| `2e6d582` version-check branch | **130 passed, 1 skipped** | container and Mac |
 
 The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jetson or in WSL with ROS 2 Humble.
 
@@ -90,3 +95,39 @@ Written up after the fact: the evidence run behind `36ca654` replayed all seven 
 fixed + hold configs. Its `floor-trials-1` result (WARN 0.7 to 4.0 s after onset in the four visible lie-downs, none
 walking or standing) and the correction it forces in DR-09 are in the
 [fixed-config replay](field-tests/2026-09-27-fixed-config-replay.md).
+
+## 2026-09-28: fine-tune on public data, device fit, and what the network captures found
+
+Four pull requests merged and one tag (`v0.1.0` at `3adcd15`), 51 commits, 63 files, 9,623 lines; tests 70 → 130.
+Five plans committed before their runs; two bars failed and stay in the record as written. Jeremy pushed PR #1's
+22 commits himself; every later push was made from the Mac's shell on his instruction with `ALLOW_PUSH=1`
+([DECISIONS.md, DR-17](DECISIONS.md#dr-17)); every `sudo` on the Jetson was his.
+
+| Commit | What | Evidence / notes |
+|---|---|---|
+| `4adc303` (11:30) | [Fine-tune plan](field-tests/2026-09-28-roboflow-finetune-plan.md), **committed before any training** | Three public Universe datasets forked and versioned; rule for the model pick fixed in advance. |
+| `2a505e5`, `3e99897` | [Keypoint rescore plan v2](field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md), `--plan v2` path | The 09-27 run's class-id mismatch fixed by name; not yet run (needs the Mac's kp-venv). |
+| `415e390`, `3b011db`, `cd5678b`, `db9b911` | Camera views bind loopback; URDF at floor level; CI, `CITATION.cff`, README table; `tools/roboflow/` time-on-floor Workflow | The Workflow ran once on the hosted API on one public image with a public model; no room frame went anywhere. |
+| `d88072e` (14:11) | [Fine-tune results](field-tests/2026-09-28-roboflow-finetune-results.md): **F1 and F2 pass on public data** | `lying` 1.000 / 1.000 at the rule's threshold, 0 of 24 pose swaps, on 73 images; "not dead on arrival", not a recall estimate. DR-13 gains a measured third option. |
+| `d0548f3` … `007ff1d` (14:45–14:52) | Review fix pass | Fresh-context review found 1 critical (the keypoint probe would have failed v2 for the same reason as v1) and 5 important; all fixed with tests that failed first. |
+| `6bf7127` (15:39) | **PR #1 merged**, 22 commits | 96 passed, 1 skipped. |
+| `9867f6c` (16:04) | [F5 device fit](field-tests/2026-09-28-roboflow-finetune-results.md) on the Jetson | `e65db0` 78.7 ms, `00ba18` 125.2 ms per frame, serial, cameras off; floor 2,799 MB with both resident. `f5_device_fit.py` crashed on macOS (`/proc/meminfo`), fixed. |
+| `03c9fa4` (16:25) | **PR #2 merged** | 99 passed, 1 skipped. |
+| `cec878a` (16:25) | [Close-the-gaps plan](plans/2026-09-28-close-the-gaps-plan.md), bars CL1/CL2 and EG1/EG2 fixed before the runs | |
+| `5df0240`, `09e45e9`, `1f95604` | CI hardening; URDF mast under the raised rig and `state_publisher.launch.py` fixed (a bare `Command` had raised a TypeError on Humble since the first commit); yaml-read test | Each with a test that failed first. |
+| `70cbf17`, `c64e724` | `scan_rate.py`; **co-load measured**: CL1, CL2 PASS | `/scan` 10.009 Hz, no gap over 0.5 s, while the GPU served 580 frames. |
+| `6194090`, `413be8c`, `de2455c` | `egress_summary.py`; **egress captured: EG1 FAIL** (285,098 bytes), EG2 PASS | One 280 KB post to `api.roboflow.com` during 580 frames. First written up as the usage collector. |
+| `c972d0a`, `4a8c02c` | `foxglove_bridge` and `rosbridge` on loopback by default; `rf_eval.py` versioned verbatim | The reviewer's open item and the 09-27 next step 4. |
+| `32de5be` (17:14) | Review fixes: **the post is the model-monitoring pingback**, not the usage collector; `/22` LAN disclosure | Verified against the 1.7.2 source: one record per request, API key in clear, class and confidence per detection, hostname, IP, MAC, once a minute. `TELEMETRY_OPT_OUT` is inert. |
+| `3adcd15` (17:25) | **PR #3 merged**, 14 commits; tag **`v0.1.0`** | 124 passed, 1 skipped. |
+| `a8d7e85`, `f41c8be` | `jetson/inference-server-up.sh`: the DR-11 command versioned, `METRICS_ENABLED=False` added; [re-capture plan](field-tests/2026-09-28-egress-recapture-plan.md) before the run | Under `sudo` a literal `~` is `/root`; the key file is now resolved from `SUDO_USER`, test first. |
+| `bd3e1f2` (18:48) | **Egress re-capture: EG1 PASS** at 12,987 bytes, EG2 PASS | The pingback is gone; six ~2.4 KB usage flushes remain. Prediction 4 was wrong (container leg 334 MB, not 82) and exposed that the 23:41 capture had begun 34 s into its run: correction written beside the failed EG1, not over it. The container's version check to `api.github.com` found in the same capture. |
+| `b3bd929`, `efc8b43` (18:53) | `DISABLE_VERSION_CHECK=True` on the script (test first); **PR #4 merged** | 129 passed, 1 skipped. |
+| `c143b5a` (19:28) | **DR-11 decision recorded**: the usage collector's aggregated record may leave, for now (Jeremy) | What that accepts, by the code: API key in clear, hashed hostname and IP, model id, counts; no per-detection field. [Version-check capture plan](field-tests/2026-09-29-version-check-capture-plan.md) before the run. |
+| `6a8a8b1` (20:08) | **Container-start capture: VC1 FAIL, VC2 PASS** | No GitHub lookup (the flag works); two 0-byte TCP handshakes to `1.1.1.1:80` from the container: ultralytics' `is_online()` at import. The bar stands. |
+| `c332945`, `37b2390` | `YOLO_OFFLINE=True` on the script (test first); [its capture plan](field-tests/2026-09-29-yolo-offline-capture-plan.md) | |
+| `2e6d582` (21:07) | **Container-start capture with `YOLO_OFFLINE=True`: VC1, VC2 PASS** | Zero packets from the container to any non-LAN address in 32.6 minutes. A container that is not asked anything now says nothing to anyone. 130 passed, 1 skipped. |
+
+Not done, on purpose: no room frame, bag or field data went to Roboflow or any hosted API; no Active Learning; no
+new decision record; nothing about the V-JEPA stage. Still owed on the privacy side: a capture that covers a model
+pull. The device state and the ordered next steps are in [HANDOFF-2026-09-28.md](field-tests/HANDOFF-2026-09-28.md).

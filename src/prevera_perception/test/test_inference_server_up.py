@@ -53,3 +53,10 @@ def test_version_check_to_github_is_disabled():
     must print it so a restart shows it took."""
     assert "-e DISABLE_VERSION_CHECK=True" in _docker_run_line()
     assert "DISABLE_VERSION_CHECK" in UP.read_text().split("docker inspect", 1)[1]
+
+
+def test_ultralytics_online_probe_is_disabled():
+    """The 2026-09-29 container-start capture (VC1 FAIL) saw the container open and close a TCP connection to
+    1.1.1.1:80 twice per start: ultralytics' is_online() at import. YOLO_OFFLINE=True is its switch."""
+    assert "-e YOLO_OFFLINE=True" in _docker_run_line()
+    assert "YOLO_OFFLINE" in UP.read_text().split("docker inspect", 1)[1]
