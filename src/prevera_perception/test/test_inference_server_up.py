@@ -19,7 +19,7 @@ def _docker_run_line():
 
 def test_every_privacy_and_hardening_flag_is_on_the_command():
     line = _docker_run_line()
-    for flag in ("--read-only", "-p 127.0.0.1:9001:9001", "--env-file ~/.roboflow.env",
+    for flag in ("--read-only", "-p 127.0.0.1:9001:9001", '--env-file "$ENV_FILE"',
                  "-e ACTIVE_LEARNING_ENABLED=False", "-e TELEMETRY_OPT_OUT=True", "-e METRICS_ENABLED=False",
                  "-e TRITON_CACHE_DIR=/tmp/triton-cache", "-e MAX_ACTIVE_MODELS=2",
                  "--security-opt=no-new-privileges", "--cap-drop=ALL", "--cap-add=NET_BIND_SERVICE",
@@ -37,3 +37,11 @@ def test_script_parses_and_prints_the_inspect_check():
     assert subprocess.run(["bash", "-n", str(UP)]).returncode == 0
     text = UP.read_text()
     assert "docker inspect inference-server" in text and "METRICS_ENABLED" in text
+
+
+def test_env_file_is_the_invoking_users_not_roots():
+    """Run as `sudo ~/inference-server-up.sh`, a literal ~ inside the script is /root; the key file is Jeremy's."""
+    text = UP.read_text()
+    assert "--env-file ~/" not in text
+    assert "SUDO_USER" in text and 'ENV_FILE=' in text
+    assert '[ -r "$ENV_FILE" ]' in text, "refuse to start without the key file rather than let docker fail half-way"

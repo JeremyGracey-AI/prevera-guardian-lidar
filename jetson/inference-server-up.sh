@@ -14,13 +14,16 @@
 #   -e METRICS_ENABLED=False                                         stops the model-monitoring pingback, which posted a
 #                                                                    record of every request to api.roboflow.com once a
 #                                                                    minute (EG1, 2026-09-28); added 2026-09-28
-# The API key comes from ~/.roboflow.env through --env-file and is never on the command line.
+# The API key comes from the invoking user's ~/.roboflow.env through --env-file and is never on the command line.
+# Under sudo, ~ is /root, so the file is resolved from SUDO_USER (override with GUARDIAN_ENV_FILE=/path).
 set -euo pipefail
+ENV_FILE="${GUARDIAN_ENV_FILE:-$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)/.roboflow.env}"
+[ -r "$ENV_FILE" ] || { echo "key file not readable: $ENV_FILE (run as sudo from jeremy's login, or set GUARDIAN_ENV_FILE)"; exit 1; }
 docker rm -f inference-server >/dev/null 2>&1 || true
 docker run -d --name inference-server --runtime nvidia --read-only \
   -p 127.0.0.1:9001:9001 \
   --volume /opt/nvme/inference-cache:/tmp:rw \
-  --env-file ~/.roboflow.env \
+  --env-file "$ENV_FILE" \
   -e TRITON_CACHE_DIR=/tmp/triton-cache \
   -e MAX_ACTIVE_MODELS=2 \
   -e ACTIVE_LEARNING_ENABLED=False \
