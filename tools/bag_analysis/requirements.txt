@@ -3,3 +3,4 @@ scikit-learn
 pyyaml
 mcap
 mcap-ros2-support
+xacro

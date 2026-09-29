@@ -314,7 +314,10 @@ flowchart LR
 <a id="dr-11"></a>
 ## DR-11 · Run camera inference on the device, not on a hosted API
 
-- **Status:** accepted; privacy verification incomplete.
+- **Status:** accepted; privacy verification done once on 2026-09-28 and it found a gap: the container posts a record
+  of every request (class and confidence per detection, API key in clear, hostname, IP, MAC) to `api.roboflow.com`
+  once a minute through the model-monitoring pingback, which the hardened command never turns off; `TELEMETRY_OPT_OUT`
+  is inert in Inference 1.7.2. Open item, see below; whether any per-request metadata may leave is Jeremy's call.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
 - **Options on record:** a hosted inference API, rejected because frames would leave the room. No cost or latency
@@ -324,11 +327,20 @@ flowchart LR
 - **Evidence** ([results, sections 2 and 5](field-tests/2026-09-27-rfdetr-results.md)): the listener is loopback only;
   median serial round trip 107.9 ms (nano, 9.3 fps) and 126.9 ms (base and medium, 7.9 fps) next to the running LIDAR
   driver and detector; lowest `MemAvailable` 2,584 MB with two models resident and the cameras stopped.
-- **Consequences and gaps:** that active learning and telemetry were off is reported, not verified (the usage database
-  was written after the last run; no egress capture). The evaluation plan's "frames never leave the device" was wrong as
-  written, because frames were copied to the Mac for scoring; the results document corrects it and leaves the plan as
-  committed. Next: send `disable_active_learning` in the request, record the container environment, capture egress
-  for one run. Whether inference disturbs `/scan` under load is not yet measured.
+- **Consequences and gaps:** on 2026-09-27 that active learning and telemetry were off was reported, not verified. On
+  2026-09-28 all three follow-ups ran ([fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)):
+  every request now carries `disable_active_learning: true` (the runner's test checks it); the container environment
+  is recorded there from `docker inspect`; and one run was captured with `tcpdump`. The capture (EG1 FAIL, EG2 PASS)
+  shows 285 KB leaving during 580 frames, all to `api.roboflow.com`, as one 280 KB post shaped and timed like the
+  model-monitoring pingback (`METRICS_ENABLED`, default True, 60 s) plus ~2.4 KB every 10 s from the usage
+  collector; the frames themselves (82 MB over the docker bridge in the same window) did not leave. **Telemetry is
+  not off**: `TELEMETRY_OPT_OUT=True` is inert in 1.7.2 and `METRICS_ENABLED` was never set. Next: pre-declare a
+  re-capture with `METRICS_ENABLED=False` (or `disable_model_monitoring: true` per request) and decide whether any
+  per-request metadata may leave at all. The evaluation plan's "frames never leave the device"
+  was wrong as written on 09-27 (frames were copied to the Mac for scoring); the results document corrects it and
+  leaves the plan as committed. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
+  over 0.5 s while `e65db0` served 580 frames (CL1, CL2 PASS,
+  [fine-tune results, section 5](field-tests/2026-09-28-roboflow-finetune-results.md)); one run, cameras off.
 
 <a id="dr-12"></a>
 ## DR-12 · Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`)
@@ -447,7 +459,10 @@ flowchart LR
 - **Pre-declared evaluations:** the plan, with its pass bars, is committed before the first result; thresholds do not
   move afterwards; audit findings are written beside unchanged verdicts; failures are reported as findings. The RF-DETR
   plan was committed at 16:38 and its results at 17:26; the keypoint plan at 17:36 and the run at 17:44
-  ([development log](DEVELOPMENT-LOG.md)). See [PROCESS.md](PROCESS.md).
+  ([development log](DEVELOPMENT-LOG.md)). On 2026-09-28 the fine-tune plan preceded its results by 2 h 41 min
+  (`4adc303` to `d88072e`), and the close-the-gaps plan (`cec878a`, 23:25 UTC) preceded the co-load bags (23:32) and the
+  egress capture (23:40); its EG1 bar failed and is reported as a finding with the bar unchanged. See
+  [PROCESS.md](PROCESS.md).
 - **Evidence:** run without the variable, the hook prints its block message and exits 1 (`sh tools/git-hooks/pre-push`,
   checked 2026-09-27); the sudoers scope was checked by `sudo -n true` being refused (lesson 6 above); the plan and
   result commit times are in the [development log](DEVELOPMENT-LOG.md).

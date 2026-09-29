@@ -163,8 +163,8 @@ What it says, in the same terms as the 09-27 columns:
   setup is absent from every number here.
 - **`/scan`.** 47 before and after `e65db0`. The 29 before `00ba18` is a single reading taken between the runs,
   with no request in flight, thirty seconds after a 47; it is measurement jitter of the same kind as nano's 39 on
-  09-27, and 46 after the run. Whether inference disturbs `/scan` *during* a run is still not measured: no bag
-  was recorded and nothing was sampled mid-run.
+  09-27, and 46 after the run. What happens *during* a run was measured later the same evening; see "Co-load"
+  below.
 - **`first_call_s` is a cold pull for `e65db0`** (17.5 s: the container had just been started and the model was
   not in `/opt/nvme/inference-cache`), and pull plus load for `00ba18` (9.1 s). Those are the numbers a restart
   pays; on 09-27 the weights were already cached.
@@ -180,8 +180,96 @@ with the DR-11 hardened command, verified by `docker inspect` (`ReadonlyRootfs=t
 `--security-opt=no-new-privileges`); every request carried `disable_active_learning: true` (the runner's test
 checks this); the LIDAR driver and fall detector were restarted at 22:51 UTC after a reboot had left the driver up
 with 0 scans, and read 44 to 47 scans per 5 s before the runs; no camera capture process was running; the
-Jetson's ROS checkout was `fix/background-absorption @ 7b705c2`, not `main`. Egress was not captured, so "the server
-posts nothing but the model pull" is still the configuration's word, not a measurement.
+Jetson's ROS checkout was `fix/background-absorption @ 7b705c2`, not `main`. Egress was captured later the same
+evening ("Egress" below): the server posts more than the model pull.
+
+**Co-load (CL1, CL2; bars fixed in [the close-the-gaps plan](../plans/2026-09-28-close-the-gaps-plan.md), committed
+at 23:25 UTC, before the bags at 23:32).** Two 60-second bags of `/scan` and `/fall_events` (`ros2 bag record -s
+mcap`), LIDAR stack up, cameras off, container up with `e65db0` resident: one idle, one with the 580-frame
+`e65db0` run inside it from second 5 to second 53. Read with
+[`scan_rate.py`](../../tools/bag_analysis/scan_rate.py) from header stamps ([idle](2026-09-28-roboflow/coload-idle.json),
+[load](2026-09-28-roboflow/coload-e65db0.json); the runner's own figures for that run are in
+[`f5-coload-e65db0.json`](2026-09-28-roboflow/f5-coload-e65db0.json)):
+
+| Bag | `/scan` msgs | Span (s) | Rate (Hz) | Largest gap (s) | Gaps > 0.5 s | `/fall_events` |
+|---|---|---|---|---|---|---|
+| idle | 567 | 56.5 | 10.009 | 0.104 | 0 | 0 |
+| `e65db0` serving inside | 594 | 59.2 | 10.009 | 0.105 | 0 | 0 |
+
+- **CL1, count within ±10 % of idle: 594 against 567, +4.8 %, PASS.** The counts differ by the recorders' spans
+  (the first recorder took longer to subscribe); the rates are identical to three decimals.
+- **CL2, no gap over 0.5 s: 0 in both, PASS.** The largest gap under load is 0.105 s, one scan period plus a
+  millisecond, the same as idle.
+- Report only: the runner inside the recording measured 77.4 / 81.2 ms (median / p90), server 58.8 ms, 12.9 fps,
+  against 78.7 / 82.4 earlier: recording the bag cost the camera path nothing visible. `MemAvailable` 2601 → 2517 MB
+  with both children still resident and the recorder running. `/fall_events` stayed silent in both bags; nobody was
+  asked to be in the room and nothing is claimed about the detector's behaviour under load beyond that.
+
+So on this evening's evidence the camera path does not disturb the LIDAR path: the scan stream ran at 10.009 Hz
+with no dropout while the GPU served 580 frames in 48.1 s (12.9 serial fps by the median, 12.1 frames per
+second wall clock). That is one run of one child on one Jetson with the
+cameras off; the claim in DR-11 is updated to that extent and no further.
+
+**Egress (EG1, EG2; bars fixed in the same plan, committed before the capture).** Jeremy ran `tcpdump -i any -n
+'not port 22 and not host 127.0.0.1'` on the Jetson (`sudo`, his) from about 23:40 to 23:42 UTC; inside it the agent
+ran the 580-frame `e65db0` pass once more (23:40:39 UTC, 47.4 s, 77.6 ms median, model already resident, so no pull
+happened in this capture). The text dump is scored by [`egress_summary.py`](../../tools/jetson/egress_summary.py)
+over the Jetson's two addresses (wired `.60` on the default route, Wi-Fi `.39`); the container's own leg on
+`docker0` and its veth is counted separately as the positive control ([extract](2026-09-28-roboflow/egress-e65db0.json)
+with every command; [runner figures](2026-09-28-roboflow/f5-egress-e65db0.json); the pcap stays on the Jetson at
+`/opt/nvme/reports/egress-e65db0.pcap`).
+
+| Window | Bytes out, non-LAN | Bytes in, non-LAN | Destinations | Container leg (frames in) | Other non-LAN |
+|---|---|---|---|---|---|
+| the 580-frame loop (47.4 s) | **285,098** | 37,682 | `151.101.65.195:443` only | 82.3 MB | 0 |
+| whole run (first call to last response) | 285,098 | 37,682 | same | 82.3 MB | 0 |
+| whole capture (about 2 min) | 295,120 | 75,614 | `151.101.65.195:443`, `151.101.1.195:443` | 82.4 MB | 0 |
+
+- **The LAN definition.** The plan wrote the bar with `192.168.4.0/24`; the room's network is a `/22`
+  (`192.168.4.0/22`, both Jetson addresses in it), and the parser committed at 23:37 UTC, before the capture, uses the
+  four `/22` prefixes. The change is disclosed here rather than hidden in the tool: under `/24` the EG1 figure is the
+  same 285,098 bytes, and the only difference is 2,996 bytes of broadcast chatter between other LAN hosts
+  (`192.168.5-7.x`) that the `/24` reading files under "other", none of it from the Jetson. Verdicts are unchanged
+  either way.
+- **EG1, under 200,000 bytes outbound during the loop: 285,098, FAIL.** The bar stands as declared. The bytes are
+  one post of **280,086 bytes at 23:41:23 UTC** (44 s into the loop, 3 s before its end) plus three exchanges of
+  about 2.4 KB at 23:41:13, 23:41:22 and 23:41:44. The 580 frames went to the container over the docker bridge in
+  the same window, 82.3 MB of them (the positive control: the capture saw them); 0.3 % of that came out, as one
+  burst, not as 580 pieces, so **frames did not leave**. What did: by the Inference 1.7.2 source, the
+  **model-monitoring pingback**, not the usage collector. `METRICS_ENABLED` defaults to True, `METRICS_INTERVAL`
+  to 60 s and `METRICS_URL` to `{API_BASE_URL}/inference-stats` (`inference/core/env.py:759-767`);
+  `PingbackInfo.post_data` (`inference/core/managers/pingback.py`) posts, once per interval, every inference the
+  server cached in the last 60 s, and the cache holds one record per request (`managers/base.py:342-367`). With the
+  default `TINY_CACHE` a record is the request's `api_key` (in clear), `confidence`, `model_id`, `model_type`,
+  `source`, `source_info`, the inference id and server id, and the response condensed to one `{class, confidence}`
+  per detection (`inference/core/cache/serializers.py:33-46, 104-107`); images are stripped, boxes are not included.
+  Each post also carries the container's hostname, IP and MAC (`managers/metrics.py:80-83`). About 550 requests fell
+  in that 60 s window at roughly 510 bytes each: 280 KB. The three small exchanges every ~10 s fit the usage
+  collector, which aggregates per model and posts to `api.roboflow.com/usage/inference` every `flush_interval`
+  of 10 s (`inference/usage_tracking/config.py`); it is a separate channel with its own endpoint. **The capture
+  cannot read TLS**: the attribution rests on the size, the 60 s cadence, the 8 DNS lookups and 8 TCP connections
+  to `api.roboflow.com` in the capture, and the code; a re-capture with `METRICS_ENABLED=False` is the test that
+  would confirm it (handoff, next item 1).
+- **EG2, every non-LAN destination is a Roboflow host: PASS.** Both addresses seen are the capture's own DNS answers
+  for `api.roboflow.com` (8 A queries, seen on three interfaces each with `-i any`, and `api.roboflow.com` as the
+  TLS server name). The operating system's `connectivity-check.ubuntu.com` lookups carried no bytes in any window.
+  Nothing left over IPv6 (the Jetson's four global-scope addresses are `fd0c::/16` ULA; "other non-LAN" is 0).
+  The 69 unparsed lines are 40 ARP and 29 `ifindex` frames, none of them IP.
+- **What EG1 found is that the privacy configuration of 09-27 does not do what it says.** `TELEMETRY_OPT_OUT=True`
+  is inert in 1.7.2: `TelemetrySettings` has no opt-out field (`inference/usage_tracking/config.py`). The pingback
+  was never addressed at all: nothing in the DR-11 command sets `METRICS_ENABLED`. So during every run of 09-27 and
+  09-28 the server posted, once a minute, a timestamped record of every request with the class and confidence of
+  every detection, the API key in clear, and the device's hostname, IP and MAC. Not frames, not boxes; but for a
+  detector in a resident's room, "lying, 0.97, 23:41:05" is a fact about the room, and it left. **Mitigations, none
+  applied tonight** (each changes what the server does and gets its own pre-declared re-capture): `METRICS_ENABLED=False`
+  in the container environment (stops the pingback; `pingback.py:82-86` logs that it is disabled), or
+  `disable_model_monitoring: true` in every request (per-request opt-out, `entities/requests/inference.py:41`);
+  for the usage channel, `METRICS_COLLECTOR_BASE_URL` pointed at a local sink; `OFFLINE_MODE=True` disables both
+  but `env.py` warns it leaves authentication and usage accounting undefined and a workspace model may then refuse
+  to load. **Recorded in DR-11 as the open privacy item, and whether per-request metadata leaving is acceptable at all
+  is Jeremy's decision, not a setting.**
+- Not verified: a capture during a model pull (the weights download, and whatever accompanies it). This capture had
+  the model resident.
 
 **For D0** the round trip to carry forward is **79 ms** (`e65db0`) or **125 ms** (`00ba18`) per frame, serial, one
 camera, cameras off, with about 2.8 GB of headroom with both resident, replacing the stock models' 108 to 127 ms.
@@ -215,10 +303,15 @@ camera, cameras off, with about 2.8 GB of headroom with both resident, replacing
   C the matrix at 0.40 stands in for 0.39 and 0.44.
 - **The device-sized candidate is not scored** under the plan's rule; its per-class numbers are at each class's
   own optimal threshold, as the platform reports them.
-- **F5 is serial, one camera, cameras off, and blind to co-load.** The Jetson figures in section 5 are one request
-  in flight at a time with no capture running; whether inference disturbs `/scan` or the fall detector during a run
-  was not sampled (no bag, no mid-run reading). Egress during the runs was not captured. The NAS latencies
-  elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict the device.
+- **F5 is serial, one camera, cameras off.** The Jetson figures in section 5 are one request in flight at a time
+  with no capture running. Co-load was measured once (CL1, CL2 in section 5): the scan stream held 10 Hz with no
+  dropout during one `e65db0` run; the detector's behaviour under load beyond a silent `/fall_events` is not
+  claimed. Egress was captured for one run (EG1 FAIL, EG2 PASS, section 5): what leaves is, by size, cadence and
+  the code, the model-monitoring pingback (one record per request, class and confidence per detection, key in
+  clear), which no setting in the DR-11 command turns off; TLS keeps the content unread, and the re-capture with
+  `METRICS_ENABLED=False` that would confirm it has not run. The NAS
+  latencies elsewhere in this document are the platform's AI1 and T4 targets, which section 5 shows do not predict
+  the device.
 - **Licences and provenance** are as the Universe uploaders state them; the URFD copy's CC BY 4.0 was not checked
   against the original dataset's terms.
 - **Nothing here is a room result.** No frame from the test room was involved, by design.

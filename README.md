@@ -20,7 +20,7 @@ the field evidence behind its design decisions, including the results that faile
 | **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; room frames next); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
 | **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
 | **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; one-line fix, verified on this device. |
-| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 99 passed, 1 skipped ([quickstart](#quickstart)). |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 124 passed, 1 skipped ([quickstart](#quickstart)). |
 
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
@@ -180,7 +180,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 the test suite (99 passed, 1 skipped), goldens, legacy reference
+│   │   └── test/                 the test suite (124 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
@@ -219,7 +219,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 99 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 124 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector
@@ -288,15 +288,19 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 - **A single 2D plane cannot see a person lying end-on.** The cameras cover it in the trials above; fusion is not built.
 - **Furniture feet look like a lying person** at floor level (elongated and still). It raised no alarm so far, but
   it is the main false-alarm risk once stillness works.
-- **Camera privacy is not fully verified.** Inference runs on the device and the client posts only to localhost, but
-  whether the server's active learning and telemetry were off is reported, not verified.
+- **Camera privacy is verified once, and the verification found a leak.** Inference runs on the device and the client
+  posts only to localhost, and a `tcpdump` capture on 2026-09-28 showed the frames staying on the device; it also
+  showed the server's model-monitoring pingback posting a record of every request (class and confidence per
+  detection, key in clear, hostname, IP, MAC) to Roboflow once a minute, which the documented container command does
+  not turn off ([DR-11](docs/DECISIONS.md#dr-11), [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)).
 - **The camera views are unauthenticated.** Since 2026-09-28 the MJPEG views bind the loopback address by default
   and are opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes
-  them on purpose, for a trusted bench only. The camera topic itself is still reachable on the LAN through
-  `foxglove_bridge` and `rosbridge`, which `guardian-up.sh` starts on all interfaces without authentication
-  ([ARCHITECTURE, section 7](docs/ARCHITECTURE.md#7-ports-and-exposure)).
-- **Not in this repository:** the V-JEPA verification stage, the RF-DETR runner used on the Jetson (`rf_eval.py`;
-  [`tools/roboflow/`](tools/roboflow/) is its public stand-in), raw recordings, extracted frames and model outputs.
+  them on purpose, for a trusted bench only; `foxglove_bridge` and `rosbridge` follow the same rule in
+  `guardian-up.sh`. The camera topic itself stays reachable by anyone who can join ROS domain 42 over DDS
+  multicast, which is the transport, not a port ([ARCHITECTURE, section 7](docs/ARCHITECTURE.md#7-ports-and-exposure)).
+- **Not in this repository:** the V-JEPA verification stage, raw recordings, extracted frames and model outputs.
+  The RF-DETR runner used on the Jetson is in [`jetson/rf_eval.py`](jetson/rf_eval.py) since 2026-09-28;
+  [`tools/roboflow/`](tools/roboflow/) is the Workflow form of the same camera path.
 
 ## Roadmap
 

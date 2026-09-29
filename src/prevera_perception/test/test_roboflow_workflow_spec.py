@@ -48,10 +48,22 @@ def test_down_classes_cover_the_three_plan_datasets():
     assert all(isinstance(c, str) and c == c.strip() for c in down)
 
 
+CONFIG = Path(__file__).resolve().parents[3] / "src" / "prevera_bringup" / "config" / "fall_detector.yaml"
+
+
+def _sustained_down_s():
+    """The detector's own value, read from the config the Jetson runs with; fails loudly if the key moves."""
+    import yaml
+    params = yaml.safe_load(CONFIG.read_text())["fall_detector"]["ros__parameters"]
+    assert "sustained_down_s" in params["fall"], "fall_detector.yaml no longer names fall.sustained_down_s"
+    return float(params["fall"]["sustained_down_s"])
+
+
 def test_warn_threshold_matches_the_lidar_sustained_rule():
     spec = json.loads(SPEC.read_text())
     warn = {i["name"]: i for i in spec["inputs"]}["warn_after_s"]["default_value"]
-    assert warn == 4.0, "keep warn_after_s equal to fall.sustained_down_s (4.0 s) or update the README"
+    assert warn == _sustained_down_s(), \
+        "keep warn_after_s equal to fall_detector.yaml's fall.sustained_down_s or update the README"
 
 
 # --- review finding I3: the timer must only ever see down poses, on tracks that die when the person gets up ---

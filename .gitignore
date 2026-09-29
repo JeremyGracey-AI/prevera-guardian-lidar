@@ -36,3 +36,6 @@ frames/
 results-rfdetr-*.json
 keypoints-results*.json
 keypoints-results*.jsonl
+
+# rosbag2 copies used by tools/bag_analysis/scan_rate.py; the bags live on the Jetson under /opt/nvme/bags
+.bags/
