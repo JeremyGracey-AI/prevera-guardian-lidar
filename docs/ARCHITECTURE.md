@@ -21,7 +21,7 @@ flowchart TB
     det["fall_detector<br/>(prevera_perception)"]
     cams["usb_cam × 2<br/>MJPEG → compressed"]
     bag[("ros2 bag record -s mcap<br/>/opt/nvme/bags")]
-    inf["Roboflow Inference 1.7.2<br/>stock RF-DETR<br/>127.0.0.1:9001 only"]
+    inf["Roboflow Inference 1.7.2<br/>stock and fine-tuned RF-DETR<br/>127.0.0.1:9001 only"]
     fox["foxglove_bridge :8765<br/>rosbridge :9090"]
   end
 
@@ -51,7 +51,7 @@ flowchart TB
 | LIDAR driver + fall detector + bridges | live on the Jetson, legacy config | [`perception.launch.py`](../src/prevera_bringup/launch/perception.launch.py), [`jetson/guardian-up.sh`](../jetson/guardian-up.sh) |
 | Detector fixes (incident hold, speed gate, windowed stillness) | implemented behind default-off keys; replay and tests only | DR-06 to DR-09, section 4 below |
 | Two webcams into ROS | live when started (`guardian-cams-up.sh`), recorded in bags | [`jetson/guardian-cams-up.sh`](../jetson/guardian-cams-up.sh) |
-| RF-DETR on the Jetson | evaluated offline on extracted frames | [RF-DETR results](field-tests/2026-09-27-rfdetr-results.md), DR-10, DR-11 |
+| RF-DETR on the Jetson | stock models evaluated offline on extracted frames (09-27); fine-tuned children served on the device for cost, co-load and egress only (09-28), no room-frame accuracy | [RF-DETR results](field-tests/2026-09-27-rfdetr-results.md), [fine-tune results](field-tests/2026-09-28-roboflow-finetune-results.md), DR-10, DR-11 |
 | LIDAR + camera fusion | not built; design open | DR-14 (D0), DR-13 (D1) |
 | V-JEPA verification | proprietary, not in this repository; interface stub only | DR-15, [`vjepa_bridge.py`](../src/prevera_perception/prevera_perception/vjepa_bridge.py) |
 
@@ -191,7 +191,7 @@ header stamp, never the mcap log time; every float is written as float32, as on 
 | Package | Contents |
 |---|---|
 | [`prevera_msgs`](../src/prevera_msgs) | `FallEvent`, `PersonTrack`, `PersonTrackArray` |
-| [`prevera_perception`](../src/prevera_perception) | `background.py`, `clustering.py`, `tracker.py`, `detector_core.py` (all ROS-free), `fall_detector_node.py` (rclpy adapter), `synthetic_scene.py` + `synthetic_publisher_node.py`, `vjepa_bridge.py` (interface stub), the test suite (83 tests at 2026-09-28, plus tools tests beside them) |
+| [`prevera_perception`](../src/prevera_perception) | `background.py`, `clustering.py`, `tracker.py`, `detector_core.py` (all ROS-free), `fall_detector_node.py` (rclpy adapter), `synthetic_scene.py` + `synthetic_publisher_node.py`, `vjepa_bridge.py` (interface stub), the test suite (130 passed, 1 skipped in CI at `6990dfe`, tools tests included) |
 | [`prevera_bringup`](../src/prevera_bringup) | `lidar.launch.py`, `perception.launch.py` (LIDAR + detector), `slam.launch.py`, `guardian.launch.py` (SLAM + detector, optional RViz), configs, udev rule, RViz layout |
 | [`prevera_description`](../src/prevera_description) | sentinel URDF (scan plane at floor level since 2026-09-28, the 0.65 m rig behind an arg; DR-02) |
 
