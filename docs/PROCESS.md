@@ -80,7 +80,9 @@ claim is acted on:
 
 Every results document ends with what is not known. Examples from the 09-27 results: the RF-DETR runner was not yet
 versioned (it is now [`jetson/rf_eval.py`](../jetson/rf_eval.py)); active learning and telemetry being off was
-reported, not verified (four captures on 2026-09-28/29 then found the pingback on and verified each switch, DR-11);
+reported, not verified (four captures on 2026-09-28 PDT then found the model-monitoring pingback on and verified the
+three switches that turn off the pingback, the version check and the ultralytics probe; the usage collector's
+aggregated record still leaves while inferring, and a model pull has never been captured, DR-11);
 one subject, one room, one session;
 frames within a segment are near-duplicates, so each segment is closer to one trial than to thirty
 ([results, section 7](field-tests/2026-09-27-rfdetr-results.md)). The same goes for this publication: what was
