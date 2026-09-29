@@ -311,7 +311,8 @@ findings, and how each is handled above:
   Follow-up 2026-09-28: verified for one run of a fine-tuned model, and telemetry was **not** off: the model-monitoring
   pingback posted a record of every request to `api.roboflow.com` once a minute, and `TELEMETRY_OPT_OUT` is inert in
   1.7.2 ([fine-tune results, section 5](2026-09-28-roboflow-finetune-results.md), EG1/EG2). The same was true of
-  every run in this document.
+  every run in this document. On 2026-09-29 the re-capture with `METRICS_ENABLED=False` showed that post gone and
+  the usage collector's aggregated ~2.4 KB record still leaving every ~10 s (same section, "Egress, re-capture").
 - **Code and co-load:** `rf_eval.py` was on the Jetson only until 2026-09-28, when a verbatim copy entered the repo
   as [`jetson/rf_eval.py`](../../jetson/rf_eval.py). The LIDAR co-load effect was not measured during these runs (no
   bag); it was measured on 2026-09-28 for a fine-tuned model ([fine-tune results, section 5](2026-09-28-roboflow-finetune-results.md)).

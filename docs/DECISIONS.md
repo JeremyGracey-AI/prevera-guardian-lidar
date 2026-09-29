@@ -55,7 +55,7 @@ flowchart LR
 | [DR-08](#dr-08) | Per-track time base and an association speed gate | implemented, default off |
 | [DR-09](#dr-09) | Windowed stillness, shipped together with `min_range_m` 0.3 | stillness implemented, default off; `min_range_m` deferred to the flip |
 | [DR-10](#dr-10) | Add two webcams and a stock camera detector for the LIDAR's blind spots | accepted; evaluated offline, not in the alert path |
-| [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; privacy verification incomplete |
+| [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback off and verified 2026-09-29, usage collector still reports |
 | [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR open |
 | [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (2026-09-28), room frames next |
 | [DR-14](#dr-14) | **D0**: where fusion runs | open |
@@ -314,10 +314,16 @@ flowchart LR
 <a id="dr-11"></a>
 ## DR-11 · Run camera inference on the device, not on a hosted API
 
-- **Status:** accepted; privacy verification done once on 2026-09-28 and it found a gap: the container posts a record
-  of every request (class and confidence per detection, API key in clear, hostname, IP, MAC) to `api.roboflow.com`
-  once a minute through the model-monitoring pingback, which the hardened command never turns off; `TELEMETRY_OPT_OUT`
-  is inert in Inference 1.7.2. Open item, see below; whether any per-request metadata may leave is Jeremy's call.
+- **Status:** accepted; privacy verified twice by capture. 2026-09-28: the container posted a record of every request
+  (class and confidence per detection, API key in clear, hostname, IP, MAC) to `api.roboflow.com` once a minute
+  through the model-monitoring pingback, which the hardened command never turned off; `TELEMETRY_OPT_OUT` is inert in
+  Inference 1.7.2. 2026-09-29: with `METRICS_ENABLED=False` in the command
+  ([`jetson/inference-server-up.sh`](../jetson/inference-server-up.sh)) that post is gone (EG1 PASS, 12,987 bytes in
+  580 frames); what still leaves is the usage collector's aggregated ~2.4 KB every ~10 s while inferring, with the
+  API key in clear, hashed hostname and IP, model id and frame counts, no per-detection field; and, at every
+  container start, a version check to `api.github.com` (`DISABLE_VERSION_CHECK=True` turns it off; added to the
+  script after the capture, not yet verified by one). Open: whether that aggregated usage record may leave a
+  resident's room at all is Jeremy's call, not a setting.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
 - **Options on record:** a hosted inference API, rejected because frames would leave the room. No cost or latency
@@ -333,10 +339,16 @@ flowchart LR
   is recorded there from `docker inspect`; and one run was captured with `tcpdump`. The capture (EG1 FAIL, EG2 PASS)
   shows 285 KB leaving during 580 frames, all to `api.roboflow.com`, as one 280 KB post shaped and timed like the
   model-monitoring pingback (`METRICS_ENABLED`, default True, 60 s) plus ~2.4 KB every 10 s from the usage
-  collector; the frames themselves (82 MB over the docker bridge in the same window) did not leave. **Telemetry is
-  not off**: `TELEMETRY_OPT_OUT=True` is inert in 1.7.2 and `METRICS_ENABLED` was never set. Next: pre-declare a
-  re-capture with `METRICS_ENABLED=False` (or `disable_model_monitoring: true` per request) and decide whether any
-  per-request metadata may leave at all. The evaluation plan's "frames never leave the device"
+  collector; the frames themselves did not leave (that capture began 34 s into the run and saw 167 of the 580
+  frames, 40.7 MB, over the docker bridge; the results record the correction beside EG1). **Telemetry was not
+  off**: `TELEMETRY_OPT_OUT=True` is inert in 1.7.2 and `METRICS_ENABLED` was never set. The pre-declared re-capture
+  with `METRICS_ENABLED=False` ran on 2026-09-29 ([plan](field-tests/2026-09-28-egress-recapture-plan.md), results
+  section 5 "Egress, re-capture"): 12,987 bytes out during 580 frames, all to `api.roboflow.com`, in ~2.4 KB
+  usage-collector exchanges every ~10 s; no post over 3.3 KB in 34 minutes of capture; the full 166 MB of frames
+  went to the container and did not leave (EG1 PASS, EG2 PASS). The version check to `api.github.com` at container
+  start was found in the same capture, outside the loop. Next: decide whether the aggregated usage record may
+  leave at all; if not, `OFFLINE_MODE=True` or a local sink for `METRICS_COLLECTOR_BASE_URL`, each with its own
+  pre-declared capture; a capture that covers a model pull is still owed. The evaluation plan's "frames never leave the device"
   was wrong as written on 09-27 (frames were copied to the Mac for scoring); the results document corrects it and
   leaves the plan as committed. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
   over 0.5 s while `e65db0` served 580 frames (CL1, CL2 PASS,

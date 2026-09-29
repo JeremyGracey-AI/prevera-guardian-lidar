@@ -20,7 +20,7 @@ the field evidence behind its design decisions, including the results that faile
 | **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; room frames next); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
 | **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
 | **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; one-line fix, verified on this device. |
-| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 124 passed, 1 skipped ([quickstart](#quickstart)). |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 129 passed, 1 skipped ([quickstart](#quickstart)). |
 
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
@@ -180,7 +180,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 the test suite (124 passed, 1 skipped), goldens, legacy reference
+│   │   └── test/                 the test suite (129 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
@@ -219,7 +219,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 124 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 129 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector
@@ -288,11 +288,16 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 - **A single 2D plane cannot see a person lying end-on.** The cameras cover it in the trials above; fusion is not built.
 - **Furniture feet look like a lying person** at floor level (elongated and still). It raised no alarm so far, but
   it is the main false-alarm risk once stillness works.
-- **Camera privacy is verified once, and the verification found a leak.** Inference runs on the device and the client
-  posts only to localhost, and a `tcpdump` capture on 2026-09-28 showed the frames staying on the device; it also
-  showed the server's model-monitoring pingback posting a record of every request (class and confidence per
-  detection, key in clear, hostname, IP, MAC) to Roboflow once a minute, which the documented container command does
-  not turn off ([DR-11](docs/DECISIONS.md#dr-11), [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)).
+- **Camera privacy is verified by capture, twice, and the first one found a leak.** Inference runs on the device
+  and the client posts only to localhost. A `tcpdump` capture on 2026-09-28 showed the server's model-monitoring
+  pingback posting a record of every request (class and confidence per detection, key in clear, hostname, IP, MAC)
+  to Roboflow once a minute, which the container command as then written did not turn off; the pre-declared
+  re-capture of 2026-09-29 with `METRICS_ENABLED=False` ([`jetson/inference-server-up.sh`](jetson/inference-server-up.sh))
+  showed that post gone, the frames staying on the device (166 MB in, 13 KB out over 580 frames), and two channels
+  still open: the usage collector's aggregated record every ~10 s (API key in clear, hashed hostname and IP, counts)
+  and a version check to GitHub at container start ([DR-11](docs/DECISIONS.md#dr-11),
+  [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)). Whether the usage record may
+  leave a resident's room at all is an open decision, not a setting.
 - **The camera views are unauthenticated.** Since 2026-09-28 the MJPEG views bind the loopback address by default
   and are opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes
   them on purpose, for a trusted bench only; `foxglove_bridge` and `rosbridge` follow the same rule in
@@ -309,8 +314,10 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 2. D1: a new pre-declared keypoint plan that fixes the class rule, and a counter-camera view that shows the whole body.
 3. D0: measure the chosen fusion placement against the direct-call baseline on the device, with a bag recording
    `/scan` during the run.
-4. Close the privacy gap structurally: disable active learning in the request, record the container environment,
-   capture egress.
+4. Close the privacy gap structurally: done for active learning (in the request), the container environment (in
+   the repo) and the pingback (`METRICS_ENABLED=False`, verified by capture); left: the decision on the usage
+   collector's aggregated record, the version check (`DISABLE_VERSION_CHECK=True`, not yet verified by capture), and
+   a capture that covers a model pull.
 5. Measure the LIDAR-to-camera extrinsics and update the URDF; labelled trials with more subjects, ranges and rooms.
 6. Revisit the 3D-sensor question with those numbers.
 7. The goal after detection: fall-risk prediction, flagging rising risk before a fall. Not built; nothing in this
