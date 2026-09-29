@@ -79,15 +79,14 @@ client = InferenceHTTPClient(api_url="https://serverless.roboflow.com", api_key=
 out = client.run_workflow(specification=spec, images={"image": "https://.../public-image.jpg"})
 ```
 
-On the Jetson, against the local Inference server started with
-[`jetson/inference-server-up.sh`](../../jetson/inference-server-up.sh), the DR-11 command (`--read-only`,
-`127.0.0.1:9001`, `ACTIVE_LEARNING_ENABLED=False`, `METRICS_ENABLED=False`, `DISABLE_VERSION_CHECK=True`,
-`YOLO_OFFLINE=True`, `TELEMETRY_OPT_OUT=True` (inert in 1.7.2, kept for documentation), and
-`TRITON_CACHE_DIR=/tmp/triton-cache` until
-[roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) is released; while requests arrive, the
-usage collector's aggregated record still goes to `api.roboflow.com`, see
-[DR-11](../../docs/DECISIONS.md#dr-11)), the same file with
-`api_url="http://127.0.0.1:9001"`. On video, `InferencePipeline.init_with_workflow(...)` from the `inference`
+On the Jetson, start the local Inference server with
+[`jetson/inference-server-up.sh`](../../jetson/inference-server-up.sh), the DR-11 command, and run the same file with
+`api_url="http://127.0.0.1:9001"`. The command sets `--read-only`, `127.0.0.1:9001`,
+`ACTIVE_LEARNING_ENABLED=False`, `METRICS_ENABLED=False`, `DISABLE_VERSION_CHECK=True`, `YOLO_OFFLINE=True`,
+`TELEMETRY_OPT_OUT=True` (inert in 1.7.2, kept for documentation), and `TRITON_CACHE_DIR=/tmp/triton-cache` until
+[roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) is released. While requests arrive, the
+usage collector's aggregated record still goes to `api.roboflow.com`
+([DR-11](../../docs/DECISIONS.md#dr-11)). On video, `InferencePipeline.init_with_workflow(...)` from the `inference`
 package with `workflow_specification=spec`, so that the tracker and the zone timer see consecutive frames with
 their frame numbers.
 
