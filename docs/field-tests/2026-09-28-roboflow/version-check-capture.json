@@ -1,0 +1,107 @@
+{
+ "plan": "docs/field-tests/2026-09-29-version-check-capture-plan.md (commit c143b5a, 2026-09-29 02:28:44 UTC, before the run)",
+ "what_changed": "~/inference-server-up.sh on the Jetson replaced by the repo's b3bd929 version (md5 d8c1ad935fe8636122e18905f5cadccd; the f41c8be copy kept as ~/inference-server-up.sh.f41c8be): one added line, -e DISABLE_VERSION_CHECK=True. Same image, cache volume, key file. No request sent to the server during the capture",
+ "capture": {
+  "command_jeremy_sudo": "tcpdump -i any -n -Z jeremy -w /opt/nvme/reports/version-check.pcap 'not port 22 and not host 127.0.0.1'",
+  "tcpdump_started_utc": "02:56:54 (ps lstart of pid 15627)",
+  "first_packet": {
+   "epoch": 1790650615.739184,
+   "utc": "02:56:55"
+  },
+  "last_packet": {
+   "epoch": 1790651015.639046,
+   "utc": "03:03:35"
+  },
+  "span_s": 399.8,
+  "pcap_bytes": 2389947,
+  "text": "tcpdump -r version-check.pcap -n -q -tt > version-check.txt  (7163 lines)",
+  "scoring": "tools/jetson/egress_summary.py version-check.txt --t0 0 --t1 9999999999  (defaults: /22 prefixes, self 192.168.4.60,192.168.4.39); container attribution: lines with 172.17.0.2 as source on docker0"
+ },
+ "container": {
+  "command": "sudo ~/inference-server-up.sh (Jeremy, terminal 2, after the capture was listening)",
+  "id": "4280e4ddec46bec2fd15a9414808ac71fc6beb4ad43ba1a572f961314f419246",
+  "uvicorn_started_utc": "02:57:28 (ps lstart of the container's uvicorn process, pid 15761)",
+  "inspect_line_as_printed": "readonly=true ports={\"9001/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"9001\"}]} TRITON_CACHE_DIR=/tmp/triton-cache MAX_ACTIVE_MODELS=2 ACTIVE_LEARNING_ENABLED=False TELEMETRY_OPT_OUT=True METRICS_ENABLED=False DISABLE_VERSION_CHECK=True",
+  "info_answering_utc": "02:59:08 at the agent's first poll over ssh, 100 s after the uvicorn start; the script's own check at +20 s printed 'server not answering yet'; the exact first-answer moment is not in the capture (127.0.0.1 is excluded)"
+ },
+ "whole_capture_lan_22": {
+  "out_bytes_non_lan": 348,
+  "in_bytes_non_lan": 316,
+  "by_destination": {
+   "91.189.91.97:80": 87,
+   "185.125.190.101:80": 87,
+   "1.1.1.1:80": 0,
+   "91.189.91.58:80": 87,
+   "91.189.91.96:80": 87
+  },
+  "container_leg_bytes": 533322,
+  "other_non_lan_bytes": 3488,
+  "other_endpoints": {
+   ":: > ff02::1:ff95:7eb2": 912,
+   ":: > ff02::1:ff95:e332": 912,
+   ":: > ff02::1:ff95:5d92": 912,
+   ":: > ff02::16": 56,
+   ":: > ff02::1:ffd3:3ad9": 32,
+   "0.0.0.0:68 > 255.255.255.255:67": 600,
+   ":: > ff02::1:ffb5:c5ab": 32,
+   ":: > ff02::1:ffa7:b16f": 32
+  },
+  "unparsed_lines": 627,
+  "unparsed_kinds": {
+   "ifindex": 243,
+   "ARP,": 382,
+   "Null": 2
+  },
+  "lines": 7163
+ },
+ "dns_names_queried_all_interfaces": {
+  "connectivity-check.ubuntu.com": "6 A + 3 AAAA (NetworkManager, host OS)",
+  "api.github.com": 0,
+  "api.roboflow.com": 0
+ },
+ "outbound_bytes_non_lan_by_second": {
+  "02:57:58": {
+   "91.189.91.97:80": 87,
+   "185.125.190.101:80": 87
+  },
+  "03:02:58": {
+   "91.189.91.96:80": 87,
+   "91.189.91.58:80": 87
+  },
+  "total": 348,
+  "note": "all four are the host's connectivity checks, 87 bytes each"
+ },
+ "from_the_container_172.17.0.2": {
+  "to_api.github.com": "0 DNS queries, 0 connections (the question this capture asked)",
+  "to_1.1.1.1:80": [
+   {
+    "utc": "02:58:08.55",
+    "src_port": 54568,
+    "packets_container_side": 4,
+    "flags": "S, ., F., . (SYN, ACK, FIN, ACK) with S. and F. back from 1.1.1.1; handshake and close in 4 ms",
+    "payload_bytes": 0
+   },
+   {
+    "utc": "02:58:40.46",
+    "src_port": 32842,
+    "packets_container_side": 4,
+    "flags": "same",
+    "payload_bytes": 0
+   }
+  ],
+  "anything_else": "only 172.17.0.1 (the host's four /info polls, DNAT of 127.0.0.1:9001)",
+  "inbound_from_outside_lan": "1.1.1.1:80 replies only, 0 payload bytes"
+ },
+ "attribution_of_1.1.1.1": "ultralytics 8.3.40 (the version Inference 1.7.2 pins), ultralytics/utils/__init__.py: `ONLINE = is_online()` at import; is_online() does socket.create_connection((\"1.1.1.1\", 80), timeout=2.0).close() unless YOLO_OFFLINE is \"true\". A TCP handshake and close with no payload, exactly the four packets seen, once per process that imports ultralytics; two processes per container start (32 s apart, the same pair that did the version check). Not in inference_core or inference_models (grepped); the switch is YOLO_OFFLINE=True, which OFFLINE_MODE also sets (inference_models/_offline.py, inference/core/env.py). Not on the command as run tonight",
+ "earlier_captures": "the 34-minute re-capture of 01:09 UTC held three 1.1.1.1:80 flows from 172.17.0.2 (01:07:07, 01:08:03, 01:08:35: the first container's one probe before it was removed, and the running container's two), which its extract filed as 'a bare SYN, no payload' under the host OS. Wrong attribution: they were the container's, the same probe as here. Corrected beside the original in the results, not over it",
+ "bars": {
+  "VC1 (zero DNS queries for api.github.com and zero TCP connections from 172.17.0.2 to any non-LAN address)": "FAIL: 0 api.github.com queries and 0 GitHub connections, but 2 TCP connections to 1.1.1.1:80 (0 payload bytes)",
+  "VC2 (/info within 120 s of docker run; DISABLE_VERSION_CHECK=True on the inspect line)": "PASS: answering at 100 s (first poll), flag printed"
+ },
+ "predictions": {
+  "1 VC1 PASS with 0 bytes": "wrong on connections, right on GitHub and on bytes: the flag under test did what it says (no version check), and the bar caught a second start-time probe",
+  "2 VC2 PASS, /info about 60 s": "PASS; answering at the 100 s poll, first-answer moment not captured",
+  "3 only host-OS traffic in the capture": "wrong: two container connections to 1.1.1.1:80",
+  "4 nothing model-sized comes in": "confirmed: 316 bytes in from outside the LAN in 400 s"
+ }
+}
