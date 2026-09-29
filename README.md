@@ -2,7 +2,8 @@
 
 A privacy-first fall detector for senior-care rooms, built on a Jetson Orin Nano. A 2D LIDAR on the floor finds a
 person lying down from geometry alone, with no images. Two webcams with a stock RF-DETR detector, run locally on the
-device, were shown in an offline evaluation to see the poses a single scan plane misses. A proprietary V-JEPA stage
+device, were shown in an offline evaluation to see the poses a single scan plane misses; a fine-tuned RF-DETR class
+split passed its pre-declared bars on public data and was served on the device (no room-frame result yet). A proprietary V-JEPA stage
 (not in this repository) is where a fall gets confirmed. This repository holds the LIDAR detector, the tools that test it against real recordings, and
 the field evidence behind its design decisions, including the results that failed.
 
@@ -19,7 +20,7 @@ the field evidence behind its design decisions, including the results that faile
 | **Does not** | See a person lying end-on (two of six lie-downs missed); reach WARN on the device (the fixes are tested offline only). Stock RF-DETR on two webcams sees the end-on poses but its box shape does not tell lying from standing ([C3](docs/field-tests/2026-09-27-rfdetr-results.md)). |
 | **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; room frames next); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
 | **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
-| **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; one-line fix, verified on this device. |
+| **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; a one-line fix plus a unit test, verified on this device. |
 | **Try it** | `pytest` on the ROS-free core and tools, no hardware: 130 passed, 1 skipped ([quickstart](#quickstart)). |
 
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
@@ -67,7 +68,7 @@ flowchart TB
   fixes["Fixes behind default-off keys:<br/>windowed stillness · incident hold ·<br/>speed gate · min_range 0.3"] -.-> core
   trk --> tracks["/tracks"]
   fall -->|"OBSERVE · WARN"| events["/fall_events"]
-  uc -. "frames, offline so far" .-> rf["RF-DETR, stock COCO<br/>Roboflow Inference on the Jetson,<br/>localhost only"]
+  uc -. "frames, offline so far" .-> rf["RF-DETR (stock COCO; fine-tuned class split)<br/>Roboflow Inference on the Jetson,<br/>localhost only"]
   events -. "WARN" .-> fusion["LIDAR + camera fusion<br/>D0: where it runs is open"]
   rf -.-> fusion
   events -. "WARN" .-> vjepa[["V-JEPA verification<br/>proprietary · not included"]]
@@ -151,9 +152,39 @@ C2's walking boxes are hips and legs only (the counter camera cuts off heads), s
 view of a standing person. C3's failure was the pre-declared trigger for keypoints; the first keypoint run was
 **invalid under its own validity rule** (the person class came back as id 1, not 0) and was not scored
 ([status](docs/field-tests/2026-09-27-rfdetr-keypoints-status.md)). C4 is the median serial HTTP round trip on the
-device; the lowest `MemAvailable` seen was 2,584 MB with two models resident and the cameras off, and whether inference
-disturbs `/scan` under load was not measured. Everything above, with the audit's caveats, is in the
-[results](docs/field-tests/2026-09-27-rfdetr-results.md).
+device; the lowest `MemAvailable` seen was 2,584 MB with two models resident and the cameras off; whether inference
+disturbs `/scan` was measured once on 2026-09-28 with the fine-tuned `e65db0` serving 580 frames: 10.009 Hz, no gap
+over 0.5 s (CL1, CL2 PASS; one run, cameras off,
+[fine-tune results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)). Everything else above, with
+the audit's caveats, is in the [results](docs/field-tests/2026-09-27-rfdetr-results.md).
+
+### Fine-tuned RF-DETR on public fall data (pre-declared, 2026-09-28)
+
+| Condition (declared before the run) | Measured | Verdict |
+|---|---|---|
+| F1: `lying` precision and recall ≥ 0.90 | 1.000 / 1.000 (`00ba18` at the valid-optimal threshold 0.75; 1.000 / 1.000 at every stored threshold from 0.11 to 0.87) | **pass** |
+| F2: `lying` read as upright in ≤ 5 % of lying instances | 0 of 24 | **pass** |
+| F5: device fit (report only; serial, one request in flight, `127.0.0.1` only, cameras off) | `e65db0` 78.7 ms, 12.7 fps, 288x288; `00ba18` 125.2 ms, 8.0 fps, 640x640; lowest `MemAvailable` 2,799 MB with both resident | reported |
+| CL1, CL2: co-load (one run, `e65db0` only, cameras off) | 594 scans against 567 idle; no `/scan` gap over 0.5 s | **pass** |
+
+Public data only: arm A, one Universe dataset, 73 test images with 89 instances, 24 of them `lying`. One training
+run. Train and test were not checked for near-duplicate frames, so the numbers are an upper bound. F2 is read from
+the confusion matrices stored at 0.70 and 0.80, which agree. None of the accuracy numbers is a room result: no frame
+from the test room was trained on or scored. F5 sent the 580 recorded `floor-trials-1` frames to the local container
+only, for timing, and discarded the predictions. Read the pass as "not dead on arrival", not as a recall estimate.
+
+`00ba18` is the child the plan's rule picked from one RF-DETR architecture search on arm A (736 images). `e65db0` is
+the platform's recommended fast child of the same search; it is reported, not scored under the plan's threshold rule.
+Arms B and C were plain RF-DETR nano comparison arms, report only. In the co-load run both bags read 10.009 Hz and
+the counts differ by the recorders' spans; nothing is claimed about the detector under load beyond `/fall_events`
+staying silent.
+
+Privacy: with the versioned command ([`jetson/inference-server-up.sh`](jetson/inference-server-up.sh)), an idle
+container sent nothing to any non-LAN address for as long as it was watched (32.6 minutes, no request sent). While
+inferring, the usage collector's aggregated record still goes to Roboflow ([DR-11](docs/DECISIONS.md#dr-11)). A model
+pull has never been captured. Details:
+[fine-tune results, section 3](docs/field-tests/2026-09-28-roboflow-finetune-results.md#3-arm-a-scored) and
+[section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md#5-f5-device-fit-report-only).
 
 ## Decisions
 
@@ -167,7 +198,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 | Scan plane at floor level, not counter height ([DR-02](docs/DECISIONS.md#dr-02)) | accepted; 3D sensor question open |
 | Replay harness over a ROS-free core; fixes behind default-legacy keys ([DR-04](docs/DECISIONS.md#dr-04), [DR-06](docs/DECISIONS.md#dr-06)) | implemented |
 | Two webcams + stock RF-DETR for the blind spots, inference on the device only ([DR-10](docs/DECISIONS.md#dr-10), [DR-11](docs/DECISIONS.md#dr-11)) | accepted |
-| **D1**: boxes or keypoints ([DR-13](docs/DECISIONS.md#dr-13)) | open, direction keypoints |
+| **D1**: boxes, keypoints, or a fine-tuned class split ([DR-13](docs/DECISIONS.md#dr-13)) | open; box shape no (C3); class split passed F1/F2 on public data (2026-09-28), room frames next; keypoint rescore v2 not run |
 | **D0**: where LIDAR and camera evidence are combined ([DR-14](docs/DECISIONS.md#dr-14)) | open, not built |
 | V-JEPA verification kept proprietary, shown as a black box ([DR-15](docs/DECISIONS.md#dr-15)) | accepted |
 | Scoped sudo, structural push gate, pre-declared evaluations ([DR-17](docs/DECISIONS.md#dr-17)) | accepted |
@@ -196,7 +227,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── DEVELOPMENT-LOG.md        commit-by-commit evidence from the private history
 │   ├── field-tests/              protocols, results, figures, handoffs, per-recording timelines
 │   ├── hardware/                 rig documentation and photos
-│   └── plans/                    replay-harness plan v4 and its open findings
+│   └── plans/                    replay-harness plan v4 and its open findings; the 2026-09-28 close-the-gaps plan
 ├── setup_jetson.sh               workspace setup and build on the Jetson
 ├── LICENSE                       Apache-2.0
 └── NOTICE                        copyright, patent notice, third-party components
@@ -273,8 +304,8 @@ lies there and one WARN about a second after the fall. For unattended runs with 
 
 Under the documented hardened `--read-only` container command, Roboflow's JetPack 6.2.0 Inference image returns HTTP 500
 for every RF-DETR request, because Triton's kernel cache defaults to a read-only path.
-[roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) sets `TRITON_CACHE_DIR` in that image (one
-line, matching the JetPack 7.2.0 image). It was verified on this Jetson with the variable set at runtime: HTTP 500
+[roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) sets `TRITON_CACHE_DIR` in that image (a
+one-line fix, matching the JetPack 7.2.0 image, plus a unit test). It was verified on this Jetson with the variable set at runtime: HTTP 500
 before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-12](docs/DECISIONS.md#dr-12).
 
 ## Limitations
@@ -315,7 +346,9 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 
 1. Finish plan v4: spot memory across a re-spawn, time-based spike memory, then the config flip against the
    pre-declared R4/R5 bars, then deployment with a rollback tag ([plan](docs/plans/replay-harness-plan-v4.md)).
-2. D1: a new pre-declared keypoint plan that fixes the class rule, and a counter-camera view that shows the whole body.
+2. D1: run the pre-declared keypoint rescore ([plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md));
+   write and run a pre-declared room-frame plan for the fine-tuned class split; a counter-camera view that shows the
+   whole body.
 3. D0: measure the chosen fusion placement against the direct-call baseline on the device, with a bag recording
    `/scan` during the run.
 4. Close the privacy gap structurally: done for active learning (in the request), the container environment (in
