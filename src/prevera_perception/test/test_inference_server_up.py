@@ -45,3 +45,11 @@ def test_env_file_is_the_invoking_users_not_roots():
     assert "--env-file ~/" not in text
     assert "SUDO_USER" in text and 'ENV_FILE=' in text
     assert '[ -r "$ENV_FILE" ]' in text, "refuse to start without the key file rather than let docker fail half-way"
+
+
+def test_version_check_to_github_is_disabled():
+    """The 2026-09-29 capture saw the container GET api.github.com/repos/roboflow/inference/releases/latest twice per
+    start (inference/core/__init__.py, at import); DISABLE_VERSION_CHECK=True is the switch, and the inspect check
+    must print it so a restart shows it took."""
+    assert "-e DISABLE_VERSION_CHECK=True" in _docker_run_line()
+    assert "DISABLE_VERSION_CHECK" in UP.read_text().split("docker inspect", 1)[1]
