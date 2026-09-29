@@ -126,7 +126,7 @@ Five plans committed before their runs; two bars failed and stay in the record a
 | `c143b5a` (19:28) | **DR-11 decision recorded**: the usage collector's aggregated record may leave, for now (Jeremy) | What that accepts, by the code: API key in clear, hashed hostname and IP, model id, counts; no per-detection field. [Version-check capture plan](field-tests/2026-09-29-version-check-capture-plan.md) before the run. |
 | `6a8a8b1` (20:08) | **Container-start capture: VC1 FAIL, VC2 PASS** | No GitHub lookup (the flag works); two 0-byte TCP handshakes to `1.1.1.1:80` from the container: ultralytics' `is_online()` at import. The bar stands. |
 | `c332945`, `37b2390` | `YOLO_OFFLINE=True` on the script (test first); [its capture plan](field-tests/2026-09-29-yolo-offline-capture-plan.md) | |
-| `2e6d582` (21:07) | **Container-start capture with `YOLO_OFFLINE=True`: VC1, VC2 PASS** | Zero packets from the container to any non-LAN address in 32.6 minutes. A container that is not asked anything now says nothing to anyone. 130 passed, 1 skipped. |
+| `2e6d582` (21:07) | **Container-start capture with `YOLO_OFFLINE=True`: VC1, VC2 PASS** | Zero packets from the container to any non-LAN address in 32.6 minutes. A container that is not asked anything now said nothing to anyone for as long as it was watched (32.6 minutes, idle; a model pull has never been captured). 130 passed, 1 skipped. |
 
 Not done, on purpose: no room frame, bag or field data went to Roboflow or any hosted API; no Active Learning; no
 new decision record; nothing about the V-JEPA stage. Still owed on the privacy side: a capture that covers a model

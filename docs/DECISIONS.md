@@ -314,7 +314,8 @@ flowchart LR
 <a id="dr-11"></a>
 ## DR-11 · Run camera inference on the device, not on a hosted API
 
-- **Status:** accepted; privacy verified twice by capture. 2026-09-28: the container posted a record of every request
+- **Status:** accepted; privacy checked by four captures (two egress, two container start).
+  2026-09-28: the container posted a record of every request
   (class and confidence per detection, API key in clear, hostname, IP, MAC) to `api.roboflow.com` once a minute
   through the model-monitoring pingback, which the hardened command never turned off; `TELEMETRY_OPT_OUT` is inert in
   Inference 1.7.2. 2026-09-29: with `METRICS_ENABLED=False` in the command
@@ -325,8 +326,9 @@ flowchart LR
   [container-start capture](field-tests/2026-09-29-version-check-capture-plan.md) at 02:57 UTC, VC2 PASS), which
   also found ultralytics' `is_online()` handshake to `1.1.1.1:80`, 0 bytes, twice per start (VC1 FAIL as declared);
   with `YOLO_OFFLINE=True` a [fourth capture](field-tests/2026-09-29-yolo-offline-capture-plan.md) at 03:11 UTC saw
-  nothing leave the container in 32.6 minutes (VC1, VC2 PASS). A container that is not asked anything now says
-  nothing to anyone. **Decision (Jeremy, 2026-09-29): yes, for now**, the aggregated usage record may leave once
+  nothing leave the container in 32.6 minutes (VC1, VC2 PASS). A container that is not asked anything now said
+  nothing to anyone for as long as it was watched (32.6 minutes, idle; a model pull has never been captured).
+  **Decision (Jeremy, 2026-09-29): yes, for now**, the aggregated usage record may leave once
   requests arrive; no revisit trigger was set.
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.

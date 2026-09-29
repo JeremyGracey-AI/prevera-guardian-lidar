@@ -288,7 +288,7 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 - **A single 2D plane cannot see a person lying end-on.** The cameras cover it in the trials above; fusion is not built.
 - **Furniture feet look like a lying person** at floor level (elongated and still). It raised no alarm so far, but
   it is the main false-alarm risk once stillness works.
-- **Camera privacy is verified by capture, twice, and the first one found a leak.** Inference runs on the device
+- **Camera privacy is checked by capture: four captures, and the first one found a leak.** Inference runs on the device
   and the client posts only to localhost. A `tcpdump` capture on 2026-09-28 showed the server's model-monitoring
   pingback posting a record of every request (class and confidence per detection, key in clear, hostname, IP, MAC)
   to Roboflow once a minute, which the container command as then written did not turn off; the pre-declared
@@ -297,7 +297,8 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   still open: the usage collector's aggregated record every ~10 s (API key in clear, hashed hostname and IP, counts)
   and a version check to GitHub at container start. Two more start captures the same night switched that check off
   (`DISABLE_VERSION_CHECK=True`), found ultralytics' 0-byte handshake to `1.1.1.1:80` and switched it off too
-  (`YOLO_OFFLINE=True`): a container that is not asked anything now says nothing to anyone
+  (`YOLO_OFFLINE=True`): a container that is not asked anything now said nothing to anyone for as long as it was
+  watched (32.6 minutes, idle; a model pull has never been captured)
   ([DR-11](docs/DECISIONS.md#dr-11),
   [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)). Whether the usage record may
   leave a resident's room at all was a product decision, not a setting: yes, for now (Jeremy, 2026-09-29, DR-11).
