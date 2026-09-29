@@ -79,5 +79,5 @@ def test_container_leg_is_the_positive_control_not_egress():
 
 def test_unparsed_lines_are_characterised():
     s = _s(["1790640000.1 enP8p1s0 B   ARP, Request who-has 192.168.4.56 tell 192.168.4.56, length 60",
-            "1790640000.2 enP8p1s0 B   ifindex 4 24:2d:6c:e0:01:14"])
+            "1790640000.2 enP8p1s0 B   ifindex 4 02:00:00:00:00:01"])
     assert s["unparsed_lines"] == 2 and s["unparsed_kinds"] == {"ARP,": 1, "ifindex": 1}
