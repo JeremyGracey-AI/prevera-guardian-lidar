@@ -4,7 +4,8 @@ This repository was assembled on 2026-09-27 from a private development repositor
 (the private history contains planning material that is not published), so this log carries forward what the
 private commits recorded: what changed, why, and the evidence each commit gave. The short hashes are the private
 ones; they are the same hashes the field-test documents and the plan cite, and they do not resolve in this
-repository. Commits that only touched unpublished planning documents are listed as such.
+repository; the hashes in the 2026-09-28 section, and in the test table from PR #1 on, are this repository's own and
+resolve here. Commits that only touched unpublished planning documents are listed as such.
 
 Who did what, throughout: Jeremy Gracey ran the hardware (mounting, taping, levelling, lying on the floor), made
 every decision recorded in [DECISIONS.md](DECISIONS.md), and owns the results. Claude Code (Anthropic's coding
@@ -18,7 +19,7 @@ timeline
     2026-09-25 : First field test on the Jetson : Foreground-hold fix : No WARN ever fires
     2026-09-26 : Replay-harness plan (three critique rounds) : ROS-free core extracted : Capture night, two cameras added
     2026-09-27 : Floor mount and floor trials : Harness, incident hold, speed gate, windowed stillness : RF-DETR evaluation, keypoint check pre-declared
-    2026-09-28 : Fine-tuned class split passes on public data : F5, co-load and four egress captures on the Jetson : Three telemetry channels found and switched off, v0.1.0
+    2026-09-28 : Fine-tuned class split passes on public data : F5, co-load, two egress and two container-start captures on the Jetson : Three telemetry channels found and switched off, v0.1.0
 ```
 
 ## Test suite over time
@@ -36,7 +37,7 @@ timeline
 | `6bf7127` PR #1, fine-tune branch and review fixes | 96 passed, 1 skipped | README at the merge |
 | `3adcd15` PR #3, gaps branch (co-load, egress, CI, URDF) | 124 passed, 1 skipped | README at the merge; CI |
 | `efc8b43` PR #4, egress re-capture | 129 passed, 1 skipped | README at the merge; CI |
-| `2e6d582` version-check branch | **130 passed, 1 skipped** | container and Mac |
+| `2e6d582` version-check branch, merged as PR #5 (`6990dfe`) | **130 passed, 1 skipped** | container and Mac; CI at `6990dfe` |
 
 The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jetson or in WSL with ROS 2 Humble.
 
@@ -53,7 +54,7 @@ The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jets
 | Commit | What | Evidence / notes |
 |---|---|---|
 | `e105795` | Restore the `<name>` tag in three `package.xml` files | They had `<n>`; rosdep and colcon rejected the workspace. |
-| `36ca257` | **Hold still foreground so a fallen person is not absorbed** | The rolling-median background (40 scans at 10 Hz) learned anything still for about 2 s, so a lying person vanished before the 4 s sustained rule could fire. Held beams (plus 2 neighbours each side) keep their background value, released after 1,200 scans (2 min) so moved furniture is still learned. The synthetic publisher was fixed to show the failure (empty room during warm-up, a real velocity spike, the body lying broadside because end-on a 2D scan sees only about 25 cm). 14 tests pass, 7 of them fail on the previous code. Verified in ROS 2 Humble (WSL): the synthetic launch emits OBSERVE then WARN (1.54 m/s spike, 0.5 s still). This was PR #1 and is what runs on the Jetson. |
+| `36ca257` | **Hold still foreground so a fallen person is not absorbed** | The rolling-median background (40 scans at 10 Hz) learned anything still for about 2 s, so a lying person vanished before the 4 s sustained rule could fire. Held beams (plus 2 neighbours each side) keep their background value, released after 1,200 scans (2 min) so moved furniture is still learned. The synthetic publisher was fixed to show the failure (empty room during warm-up, a real velocity spike, the body lying broadside because end-on a 2D scan sees only about 25 cm). 14 tests pass, 7 of them fail on the previous code. Verified in ROS 2 Humble (WSL): the synthetic launch emits OBSERVE then WARN (1.54 m/s spike, 0.5 s still). This was private PR #1 and is what runs on the Jetson. |
 | `076354e` | Jetson bring-up scripts, bag tools, [field test](field-tests/2026-09-25-rplidar-fall-tests.md) | Lowering the sensor makes the lying body visible, but WARN never fires: stillness never exceeds 0.4 s at 3.4 to 4.9 m (centroid jitter and track re-spawns). |
 | `7b705c2` | [Handoff](field-tests/HANDOFF-2026-09-26.md) and `guardian-status.sh` | 15 lessons (sensing and ops), the chunk plan, the clean-data protocol. |
 
@@ -67,7 +68,7 @@ The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jets
 | `4613bdc` | Plan step 1: ROS-free `SyntheticScene` | SHA-256 of the 160 seed-42 scans identical before and after the move; 14 tests collect and pass with no `rclpy`. |
 | `a0d7e49` | Plan step 2: ROS-free `DetectorCore`; the node becomes a thin adapter | Test-first (collection failed on the missing module, then green). The old node and the new node were driven with the same 160 `LaserScan`s: 130 `PersonTrackArray` and 48 `FallEvent` messages, field-identical, under both the declared defaults and the YAML. 25 passed, 1 skipped. |
 | `a25a4e0` ... `d922db2` | [Rig](hardware/rig-2026-09-26.md), [runbook](field-tests/RUNBOOK-2026-09-26-capture.md), [capture night](field-tests/2026-09-26-capture.md), [handoff](field-tests/HANDOFF-2026-09-27.md) | LIDAR found on its side (89.9°) after a mount rework, so Recording A is a vertical-plane dataset; Recording B, a level 121 cm plane, loses a person on the floor for 39 s with zero false alarms. |
-| `f185066` | PR #1 merged | |
+| `f185066` | Private PR #1 merged | |
 | `bcae696` | Planning document | Not published. Its two open design decisions (D0, D1) are recorded in [DECISIONS.md](DECISIONS.md). |
 
 ## 2026-09-27: floor mount, fixes, camera evaluation
@@ -98,7 +99,8 @@ walking or standing) and the correction it forces in DR-09 are in the
 
 ## 2026-09-28: fine-tune on public data, device fit, and what the network captures found
 
-Four pull requests merged and one tag (`v0.1.0` at `3adcd15`), 51 commits, 63 files, 9,623 lines; tests 70 → 130.
+Five pull requests merged and one tag (`v0.1.0` at `3adcd15`); through `6990dfe`, 53 commits, 64 files, 9,663
+insertions; tests 70 → 130 (124 at the tag).
 Five plans committed before their runs; two bars failed and stay in the record as written. Jeremy pushed PR #1's
 22 commits himself; every later push was made from the Mac's shell on his instruction with `ALLOW_PUSH=1`
 ([DECISIONS.md, DR-17](DECISIONS.md#dr-17)); every `sudo` on the Jetson was his.
