@@ -297,7 +297,7 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
   still open: the usage collector's aggregated record every ~10 s (API key in clear, hashed hostname and IP, counts)
   and a version check to GitHub at container start ([DR-11](docs/DECISIONS.md#dr-11),
   [results, section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md)). Whether the usage record may
-  leave a resident's room at all is an open decision, not a setting.
+  leave a resident's room at all was a product decision, not a setting: yes, for now (Jeremy, 2026-09-29, DR-11).
 - **The camera views are unauthenticated.** Since 2026-09-28 the MJPEG views bind the loopback address by default
   and are opened through an ssh tunnel (`guardian-cams-up.sh`, `mjpeg_server.py`); `GUARDIAN_BIND=0.0.0.0` exposes
   them on purpose, for a trusted bench only; `foxglove_bridge` and `rosbridge` follow the same rule in

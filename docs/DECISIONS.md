@@ -55,7 +55,7 @@ flowchart LR
 | [DR-08](#dr-08) | Per-track time base and an association speed gate | implemented, default off |
 | [DR-09](#dr-09) | Windowed stillness, shipped together with `min_range_m` 0.3 | stillness implemented, default off; `min_range_m` deferred to the flip |
 | [DR-10](#dr-10) | Add two webcams and a stock camera detector for the LIDAR's blind spots | accepted; evaluated offline, not in the alert path |
-| [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback off and verified 2026-09-29, usage collector still reports |
+| [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback off (verified 2026-09-29); usage record may leave, for now (Jeremy, 2026-09-29); version check off, capture pending |
 | [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR open |
 | [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (2026-09-28), room frames next |
 | [DR-14](#dr-14) | **D0**: where fusion runs | open |
@@ -322,8 +322,9 @@ flowchart LR
   580 frames); what still leaves is the usage collector's aggregated ~2.4 KB every ~10 s while inferring, with the
   API key in clear, hashed hostname and IP, model id and frame counts, no per-detection field; and, at every
   container start, a version check to `api.github.com` (`DISABLE_VERSION_CHECK=True` turns it off; added to the
-  script after the capture, not yet verified by one). Open: whether that aggregated usage record may leave a
-  resident's room at all is Jeremy's call, not a setting.
+  script after the capture, not yet verified by one). **Decision (Jeremy, 2026-09-29): yes, for now**, the
+  aggregated usage record may leave; no revisit trigger was set. The version-check verification capture is
+  [pre-declared](field-tests/2026-09-29-version-check-capture-plan.md).
 - **Context:** the product is a privacy-preserving fall detector in residents' rooms; frames of people must not leave
   the room.
 - **Options on record:** a hosted inference API, rejected because frames would leave the room. No cost or latency
@@ -346,9 +347,14 @@ flowchart LR
   section 5 "Egress, re-capture"): 12,987 bytes out during 580 frames, all to `api.roboflow.com`, in ~2.4 KB
   usage-collector exchanges every ~10 s; no post over 3.3 KB in 34 minutes of capture; the full 166 MB of frames
   went to the container and did not leave (EG1 PASS, EG2 PASS). The version check to `api.github.com` at container
-  start was found in the same capture, outside the loop. Next: decide whether the aggregated usage record may
-  leave at all; if not, `OFFLINE_MODE=True` or a local sink for `METRICS_COLLECTOR_BASE_URL`, each with its own
-  pre-declared capture; a capture that covers a model pull is still owed. The evaluation plan's "frames never leave the device"
+  start was found in the same capture, outside the loop. Whether the aggregated usage record may leave at all was
+  put to Jeremy as a product question and answered on 2026-09-29: **yes, for now**. What that accepts, by the
+  1.7.2 code: about 2.4 KB every ~10 s while requests arrive, to `api.roboflow.com`, carrying the API key in
+  clear, the sha256 of the hostname and of the IP, the model id, frame counts, fps and megapixel buckets, no
+  per-detection field and no image. If it is revisited, the candidates are `OFFLINE_MODE=True` (env.py warns it
+  leaves authentication and usage accounting undefined; a workspace model may refuse to load) or a local sink for
+  `METRICS_COLLECTOR_BASE_URL` / `TELEMETRY_API_USAGE_ENDPOINT_URL`, each with its own pre-declared capture. Still
+  owed: the version-check capture (plan above) and a capture that covers a model pull. The evaluation plan's "frames never leave the device"
   was wrong as written on 09-27 (frames were copied to the Mac for scoring); the results document corrects it and
   leaves the plan as committed. Whether inference disturbs `/scan` under load: measured once on 2026-09-28, 10.009 Hz with no gap
   over 0.5 s while `e65db0` served 580 frames (CL1, CL2 PASS,
