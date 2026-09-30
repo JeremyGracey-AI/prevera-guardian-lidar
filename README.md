@@ -3,7 +3,8 @@
 A privacy-first fall detector for senior-care rooms, built on a Jetson Orin Nano. A 2D LIDAR on the floor finds a
 person lying down from geometry alone, with no images. Two webcams with a stock RF-DETR detector, run locally on the
 device, were shown in an offline evaluation to see the poses a single scan plane misses; a fine-tuned RF-DETR class
-split passed its pre-declared bars on public data and was served on the device (no room-frame result yet). A proprietary V-JEPA stage
+split passed pre-declared bars on public data and, from the counter camera only, on recorded room frames; the floor
+camera failed the head-first pose. A proprietary V-JEPA stage
 (not in this repository) is where a fall gets confirmed. This repository holds the LIDAR detector, the tools that test it against real recordings, and
 the field evidence behind its design decisions, including the results that failed.
 
@@ -18,10 +19,10 @@ the field evidence behind its design decisions, including the results that faile
 |---|---|
 | **Works** | A floor-level 2D LIDAR sees a person lying across or diagonal to its beam within a second, at 1.3 to 2.6 m, with 0 false alarms over 95 s of walking ([floor trials](docs/field-tests/2026-09-27-floor-mount-grid.md)). |
 | **Does not** | See a person lying end-on (two of six lie-downs missed); reach WARN on the device (the fixes are tested offline only). Stock RF-DETR on two webcams sees the end-on poses but its box shape does not tell lying from standing ([C3](docs/field-tests/2026-09-27-rfdetr-results.md)). |
-| **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; room frames next); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
+| **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; [room frames](docs/field-tests/2026-09-29-room-frames-results.md): both bars pass from the counter camera, the floor camera fails the head-first pose); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
 | **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
 | **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; a one-line fix plus a unit test, verified on this device. |
-| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 130 passed, 1 skipped ([quickstart](#quickstart)). |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 193 passed, 1 skipped ([quickstart](#quickstart)). |
 
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
@@ -94,8 +95,8 @@ flowchart LR
 
 ## Key results
 
-All numbers link to the document that reports them. The LIDAR and stock-camera results are one subject, one room,
-one session each. The fine-tune accuracy results are on a public test split; no room frame was trained on or scored.
+All numbers link to the document that reports them. The LIDAR, stock-camera and room-frame results are one subject,
+one room, one session each. The fine-tune accuracy results of 09-28 are on a public test split; no room frame was trained on.
 All are feasibility results, not recall estimates.
 
 ### Where the LIDAR can see a fallen person
@@ -187,6 +188,22 @@ pull has never been captured. Details:
 [fine-tune results, section 3](docs/field-tests/2026-09-28-roboflow-finetune-results.md#3-arm-a-scored) and
 [section 5](docs/field-tests/2026-09-28-roboflow-finetune-results.md#5-f5-device-fit-report-only).
 
+### Fine-tuned RF-DETR on room frames (pre-declared, 2026-09-29)
+
+| Condition (declared and pushed before the run) | Measured | Verdict |
+|---|---|---|
+| R1: one camera reads `lying` in ≥ 80 % of its B frames and of its F frames | counter camera: B 32 of 33, F 30 of 30 | **pass**, carried by the counter camera |
+| R2: the counter camera reads `lying` in ≤ 5 % of walking frames | 0 of 90 | **pass** |
+| Floor camera (report only) | B 32 of 33; **F 0 of 30, all 30 read `standing`**; D 14 of 35 (20 with no pose box, 1 `sitting`) and E 22 of 33 (11 with no pose box) | would fail R1 alone |
+
+The model is `e65db0` at confidence 0.56, the device-sized child, and not the one that passed F1 and F2. One valid
+run of the 580 recorded `floor-trials-1` frames on the Jetson, scored once: 580 answered, no request error. One
+subject, one room, one lie-down per segment, frames that are near-duplicates, and nobody fell: a feasibility result,
+not a recall estimate. The plan went through two adversarial reviews before the run ([record](docs/field-tests/2026-09-29-room-frames/reviews.md)); the first found
+two ways a broken run could have scored as a pass. Not verified at the run: the container's environment was not inspected
+and the network was not captured. Details: [plan](docs/field-tests/2026-09-29-room-frames-plan.md),
+[results](docs/field-tests/2026-09-29-room-frames-results.md).
+
 ## Decisions
 
 Eighteen decision records (DR-00 to DR-17), each with its status, the options on record (or a note that none were
@@ -199,7 +216,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 | Scan plane at floor level, not counter height ([DR-02](docs/DECISIONS.md#dr-02)) | accepted; 3D sensor question open |
 | Replay harness over a ROS-free core; fixes behind default-legacy keys ([DR-04](docs/DECISIONS.md#dr-04), [DR-06](docs/DECISIONS.md#dr-06)) | implemented |
 | Two webcams + stock RF-DETR for the blind spots, inference on the device only ([DR-10](docs/DECISIONS.md#dr-10), [DR-11](docs/DECISIONS.md#dr-11)) | accepted |
-| **D1**: boxes, keypoints, or a fine-tuned class split ([DR-13](docs/DECISIONS.md#dr-13)) | open; box shape no (C3); class split passed F1/F2 on public data (2026-09-28), room frames next; keypoint rescore v2 not run |
+| **D1**: boxes, keypoints, or a fine-tuned class split ([DR-13](docs/DECISIONS.md#dr-13)) | open; box shape no (C3); class split passed F1/F2 on public data (`00ba18`, 2026-09-28) and R1/R2 on room frames from the counter camera (`e65db0`, 2026-09-29; the floor camera fails F); keypoint rescore v2 not run |
 | **D0**: where LIDAR and camera evidence are combined ([DR-14](docs/DECISIONS.md#dr-14)) | open, not built |
 | V-JEPA verification kept proprietary, shown as a black box ([DR-15](docs/DECISIONS.md#dr-15)) | accepted |
 | Scoped sudo, structural push gate, pre-declared evaluations ([DR-17](docs/DECISIONS.md#dr-17)) | accepted |
@@ -212,13 +229,13 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 the test suite (130 passed, 1 skipped), goldens, legacy reference
+│   │   └── test/                 the test suite (193 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
 ├── tools/roboflow/               time-on-floor Workflow (the camera half of D0), runnable on the device
 ├── tools/git-hooks/pre-push      the structural push gate
-├── jetson/                       bring-up and run scripts, camera views, scan and track probes, the F5 runner
+├── jetson/                       bring-up and run scripts, camera views, scan and track probes, the F5 and room-frame runners
 ├── foxglove/guardian.json        Foxglove layout used during capture
 ├── demos/                        mobile-app UI concept (fictional data)
 ├── docs/
@@ -251,7 +268,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 130 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 193 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector
@@ -348,8 +365,8 @@ before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-
 1. Finish plan v4: spot memory across a re-spawn, time-based spike memory, then the config flip against the
    pre-declared R4/R5 bars, then deployment with a rollback tag ([plan](docs/plans/replay-harness-plan-v4.md)).
 2. D1: run the pre-declared keypoint rescore ([plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md));
-   write and run a pre-declared room-frame plan for the fine-tuned class split; a counter-camera view that shows the
-   whole body.
+   decide what follows from the [room-frame result](docs/field-tests/2026-09-29-room-frames-results.md), the floor camera's head-first failure included; a
+   counter-camera view that shows the whole body.
 3. D0: measure the chosen fusion placement against the direct-call baseline on the device, with a bag recording
    `/scan` during the run.
 4. Close the privacy gap structurally: done for active learning (in the request), the container environment (in

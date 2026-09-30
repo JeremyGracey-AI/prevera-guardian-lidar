@@ -20,6 +20,7 @@ timeline
     2026-09-26 : Replay-harness plan (three critique rounds) : ROS-free core extracted : Capture night, two cameras added
     2026-09-27 : Floor mount and floor trials : Harness, incident hold, speed gate, windowed stillness : RF-DETR evaluation, keypoint check pre-declared
     2026-09-28 : Fine-tuned class split passes on public data : F5, co-load, two egress and two container-start captures on the Jetson : Three telemetry channels found and switched off, v0.1.0
+    2026-09-29 : Room-frame plan declared, reviewed twice and pushed before its run : Both bars pass from the counter camera : The floor camera fails the head-first pose
 ```
 
 ## Test suite over time
@@ -38,6 +39,7 @@ timeline
 | `3adcd15` PR #3, gaps branch (co-load, egress, CI, URDF) | 124 passed, 1 skipped | README at the merge; CI |
 | `efc8b43` PR #4, egress re-capture | 129 passed, 1 skipped | README at the merge; CI |
 | `2e6d582` version-check branch, merged as PR #5 (`6990dfe`) | **130 passed, 1 skipped** | container and Mac; CI at `6990dfe` |
+| `2f39402` room-frame plan, runner and scorer | **193 passed, 1 skipped** | Mac, Python 3.10; 63 of them are the room-frame tests |
 
 The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jetson or in WSL with ROS 2 Humble.
 
@@ -134,3 +136,20 @@ Five plans committed before their runs; two bars failed and stay in the record a
 Not done, on purpose: no room frame, bag or field data went to Roboflow or any hosted API; no Active Learning; no
 new decision record; nothing about the V-JEPA stage. Still owed on the privacy side: a capture that covers a model
 pull. The device state and the ordered next steps are in [HANDOFF-2026-09-28.md](field-tests/HANDOFF-2026-09-28.md).
+
+## 2026-09-29: the room-frame measurement
+
+All times PDT. Hashes are this repository's own.
+
+| Commit | What | Evidence |
+|---|---|---|
+| `72c25ac`, merged as PR #6 (`7174fc9`) | Documents brought to the 09-28 state; three privacy statements scoped to what was captured | 130 passed, 1 skipped; CI |
+| `2875bdf`, merged as PR #7 (`6cb83fd`) | `website/`: the source of the public page, with its claims table | the pull request's description lists its checks |
+| `560006a` (16:14) | [Room-frame plan](field-tests/2026-09-29-room-frames-plan.md), `jetson/rf_room_eval.py`, `tools/bag_analysis/score_room_frames.py`, tests | First review, before the commit: two blockers. A server that stopped answering still cleared R2; a partial file got a verdict. Both closed in the scorer ([record](field-tests/2026-09-29-room-frames/reviews.md)) |
+| `2f39402` (16:51) | Second review applied: no proxy, no smoke mode, rows written when a session drops, summary compared with its types | 193 passed, 1 skipped; 44 seeded mutations, none survives ([script and output](field-tests/2026-09-29-room-frames/)) |
+| pushed 16:51, run 16:52 | **Room frames: R1 PASS, R2 PASS, carried by the counter camera** | [results](field-tests/2026-09-29-room-frames-results.md): counter camera B 32 of 33, F 30 of 30, W 0 of 90; floor camera F 0 of 30, all read `standing`. 580 answered, no error; one run, scored once |
+
+Not done, on purpose: no room frame went to Roboflow or any hosted API; the model under test was not retrained;
+`00ba18` was not run; D1 was not decided. Not verified at the run: the container's environment (no `docker`
+access without a password) and the network (no capture).
+

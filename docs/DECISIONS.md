@@ -57,7 +57,7 @@ flowchart LR
 | [DR-10](#dr-10) | Add two webcams and a stock camera detector for the LIDAR's blind spots | accepted; evaluated offline, not in the alert path |
 | [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback, version check and ultralytics probe off, each verified by capture 2026-09-29; usage record may leave, for now (Jeremy, 2026-09-29); model pull never captured |
 | [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR open |
-| [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (2026-09-28), room frames next |
+| [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (`00ba18`, 2026-09-28) and R1/R2 on room frames from the counter camera (`e65db0`, 2026-09-29; the floor camera fails F) |
 | [DR-14](#dr-14) | **D0**: where fusion runs | open |
 | [DR-15](#dr-15) | Publish the LIDAR path; keep the V-JEPA verification stage proprietary | accepted |
 | [DR-16](#dr-16) | Record every bag as mcap, start it before the restart, split storage | accepted |
@@ -393,7 +393,9 @@ flowchart LR
 
 - **Status:** open. Box shape: measured no (C3). Keypoints: the first run was invalid under its own rule; the
   [v2 rescore plan](field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md) fixes the person rule and waits for the Mac.
-  Fine-tuned class split: measured **yes on public data** (2026-09-28, F1 and F2 pass); not yet measured on room frames.
+  Fine-tuned class split: measured **yes on public data** (2026-09-28, F1 and F2 pass) and **yes on room frames from
+  the counter camera** (2026-09-29, R1 and R2 pass, `e65db0`); the floor camera read the head-first lie-down as
+  `standing` in 30 of 30 frames ([results](field-tests/2026-09-29-room-frames-results.md)).
 - **Definition:** D1 is what the camera model predicts for the fall signal: a bounding box (a fall class or the box's
   shape), human keypoints (pose), or, since 2026-09-28, a detector fine-tuned to predict the pose as a class.
 - **Context:** detection condition C3 (the counter camera's box aspect separates lying from standing) failed for all
@@ -412,10 +414,14 @@ flowchart LR
   [extract](field-tests/2026-09-27-rfdetr/keypoints-validity.json); the class split's F1 (`lying` 1.000 / 1.000)
   and F2 (0 of 24 pose swaps) on the arm-A test split, with the comparison arms, in the
   [fine-tune results](field-tests/2026-09-28-roboflow-finetune-results.md) and its
-  [extracts](field-tests/2026-09-28-roboflow/).
-- **Consequences:** the keypoint rescore (plan v2, on the Mac) and a room-frame plan for the class split are both
-  pre-declared next measurements; which runs first is open. A counter-camera framing that shows the whole body
-  (D and E are cut at the frame edges, W at the top) is needed by either.
+  [extracts](field-tests/2026-09-28-roboflow/); R1 (counter camera: B 32 of 33, F 30 of 30) and R2 (0 of 90 walking
+  frames read `lying`) in the [room-frame results](field-tests/2026-09-29-room-frames-results.md) and its
+  [extract](field-tests/2026-09-29-room-frames/room-e65db0.json). One subject, one room, near-duplicate frames.
+- **Consequences:** the room-frame plan for the class split has run (2026-09-29); the keypoint rescore (plan v2, on
+  the Mac) is the pre-declared measurement still owed. D1 stays open: choosing between the options is the owner's
+  decision and is not made by a passing bar. A counter-camera framing that shows the whole body (D and E are cut at
+  the frame edges, W at the top) is needed by either option. One camera out of two failed a pose the other passed:
+  the result differs between the two cameras, and why was not examined.
 
 <a id="dr-14"></a>
 ## DR-14 · D0: where fusion runs
