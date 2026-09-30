@@ -10,8 +10,8 @@ authors:
 repository-code: "https://github.com/JeremyGracey-AI/prevera-guardian-lidar"
 url: "https://jeremygracey.ai"
 license: Apache-2.0
-date-released: "2026-09-28"
-version: "0.1.0"
+date-released: "2026-09-29"
+version: "0.1.1"
 keywords:
   - fall detection
   - LIDAR
@@ -23,6 +23,8 @@ keywords:
 abstract: >-
   A privacy-first fall detector for senior-care rooms on a Jetson Orin Nano: a floor-level 2D LIDAR finds a
   person lying down from geometry alone, with no images; two webcams with an on-device RF-DETR detector were
-  evaluated offline for the poses a single scan plane misses. The repository holds the ROS 2 detector, an offline
+  evaluated offline for the poses a single scan plane misses, and a fine-tuned RF-DETR class split passed its
+  pre-declared bars on public data and, from the counter camera only, on recorded room frames (the floor camera
+  failed the head-first pose). The repository holds the ROS 2 detector, an offline
   replay harness, pre-declared evaluations with their results (including the ones that failed), and eighteen
   decision records. Research prototype measured on one subject in one room; not a medical device. Patent pending.
