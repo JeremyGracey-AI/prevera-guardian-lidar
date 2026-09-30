@@ -7,7 +7,7 @@
 <meta name="description" content="Research prototype: a floor-level 2D LIDAR finds a person lying down from distances alone, and, in an offline evaluation, two webcams with a stock detector run on the device saw the poses one scan plane misses. One subject, one room. Not a medical device.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="PREVERA GUARDIAN+AI — privacy-first fall-detection prototype">
-<meta property="og:description" content="Floor-level 2D LIDAR on a Jetson Orin Nano, on-device camera detection (stock and fine-tuned RF-DETR, the fine-tune on public data only), and network captures of what leaves the device. Field results, including the failures, are public under Apache-2.0. Research prototype, not a medical device.">
+<meta property="og:description" content="Floor-level 2D LIDAR on a Jetson Orin Nano, on-device camera detection (stock and fine-tuned RF-DETR; the fine-tune scored on public data and on recorded room frames), and network captures of what leaves the device. Field results, including the failures, are public under Apache-2.0. Research prototype, not a medical device.">
 <meta property="og:site_name" content="PREVERA GUARDIAN+AI">
 <meta property="og:url" content="https://preveraguard.com/">
 <link rel="canonical" href="https://preveraguard.com/">
@@ -471,9 +471,9 @@ tbody th{font-weight:600;color:var(--navy)}
           <li class="node"><h4>Recorded in bags</h4><p>1280&times;720 at 30&nbsp;Hz, recorded alongside the LIDAR in rosbag2 bags. The 09-27 camera record is the original sqlite3 bag; bags are recorded as mcap from now on (DR-16).</p></li>
           <li class="node"><h4>Frames extracted</h4><p>1 frame per second, for evaluation only.</p></li>
           <li class="node"><h4>Stock RF-DETR</h4><p>COCO weights, no fine-tuning. Served by Roboflow Inference 1.7.2 on the Jetson, listening on 127.0.0.1:9001 only.</p></li>
-          <li class="node box-open"><h4><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-13" rel="noopener">D1</a>: boxes, keypoints, or a pose class</h4><p>Box shape failed (C3). A fine-tune that predicts the pose as a class passed on public data (<code>lying</code> 1.000 / 1.000 on a 73-image public test split; one training run, near-duplicate frames not checked, so an upper bound); room frames are next. The keypoint rescore plan is written and has not been run.</p><span class="tag tag-open">D1 open</span></li>
+          <li class="node box-open"><h4><a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-13" rel="noopener">D1</a>: boxes, keypoints, or a pose class</h4><p>Box shape failed (C3). A fine-tune that predicts the pose as a class passed on public data (<code>lying</code> 1.000 / 1.000 on a 73-image public test split; one training run, near-duplicate frames not checked, so an upper bound). On recorded room frames the device-sized model then passed both pre-declared bars from the counter camera, and the floor camera read one pose as standing (<a href="#ev-9">section 9</a>). The keypoint rescore plan is written and has not been run.</p><span class="tag tag-open">D1 open</span></li>
         </ol>
-        <div class="fixes"><span class="tag tag-public">Public data</span> <strong>Fine-tuned on public data, measured on the device (2026-09-28):</strong> two RF-DETR models trained on Roboflow to predict the pose as a class run in the same local container at 78.7&nbsp;ms and 125.2&nbsp;ms per frame (serial, cameras off). While one served 580 frames, the LIDAR scan stream held 10.009&nbsp;Hz with no gap over 0.5&nbsp;s (one run). Their predictions on room frames were discarded by design, so no room accuracy exists yet.</div>
+        <div class="fixes"><span class="tag tag-public">Public data</span> <strong>Fine-tuned on public data, measured on the device (2026-09-28):</strong> two RF-DETR models trained on Roboflow to predict the pose as a class run in the same local container at 78.7&nbsp;ms and 125.2&nbsp;ms per frame (serial, cameras off). While one served 580 frames, the LIDAR scan stream held 10.009&nbsp;Hz with no gap over 0.5&nbsp;s (one run). Their predictions in those runs were discarded by design. The room frames were scored a day later, under their own plan (<a href="#ev-9">section 9</a>).</div>
       </div>
 
       <div class="lane lane-down">
@@ -632,7 +632,7 @@ tbody th{font-weight:600;color:var(--navy)}
         <li><strong>Two evaluators.</strong> The model was picked on the search&rsquo;s own valid score (96.85 mAP@50-95); every number above is Roboflow Model Evaluation&rsquo;s (0.963 on the same split). Whether the rule would pick the same model under Model Evaluation is not known, because only two were evaluated.</li>
         <li><strong>How the numbers were read.</strong> The 0.75 threshold comes from the valid split and was not tuned on test. Confusion matrices are stored at 0.1 steps only: F2 is read at 0.70 and 0.80, which agree, and the F4 swaps at 0.40. <code>bed</code> labels the furniture, so nothing here tests a person lying in a bed. Arm C&rsquo;s splits were rebalanced to 70/20/10 before versioning, because its fork had 6 test images.</li>
         <li><strong>Licences.</strong> The datasets are CC BY 4.0 as their Universe uploaders state (the URFD copy was not checked against the original dataset&rsquo;s terms). The trained models are under Roboflow&rsquo;s Platform Model License (PML-1.0).</li>
-        <li><strong>Not a room result.</strong> The plan for room frames has not been written. Source: the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-plan.md" rel="noopener">fine-tune plan</a> and the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-results.md#3-arm-a-scored" rel="noopener">results, section 3</a>.</li>
+        <li><strong>Not a room result.</strong> The room frames were scored under a separate plan (<a href="#ev-9">section 9</a>). Source: the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-plan.md" rel="noopener">fine-tune plan</a> and the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-roboflow-finetune-results.md#3-arm-a-scored" rel="noopener">results, section 3</a>.</li>
       </ul>
     </div>
 
@@ -684,6 +684,28 @@ tbody th{font-weight:600;color:var(--navy)}
       </ul>
     </div>
 
+    <div class="ev-block" id="ev-9">
+      <h3>9. The fine-tuned model on room frames: one camera passed, one failed a pose</h3>
+      <p class="lead">On 2026-09-29 the device-sized fine-tuned model was scored on the 580 recorded room frames of section 5, on the Jetson, at confidence 0.56. It is the faster of the two models in section 7, and not the one that passed F1 and F2 in section 6. The plan, the runner and the scorer were pushed to the public repository before the run. One run, scored once: 580 frames answered, no request error.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Condition (declared before the run)</th><th scope="col">Verdict</th><th scope="col">Bar</th><th scope="col">Measured</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">R1: one camera reads <code>lying</code> in both end-on lie-downs the LIDAR missed (B and F)</th><td><span class="res-ok">pass</span></td><td class="num">&ge;&nbsp;80% of B and of F, same camera</td><td class="num">counter camera: 32 of 33 and 30 of 30</td></tr>
+            <tr><th scope="row">R2: the counter camera reads <code>lying</code> while the person stands and walks</th><td><span class="res-ok">pass</span></td><td class="num">&le;&nbsp;5% of 90</td><td class="num">0 of 90</td></tr>
+            <tr><th scope="row">The floor camera, same segments (report only)</th><td>reported</td><td>none</td><td>B 32 of 33. F 0 of 30: all 30 read <code>standing</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="caveats">
+        <li><strong>One camera of two.</strong> The floor camera read the head-first lie-down as <code>standing</code> in 30 of 30 frames, and on its own it would fail R1. In the two diagonal segments it often returned no pose at all (20 of 35 frames and 11 of 33). Why was not examined.</li>
+        <li><strong>One subject, one room, one lie-down per segment.</strong> Frames within a segment are near-duplicates, so each count is closer to one trial than to thirty. Nobody fell. On the counter camera the walking frames show hips and legs only.</li>
+        <li><strong>Reviewed before the run.</strong> Two adversarial reviews of the plan and its scorer came before any result. The first found two ways a broken run could have been scored as a pass; both were closed before the plan was committed.</li>
+        <li><strong>Not verified at the run.</strong> The container&rsquo;s settings were not inspected and the network was not captured, so what section 8 says still leaves is assumed to have left.</li>
+        <li><strong>D1 stays open.</strong> A passing bar is evidence, not a decision. Source: the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-room-frames-plan.md" rel="noopener">room-frame plan</a> and the <a href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-room-frames-results.md" rel="noopener">results</a>.</li>
+      </ul>
+    </div>
+
     <div class="doc-links" aria-label="Results documents on GitHub">
       <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-floor-mount-grid.md" rel="noopener">Floor trials, 2026-09-27</a>
       <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-27-rfdetr-eval-plan.md" rel="noopener">RF-DETR plan (pre-declared)</a>
@@ -697,6 +719,8 @@ tbody th{font-weight:600;color:var(--navy)}
       <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-version-check-capture-plan.md" rel="noopener">Container-start capture plan: version check</a>
       <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-yolo-offline-capture-plan.md" rel="noopener">Container-start capture plan: online check</a>
       <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md" rel="noopener">Keypoint rescore plan v2 (not run)</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-room-frames-plan.md" rel="noopener">Room-frame plan (pre-declared)</a>
+      <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/field-tests/2026-09-29-room-frames-results.md" rel="noopener">Room-frame results</a>
       <a class="doc-link ext" href="https://github.com/JeremyGracey-AI/prevera-guardian-lidar/blob/main/docs/DECISIONS.md#dr-11" rel="noopener">DR-11: what leaves the device</a>
     </div>
   </div>
@@ -790,7 +814,7 @@ tbody th{font-weight:600;color:var(--navy)}
         <h3>Close the open items</h3>
         <ol>
           <li><strong>Finish spot memory (across a re-spawn) and time-based spike memory, then switch the fixes on</strong>, but only against the pre-declared bars (WARN in every lying segment, 0 WARN in every empty-room segment), then deploy with a rollback tag. Until spike memory exists, the spike rule fires mostly on centroid jitter rather than on the fall itself.</li>
-          <li><strong>D1:</strong> run the keypoint rescore (plan v2, written 2026-09-28), and write the room-frame plan for the fine-tuned class split before it runs. Either needs a counter-camera view that shows the whole body.</li>
+          <li><strong>D1:</strong> run the keypoint rescore (plan v2, written 2026-09-28), and decide what follows from the room-frame result, the floor camera&rsquo;s failure included (<a href="#ev-9">section 9</a>). Either option needs a counter-camera view that shows the whole body.</li>
           <li><strong>Fusion (D0):</strong> measure the chosen placement on the device, recording the LIDAR during the run.</li>
           <li><strong>Privacy, structurally:</strong> done for active learning (off in every request), the container environment (versioned), the per-request pingback, the version check and the start-up probe, the last three verified by capture (one run, one model, cameras off; the two start-up switches on an idle container). The aggregated usage record may leave, for now (Jeremy Gracey, DR-11). Left: a capture that covers a model download.</li>
           <li><strong>More evidence:</strong> measure the LIDAR-to-camera extrinsics, then run labelled trials with more subjects, ranges and rooms.</li>
@@ -844,7 +868,7 @@ tbody th{font-weight:600;color:var(--navy)}
           <li><strong>Furniture feet</strong> look like a lying person at floor level (elongated and still). They have raised no alarm so far, but they are the main false-alarm risk once stillness works.</li>
           <li><strong>Camera privacy has been checked by capture, and one gap remains.</strong> Until 2026-09-28 the server posted a record of every request (class and confidence per detection, API key, hostname, IP, MAC) once a minute; that is switched off and verified by capture (one run, one model, cameras off). An aggregated usage record (API key in clear, hashed hostname and IP, counts; no image, no per-detection field) still leaves every ~10&nbsp;s while inferring, by Jeremy Gracey&rsquo;s decision (DR-11), for now. The fields are from the Inference 1.7.2 code, since the captures cannot read TLS. A model download has never been captured.</li>
           <li><strong>The camera views are unauthenticated.</strong> Since 2026-09-28 they listen on the loopback address by default and are opened through an ssh tunnel; exposing them to the network is an explicit setting for a trusted bench. The camera topic stays reachable to anyone who can join the ROS domain on the local network.</li>
-          <li><strong>The fine-tuned class split is measured on public data only.</strong> 73 test images from one dataset, one training run, near-duplicate frames not checked: an upper bound, and not a room result.</li>
+          <li><strong>The fine-tuned class split&rsquo;s public numbers are an upper bound.</strong> 73 test images from one dataset, one training run, near-duplicate frames not checked. On recorded room frames the device-sized model passed from the counter camera and failed one pose from the floor camera (<a href="#ev-9">section 9</a>): one subject, one room, nobody fell.</li>
         </ul>
       </div>
     </div>

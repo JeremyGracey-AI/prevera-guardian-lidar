@@ -67,9 +67,9 @@ new Vercel project with this directory as its root.
   - Every privacy number carries its scope: one run, one model, cameras off, no model download captured.
   - The list of fields that leave the device appears once, in the Known limitations item, with its source: the
     Inference 1.7.2 code, since the captures cannot read TLS.
-  - The fine-tune is "on public data": 73 test images, one training run, near-duplicate frames not checked, no
-    room-frame result. The architecture search ran on one dataset (arm A, 736 images); arms B and C were plain
-    RF-DETR nano comparison arms.
+  - The fine-tune is "on public data": 73 test images, one training run, near-duplicate frames not checked. The
+    architecture search ran on one dataset (arm A, 736 images); arms B and C were plain RF-DETR nano comparison
+    arms. The room-frame result (section 9) is one subject, one room, one camera of two, and says so.
   - Dates are PDT. Evidence section 8 notes once that the repository dates the last three captures 2026-09-29 UTC.
 - **No regulatory claims.** "Path toward HIPAA-aligned deployment" appears only as a future item on the roadmap.
 - **Out of the page:** patent docket numbers, filing dates, phone numbers, and customers or partners.
@@ -77,7 +77,8 @@ new Vercel project with this directory as its root.
 
 ## Claims table
 
-Paths are relative to the repository root, and line numbers refer to commit `72c25ac`. `demo.html` means
+Paths are relative to the repository root, and line numbers refer to commit `72c25ac`, except the rows of the last
+table (section 9), which refer to the merge of pull request 8 (2026-09-29). `demo.html` means
 `website/demo.html` as it is in this directory. "One subject, one room, one session" applies to every measured LIDAR
 and stock-camera result (README.md:10, 97-99, 314-315). The fine-tune results are on a public test split and carry
 their own caveats in the last table.
@@ -111,9 +112,9 @@ their own caveats in the last table.
 | Roboflow Inference 1.7.2 on the Jetson, listening on 127.0.0.1:9001 only; stock COCO RF-DETR with no fine-tuning; evaluated offline; not in the live alert path | docs/field-tests/2026-09-27-rfdetr-results.md:41-55; docs/DECISIONS.md:297-305, 338-339 |
 | Fusion (D0): where it runs is open, and nothing is built | docs/DECISIONS.md:420-438; README.md:203, 320 |
 | The camera half of D0 exists as a time-on-floor Roboflow Workflow (seconds since a down-pose track entered a floor zone); validated structurally; ran once on the hosted API on one public image, which shows only that it executes; not run on video | docs/DECISIONS.md:435-438; docs/field-tests/2026-09-28-roboflow-finetune-results.md:407-410; tools/roboflow/README.md:59-66 |
-| D1 open: box shape no (C3); keypoints await the v2 rescore; a fine-tuned class split passed F1/F2 on public data, room frames next. The first keypoint run was invalid and not scored | docs/DECISIONS.md:60, 394-396; docs/field-tests/2026-09-27-rfdetr-keypoints-status.md:1-5, 27-29 |
+| D1 open: box shape no (C3); keypoints await the v2 rescore; a fine-tuned class split passed F1/F2 on public data, and on room frames from the counter camera (section 9). The first keypoint run was invalid and not scored | docs/DECISIONS.md:60, 394-396 (at `72c25ac`; the room clause: section 9 rows); docs/field-tests/2026-09-27-rfdetr-keypoints-status.md:1-5, 27-29 |
 | Keypoint rescore plan v2: written 2026-09-28, fixes the class rule, not run | docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md:1-3, 8-11; docs/DEVELOPMENT-LOG.md:112 |
-| The room-frame plan for the class split is not written; either next step needs a counter-camera view that shows the whole body | docs/DECISIONS.md:416-418; README.md:350-352 |
+| Either D1 option needs a counter-camera view that shows the whole body; what follows from the room-frame result is open | docs/DECISIONS.md:416-418 (at `72c25ac`); section 9 rows |
 | A hosted inference API was rejected because frames would leave the room | docs/DECISIONS.md:334-337 (DR-11) |
 | On 2026-09-27 the client posted only to localhost and privacy was reported, not verified; the server was also posting a record of every request once a minute, and `TELEMETRY_OPT_OUT` does nothing in Inference 1.7.2 (by the 1.7.2 code; the capture cannot read TLS) | docs/field-tests/2026-09-27-rfdetr-results.md:73-94; docs/field-tests/2026-09-28-roboflow-finetune-results.md:249-252, 266-271; docs/DECISIONS.md:343-351 |
 | Camera inference was evaluated offline: in the RF-DETR box evaluation, inference ran on the Jetson; frames were then copied to a Mac for scoring; the keypoint preview ran on the Mac CPU | docs/DECISIONS.md:57 (DR-10); docs/field-tests/2026-09-27-rfdetr-results.md:91-93; docs/field-tests/2026-09-27-rfdetr-keypoints-status.md:15-17 |
@@ -196,7 +197,7 @@ their own caveats in the last table.
 | Two evaluators: 96.85 (the search's own valid mAP@50-95) and 0.963 (Model Evaluation, same split); whether the rule would pick the same model under Model Evaluation is not known | docs/field-tests/2026-09-28-roboflow-finetune-results.md:55-59, 422-424 |
 | Arm C's splits were rebalanced to 70/20/10 before versioning; its fork had 6 test images | docs/field-tests/2026-09-28-roboflow-finetune-plan.md:19; docs/field-tests/2026-09-28-roboflow-finetune-results.md:28 |
 | Licences: datasets CC BY 4.0 as their Universe uploaders state, URFD copy not checked against the original terms; trained models under PML-1.0 | docs/field-tests/2026-09-28-roboflow-finetune-plan.md:12-13; docs/field-tests/2026-09-28-roboflow-finetune-results.md:444-445, 463-464, 475-476 |
-| Not a room result; the predictions on room frames were discarded by design; the room-frame plan is not written | docs/field-tests/2026-09-28-roboflow-finetune-results.md:171-174, 446; docs/DECISIONS.md:416-417 |
+| Not a room result; the predictions in the cost runs were discarded by design; the room frames were scored a day later under their own plan (section 9) | docs/field-tests/2026-09-28-roboflow-finetune-results.md:171-174, 446; section 9 rows |
 | F5 ran at 15:54 PDT (22:54 UTC): 580 room frames, one request at a time, to 127.0.0.1:9001 only, cameras off | docs/field-tests/2026-09-28-roboflow-finetune-results.md:132-135, 182 |
 | Fast child `e65db0`: 288×288, 78.7 ms, 12.7 fps. The rule's pick `00ba18`: 640×640, 125.2 ms, 8.0 fps | docs/field-tests/2026-09-28-roboflow-finetune-results.md:144-145 |
 | Stock nano 107.9 ms, 9.3 fps (input not read); stock base 560×560, 126.9 ms, 7.9 fps; measured 2026-09-27 the same way | docs/field-tests/2026-09-28-roboflow-finetune-results.md:132-133, 146-147 |
@@ -235,3 +236,21 @@ their own caveats in the last table.
 | On the page | Source |
 |---|---|
 | $500K per site for supervised pilots at 2 to 3 selected sites, at most $1.5M for three; prediction as the goal the raise funds, not built | The founder's ask. It is not in the repository, and the page labels it as an ask, not as a result or a projection. |
+
+### Section 9: the fine-tuned model on room frames (rows added 2026-09-29, lines at the merge of pull request 8)
+
+| Claim on the page | Source |
+|---|---|
+| Scored on 2026-09-29 on the 580 recorded room frames, on the Jetson, at confidence 0.56; one run, scored once, 580 answered, no request error | docs/field-tests/2026-09-29-room-frames-results.md:32-37 |
+| The device-sized model: the faster of the two in section 7, and not the one that passed F1 and F2 | docs/field-tests/2026-09-29-room-frames-plan.md:33-37; docs/field-tests/2026-09-29-room-frames-results.md:95 |
+| Plan, runner and scorer pushed to the public repository before the run | docs/field-tests/2026-09-29-room-frames-results.md:32; docs/field-tests/2026-09-29-room-frames-plan.md (commits `560006a`, `2f39402`) |
+| R1: one camera reads `lying` in >= 80 % of B and of F, same camera; pass, counter camera 32 of 33 and 30 of 30 | docs/field-tests/2026-09-29-room-frames-results.md:19; docs/field-tests/2026-09-29-room-frames-plan.md:89-93 |
+| R2: counter camera reads `lying` in <= 5 % of 90 walking frames; pass, 0 of 90 | docs/field-tests/2026-09-29-room-frames-results.md:20; docs/field-tests/2026-09-29-room-frames-plan.md:94-96 |
+| Floor camera: B 32 of 33; F 0 of 30, all 30 read `standing`; would fail R1 alone | docs/field-tests/2026-09-29-room-frames-results.md:23, 64 |
+| Floor camera in the diagonal segments: no pose in 20 of 35 (D) and 11 of 33 (E); why was not examined | docs/field-tests/2026-09-29-room-frames-results.md:62-63, 72-76 |
+| One subject, one room, one lie-down per segment; near-duplicate frames; nobody fell | docs/field-tests/2026-09-29-room-frames-results.md:12-13, 93 |
+| On the counter camera the walking frames show hips and legs only | docs/field-tests/2026-09-29-room-frames-results.md:81 |
+| Two adversarial reviews before the run; the first found two ways a broken run could have been scored as a pass, closed before the plan was committed | docs/field-tests/2026-09-29-room-frames-results.md:100-104; docs/field-tests/2026-09-29-room-frames/reviews.md |
+| Not verified at the run: container settings not inspected, network not captured | docs/field-tests/2026-09-29-room-frames-results.md:44-46 |
+| D1 stays open | docs/field-tests/2026-09-29-room-frames-results.md:88-91; docs/DECISIONS.md (DR-13 status, at the merge of pull request 8) |
+
