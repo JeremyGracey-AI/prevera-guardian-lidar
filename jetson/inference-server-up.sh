@@ -32,9 +32,22 @@
 # 2026-09-29).
 # The API key comes from the invoking user's ~/.roboflow.env through --env-file and is never on the command line.
 # Under sudo, ~ is /root, so the file is resolved from SUDO_USER (override with GUARDIAN_ENV_FILE=/path).
+# The file must be owned by that user, readable, and accessible only to its owner (normally mode 0600).
+# Check before stopping an existing container; never repair permissions or print file contents automatically.
 set -euo pipefail
-ENV_FILE="${GUARDIAN_ENV_FILE:-$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)/.roboflow.env}"
+INVOKING_USER="${SUDO_USER:-$USER}"
+ENV_FILE="${GUARDIAN_ENV_FILE:-$(getent passwd "$INVOKING_USER" | cut -d: -f6)/.roboflow.env}"
+[ -f "$ENV_FILE" ] && [ ! -L "$ENV_FILE" ] || { echo "key file must be a regular file, not a symlink: $ENV_FILE" >&2; exit 1; }
 [ -r "$ENV_FILE" ] || { echo "key file not readable: $ENV_FILE (run as sudo from jeremy's login, or set GUARDIAN_ENV_FILE)"; exit 1; }
+INVOKING_UID="$(id -u "$INVOKING_USER")"
+# GNU stat on the Jetson; BSD stat supports local validation on macOS.
+FILE_METADATA="$(stat -c '%u %a' "$ENV_FILE" 2>/dev/null)" || FILE_METADATA="$(stat -f '%u %Lp' "$ENV_FILE")"
+read -r FILE_UID FILE_MODE <<< "$FILE_METADATA"
+[ "$FILE_UID" = "$INVOKING_UID" ] || { echo "key file must be owned by $INVOKING_USER: $ENV_FILE" >&2; exit 1; }
+if [[ ! "$FILE_MODE" =~ ^[0-7]{1,4}$ ]] || (( (8#$FILE_MODE & 077) != 0 || (8#$FILE_MODE & 0400) == 0 )); then
+  echo "key file must be owner-readable with no group or other permissions (use mode 0600): $ENV_FILE" >&2
+  exit 1
+fi
 docker rm -f inference-server >/dev/null 2>&1 || true
 docker run -d --name inference-server --runtime nvidia --read-only \
   -p 127.0.0.1:9001:9001 \

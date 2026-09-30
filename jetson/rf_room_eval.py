@@ -2,7 +2,7 @@
 """Room frames: what a fine-tuned Roboflow Inference model says about each floor-trials-1 frame, kept as it said it.
 
 The runner behind docs/field-tests/2026-09-29-room-frames-plan.md. One request per manifest frame, serially, all
-to http://127.0.0.1:9001 and nowhere else (proxy settings in the environment are ignored), with active learning
+to http://127.0.0.1:9001 by default (only literal loopback overrides are accepted; no proxies or redirects), with active learning
 asked off in every body. Each frame's predictions are written beside its manifest tags: class, confidence and
 box, unrounded and in the order the server returned them. A request that fails, for any reason, is a row with
 an `error` and no predictions, and the run goes on.
@@ -34,22 +34,16 @@ import signal
 import sys
 import time
 import urllib.error
-import urllib.request
 
-URL = "http://127.0.0.1:9001"  # the only host this file ever posts to; --url exists for the test stub
+from inference_http import URL, InferenceResponseError, request_json, validate_base_url
+
 CONFIDENCE = 0.56
 KEPT = ("class", "confidence", "x", "y", "width", "height")
-DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # http_proxy and friends are not honoured
 
 
 def rows_digest(rows):
     """sha256 of the rows as canonical JSON: the scorer recomputes it, so a row edited by hand shows."""
     return hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-
-
-def get_json(path, timeout=10, url=URL):
-    with DIRECT.open(f"{url}{path}", timeout=timeout) as r:
-        return json.load(r)
 
 
 def infer(model_id, key, confidence, image, url=URL):
@@ -61,11 +55,8 @@ def infer(model_id, key, confidence, image, url=URL):
         "disable_active_learning": True,
         "image": {"type": "base64", "value": base64.b64encode(image).decode()},
     }).encode()
-    req = urllib.request.Request(f"{url}/infer/object_detection", data=body,
-                                 headers={"Content-Type": "application/json"})
     t = time.perf_counter()
-    with DIRECT.open(req, timeout=300) as r:
-        out = json.load(r)
+    out = request_json("/infer/object_detection", data=body, timeout=300, url=url)
     return out, (time.perf_counter() - t) * 1000
 
 
@@ -81,6 +72,10 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--url", default=URL, help=argparse.SUPPRESS)  # test stub only
     a = ap.parse_args()
+    try:
+        a.url = validate_base_url(a.url)
+    except ValueError as e:
+        ap.error(str(e))
     key = os.environ.get("ROBOFLOW_API_KEY", "")
     if not key:
         sys.exit("ROBOFLOW_API_KEY is not set (source ~/.roboflow.env)")
@@ -99,7 +94,7 @@ def main():
     rows, errors, digest, info = [], 0, hashlib.sha256(), {}
     t_run = time.time()
     try:
-        info = get_json("/info", url=a.url)
+        info = request_json("/info", url=a.url)
         for m in manifest:
             try:
                 image = open(f"{a.frames}/{m['file']}", "rb").read()
@@ -112,6 +107,9 @@ def main():
             except urllib.error.HTTPError as e:
                 errors += 1
                 rows.append({**m, "predictions": [], "error": f"HTTP {e.code}"})
+            except InferenceResponseError as e:
+                errors += 1
+                rows.append({**m, "predictions": [], "error": str(e)})
             except Exception as e:  # whatever went wrong with this frame, the next one is still asked
                 errors += 1
                 rows.append({**m, "predictions": [], "error": f"{type(e).__name__}: {e}"[:120]})
@@ -142,4 +140,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except urllib.error.HTTPError as e:
+        sys.exit(f"inference request failed: HTTP {e.code}")
+    except InferenceResponseError as e:
+        sys.exit(str(e))

@@ -11,6 +11,13 @@ __pycache__/
 .ruff_cache/
 .venv*/
 
+# Local credentials; commit placeholder-only examples instead.
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
 # IDE
 .vscode/
 .idea/

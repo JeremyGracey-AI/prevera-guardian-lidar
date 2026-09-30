@@ -197,6 +197,9 @@ header stamp, never the mcap log time; every float is written as float32, as on 
 
 ## 7. Ports and exposure
 
+[`SECURITY.md`](SECURITY.md) describes SSH and application access, the maintained inference clients' transport,
+API-key storage and rotation, accepted egress, and the checks needed before a device update.
+
 | Port | Service | Bound to | Note |
 |---|---|---|---|
 | 9001 | Roboflow Inference | 127.0.0.1 | loopback only (DR-11) |

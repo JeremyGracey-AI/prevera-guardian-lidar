@@ -255,6 +255,9 @@ Documents published from the private development history end with a **publicatio
 replaced (hosts, addresses, local paths, unpublished planning references). The notes sit at the end so that line
 numbers cited between documents still hold.
 
+For access boundaries, API-key handling, accepted egress and staged device updates, see
+[`docs/SECURITY.md`](docs/SECURITY.md).
+
 ## Quickstart
 
 ### Run the tests (no ROS, no hardware)

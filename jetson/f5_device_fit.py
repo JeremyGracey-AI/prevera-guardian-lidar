@@ -4,7 +4,8 @@
 Reproduces the cost measurement of the 2026-09-27 results, section 5 (C4), for a fine-tuned model, so the
 numbers sit in the same columns: the first call is timed on its own (it includes the model pull and load),
 then 3 untimed warm-ups, then one request per manifest frame, serially, one in flight at a time, all to
-http://127.0.0.1:9001 and nowhere else. `MemAvailable` (and jtop GPU % when jtop is usable) is sampled every
+http://127.0.0.1:9001 by default (only literal loopback overrides are accepted; no proxies or redirects).
+`MemAvailable` (and jtop GPU % when jtop is usable) is sampled every
 0.5 s from before the first call until the last response.
 
 This is a cost measurement, not a room result. The predictions are not kept: only the number of boxes per frame
@@ -28,9 +29,8 @@ import sys
 import threading
 import time
 import urllib.error
-import urllib.request
 
-URL = "http://127.0.0.1:9001"  # the only host this file ever posts to; --url exists for the test stub
+from inference_http import URL, InferenceResponseError, request_json, validate_base_url
 
 
 def mem_available_mb():
@@ -68,11 +68,6 @@ class Sampler(threading.Thread):
                 time.sleep(0.5)
 
 
-def get_json(path, timeout=10, url=URL):
-    with urllib.request.urlopen(f"{url}{path}", timeout=timeout) as r:
-        return json.load(r)
-
-
 def infer(model_id, key, confidence, path, url=URL):
     """One request. Returns (response, client_ms). The body is built before the timer starts, as rf_eval.py did."""
     body = json.dumps({
@@ -82,11 +77,8 @@ def infer(model_id, key, confidence, path, url=URL):
         "disable_active_learning": True,
         "image": {"type": "base64", "value": base64.b64encode(open(path, "rb").read()).decode()},
     }).encode()
-    req = urllib.request.Request(f"{url}/infer/object_detection", data=body,
-                                 headers={"Content-Type": "application/json"})
     t = time.perf_counter()
-    with urllib.request.urlopen(req, timeout=300) as r:
-        out = json.load(r)
+    out = request_json("/infer/object_detection", data=body, timeout=300, url=url)
     return out, (time.perf_counter() - t) * 1000
 
 
@@ -99,6 +91,10 @@ def main():
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--url", default=URL, help=argparse.SUPPRESS)  # test stub only
     a = ap.parse_args()
+    try:
+        a.url = validate_base_url(a.url)
+    except ValueError as e:
+        ap.error(str(e))
     key = os.environ.get("ROBOFLOW_API_KEY", "")
     if not key:
         sys.exit("ROBOFLOW_API_KEY is not set (source ~/.roboflow.env)")
@@ -108,7 +104,7 @@ def main():
     tag = a.model_id.replace("/", "_")
     out_path = a.out or f"{a.frames}/f5-{tag}.json"
 
-    info = get_json("/info", url=a.url)
+    info = request_json("/info", url=a.url)
     idle = mem_available_mb()
     sampler = Sampler()
     sampler.start()
@@ -119,8 +115,8 @@ def main():
         first, _ = infer(a.model_id, key, a.confidence, first_path, url=a.url)
     except urllib.error.HTTPError as e:
         sampler.stop.set()
-        detail = e.read().decode(errors="replace")[:600]
-        sys.exit(f"first call failed: HTTP {e.code}: {detail}")
+        sampler.join(timeout=2)
+        sys.exit(f"first call failed: HTTP {e.code}")
     first_call_s = time.perf_counter() - t0
     for _ in range(3):
         infer(a.model_id, key, a.confidence, first_path, url=a.url)  # warm-ups, not timed
@@ -143,7 +139,7 @@ def main():
 
     registry = None
     try:
-        registry = [e for e in get_json("/model/registry", url=a.url).get("models", []) if a.model_id in json.dumps(e)]
+        registry = [e for e in request_json("/model/registry", url=a.url).get("models", []) if a.model_id in json.dumps(e)]
     except Exception as e:  # the registry endpoint is a bonus; the run stands without it
         registry = f"unavailable ({type(e).__name__})"
 
@@ -179,4 +175,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except urllib.error.HTTPError as e:
+        sys.exit(f"inference request failed: HTTP {e.code}")
+    except InferenceResponseError as e:
+        sys.exit(str(e))
