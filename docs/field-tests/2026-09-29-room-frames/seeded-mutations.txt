@@ -1,0 +1,48 @@
+baseline: 63 passed in 9.81s
+caught   M1 same-class top reads tie | test/test_room_frames.py::test_two_boxes_of_one_class_sharing_the_top_confidence_read_that_class
+caught   M2 class match case-insensitive | test/test_room_frames.py::test_class_names_are_compared_exactly - Asse...
+caught   M3 errors do not invalidate | test/test_room_frames.py::test_a_server_that_stops_answering_is_not_a_pass
+caught   M4 bed counted under threshold | test/test_room_frames.py::test_bed_boxes_are_counted_per_cell_at_the_declared_confidence
+caught   M5 error row read from predictions | test/test_room_frames.py::test_a_server_that_stops_answering_is_not_a_pass
+caught   M6 R2 failing list omits ties | test/test_room_frames.py::test_a_tie_counts_against_the_bar_on_both_sides
+caught   M6b R2 ignores ties in the bar | test/test_room_frames.py::test_a_tie_counts_against_the_bar_on_both_sides
+caught   M7 row count unchecked | test/test_room_frames.py::test_a_file_that_is_not_the_whole_manifest_gets_no_verdict
+caught   M7b group counts unchecked | test/test_room_frames.py::test_a_file_that_is_not_the_whole_manifest_gets_no_verdict
+caught   M7c duplicates unchecked | test/test_room_frames.py::test_a_file_that_is_not_the_whole_manifest_gets_no_verdict
+caught   M7d unexpected groups unchecked | test/test_room_frames.py::test_a_camera_or_segment_the_plan_does_not_name_gets_no_verdict
+caught   M7e unknown classes unchecked | test/test_room_frames.py::test_a_class_name_outside_the_four_means_the_harness_does_not_match_the_model
+caught   M7f summary values unchecked | test/test_room_frames.py::test_a_summary_that_is_not_the_declared_run_gets_no_verdict[model-jeremy-grac
+caught   M7g names and order unchecked | test/test_room_frames.py::test_rows_under_other_names_or_in_another_order_get_no_verdict
+caught   M7h rows digest unchecked | test/test_room_frames.py::test_a_summary_that_leaves_a_field_out_gets_no_verdict
+caught   M7i loose equality | test/test_room_frames.py::test_a_summary_that_is_not_the_declared_run_gets_no_verdict[complete-1]
+caught   M7j server version unchecked | test/test_room_frames.py::test_a_summary_that_is_not_the_declared_run_gets_no_verdict[server_version-1.
+caught   M16 printed R1 is per-segment | test/test_room_frames.py::test_the_printed_r1_verdict_is_the_same_camera_reading
+caught   M17 invalid run still exits 0 | test/test_room_frames.py::test_an_invalid_run_prints_its_reasons_and_nothing_a_verdict_could_be_read_fr
+caught   M18 R1 per-segment as verdict | test/test_room_frames.py::test_r1_needs_the_same_camera_in_b_and_in_f
+caught   M19 80% bar loosened | test/test_room_frames.py::test_eighty_percent_is_27_of_33_and_24_of_30
+caught   M20 5% bar loosened | test/test_room_frames.py::test_five_percent_is_4_of_90_and_no_frames_cannot_pass
+caught   N12 invalid run prints the table | test/test_room_frames.py::test_an_invalid_run_prints_its_reasons_and_nothing_a_verdict_could_be_read_fr
+caught   N12b invalid score() keeps readings | test/test_room_frames.py::test_a_server_that_stops_answering_is_not_a_pass
+caught   N16 unreadable file crashes | test/test_room_frames.py::test_a_file_that_is_not_json_is_an_invalid_run
+caught   M8 runner rounds confidence | test/test_room_frames.py::test_runner_keeps_every_box_unrounded_and_in_the_order_returned
+caught   M9 default URL not loopback | test/test_room_frames.py::test_the_runners_defaults_are_the_declared_ones
+caught   M10 default confidence 0.75 | test/test_room_frames.py::test_the_runners_defaults_are_the_declared_ones
+caught   M11 only HTTP errors caught | test/test_room_frames.py::test_whatever_goes_wrong_with_a_frame_is_a_row_and_the_run_goes_on
+caught   M12 predictions re-sorted | test/test_room_frames.py::test_runner_keeps_every_box_unrounded_and_in_the_order_returned
+caught   M15 extra field in body | test/test_room_frames.py::test_runner_sends_one_request_per_manifest_frame_to_the_inference_route
+caught   M21 AL flag dropped | test/test_room_frames.py::test_runner_sends_one_request_per_manifest_frame_to_the_inference_route
+caught   M22 overwrite allowed | test/test_room_frames.py::test_runner_never_writes_over_a_file - asser...
+caught   M23 200 without predictions accepted | test/test_room_frames.py::test_whatever_goes_wrong_with_a_frame_is_a_row_and_the_run_goes_on
+caught   M25 key written to summary | test/test_room_frames.py::test_runner_output_carries_no_key_and_no_verdict
+caught   N3 complete always true | test/test_room_frames.py::test_an_interrupted_run_leaves_its_rows_and_says_it_is_not_complete[Signals.S
+caught   N7b SIGTERM/SIGHUP not handled | test/test_room_frames.py::test_an_interrupted_run_leaves_its_rows_and_says_it_is_not_complete[Signals.S
+caught   N7c interrupted run writes nothing | test/test_room_frames.py::test_an_interrupted_run_leaves_its_rows_and_says_it_is_not_complete[Signals.S
+caught   N11 proxies honoured | test/test_room_frames.py::test_a_proxy_in_the_environment_is_not_used
+caught   N14 error text uncapped | test/test_room_frames.py::test_whatever_goes_wrong_with_a_frame_is_a_row_and_the_run_goes_on
+caught   N15 Ctrl-C becomes an error row | test/test_room_frames.py::test_an_interrupted_run_leaves_its_rows_and_says_it_is_not_complete[Signals.S
+caught   N17 output created after the run | test/test_room_frames.py::test_runner_sends_one_request_per_manifest_frame_to_the_inference_route
+caught   N18 rows digest not recorded | test/test_room_frames.py::test_the_summary_pins_the_manifest_the_frames_and_the_rows
+caught   N19 frame digest of names | test/test_room_frames.py::test_the_summary_pins_the_manifest_the_frames_and_the_rows
+
+44 mutants, 44 caught, survivors: []
+restored baseline: 63 passed in 9.86s

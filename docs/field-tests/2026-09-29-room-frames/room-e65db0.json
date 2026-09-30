@@ -1,0 +1,667 @@
+{
+ "plan": "docs/field-tests/2026-09-29-room-frames-plan.md",
+ "plan_commits": {
+  "560006a": "2026-09-29T16:14:31-07:00",
+  "2f39402": "2026-09-29T16:51:03-07:00",
+  "pushed_to_origin_by_utc": "2026-09-29T23:51:33Z",
+  "pull_request": 8
+ },
+ "run": {
+  "command_on_the_jetson": "python3 /opt/nvme/frames/rf_room_eval.py jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0  (defaults for confidence, frames, output and URL; key from ~/.roboflow.env; detached with nohup setsid)",
+  "runner_sha256_on_the_jetson": "50f7c8a1367a4e98a18b214fb53ae09634c2285f6424207be815b68635b8f86a",
+  "runner_is_the_file_at_commit": "2f39402",
+  "runs_made": 1,
+  "smoke_runs": 0,
+  "output_file": "/opt/nvme/frames/floor-trials-1/room-jeremy-gracey_fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0.json",
+  "output_bytes": 200501,
+  "output_sha256": "879b3fd5901e93cba84a714745c395238048123f91fbc69f7fcd551a387b4a61",
+  "output_written_utc": "2026-09-29T23:52:53Z",
+  "server_process": "uvicorn pid 16863, ps lstart Tue Sep 29 03:11:36 2026 UTC, before and after the run: the process recorded in 2026-09-28-roboflow/yolo-offline-capture.json with its inspect line",
+  "container_environment_inspected_at_the_run": false,
+  "why_not": "docker on the Jetson needs sudo with a password, which the agent that made the run does not have",
+  "network_capture": false,
+  "camera_processes_running": 0,
+  "lidar_stack_running": true,
+  "mem_available_kb": {
+   "before": 4543956,
+   "after": 3623096,
+   "note": "two readings of /proc/meminfo, not sampled during the run; not a cost measurement"
+  }
+ },
+ "summary_as_the_runner_wrote_it": {
+  "model": "jeremy-gracey/fall_detection-johan-jsi2o-1-rfdetr-nas-t1--e65db0",
+  "confidence": 0.56,
+  "url": "http://127.0.0.1:9001",
+  "complete": true,
+  "frames_requested": 580,
+  "frames_answered": 580,
+  "errors": 0,
+  "run_s": 50.4,
+  "manifest_md5": "9da67efcc98c6ffd2bbbeb4fb1d82d1d",
+  "frames_sha256": "a6d168682234a74af0a01c3c790baf1961e3795a4a0d060d7aa428d2b27d6cc7",
+  "rows_sha256": "750321914312dd4997fbfdecb89207aaa7a4549abaea66749d8030ec092ef61f",
+  "server_version": "1.7.2",
+  "device": "jg-desktop",
+  "started_utc": "2026-09-29T23:52:02Z",
+  "frames_dir": "/opt/nvme/frames/floor-trials-1",
+  "note": "predictions kept as returned; nothing scored here (see docstring)"
+ },
+ "scoring": {
+  "scorer_commit": "2f39402",
+  "scorer_sha256": "6b38aea6b2bc5e32fc22184a2a354ad53cb5abf2d7894703467de91082784692",
+  "scored_utc": "2026-09-29T23:54:08Z",
+  "times_scored_for_the_verdict": 1,
+  "exit_status": 0
+ },
+ "score": {
+  "confidence": 0.56,
+  "frames": 580,
+  "valid": true,
+  "invalid": [],
+  "cells": {
+   "A/c920": {
+    "n": 35,
+    "lying": 33,
+    "standing": 1,
+    "sitting": 1,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "A/brio": {
+    "n": 35,
+    "lying": 34,
+    "standing": 1,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "B/c920": {
+    "n": 33,
+    "lying": 32,
+    "standing": 1,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "B/brio": {
+    "n": 33,
+    "lying": 32,
+    "standing": 1,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "C/c920": {
+    "n": 34,
+    "lying": 34,
+    "standing": 0,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "C/brio": {
+    "n": 34,
+    "lying": 34,
+    "standing": 0,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "D/c920": {
+    "n": 35,
+    "lying": 34,
+    "standing": 0,
+    "sitting": 1,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "D/brio": {
+    "n": 35,
+    "lying": 14,
+    "standing": 0,
+    "sitting": 1,
+    "none": 20,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "E/c920": {
+    "n": 33,
+    "lying": 33,
+    "standing": 0,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "E/brio": {
+    "n": 33,
+    "lying": 22,
+    "standing": 0,
+    "sitting": 0,
+    "none": 11,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "F/c920": {
+    "n": 30,
+    "lying": 30,
+    "standing": 0,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "F/brio": {
+    "n": 30,
+    "lying": 0,
+    "standing": 30,
+    "sitting": 0,
+    "none": 0,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "W/c920": {
+    "n": 90,
+    "lying": 0,
+    "standing": 79,
+    "sitting": 0,
+    "none": 11,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   },
+   "W/brio": {
+    "n": 90,
+    "lying": 0,
+    "standing": 66,
+    "sitting": 0,
+    "none": 24,
+    "tie": 0,
+    "error": 0,
+    "bed_boxes": 0
+   }
+  },
+  "r1": {
+   "pass": true,
+   "carried_by": [
+    "c920"
+   ],
+   "per_segment_reading": true,
+   "per_cam": {
+    "c920": {
+     "B": {
+      "lying": 32,
+      "n": 33,
+      "clears": true
+     },
+     "F": {
+      "lying": 30,
+      "n": 30,
+      "clears": true
+     }
+    },
+    "brio": {
+     "B": {
+      "lying": 32,
+      "n": 33,
+      "clears": true
+     },
+     "F": {
+      "lying": 0,
+      "n": 30,
+      "clears": false
+     }
+    }
+   }
+  },
+  "r2": {
+   "pass": true,
+   "lying": 0,
+   "tie": 0,
+   "n": 90
+  },
+  "failing": [
+   "r1 B/brio read standing: B-094s-brio.jpg",
+   "r1 B/c920 read standing: B-094s-c920.jpg",
+   "r1 F/brio read standing: F-370s-brio.jpg",
+   "r1 F/brio read standing: F-371s-brio.jpg",
+   "r1 F/brio read standing: F-372s-brio.jpg",
+   "r1 F/brio read standing: F-373s-brio.jpg",
+   "r1 F/brio read standing: F-374s-brio.jpg",
+   "r1 F/brio read standing: F-375s-brio.jpg",
+   "r1 F/brio read standing: F-376s-brio.jpg",
+   "r1 F/brio read standing: F-377s-brio.jpg",
+   "r1 F/brio read standing: F-378s-brio.jpg",
+   "r1 F/brio read standing: F-379s-brio.jpg",
+   "r1 F/brio read standing: F-380s-brio.jpg",
+   "r1 F/brio read standing: F-381s-brio.jpg",
+   "r1 F/brio read standing: F-382s-brio.jpg",
+   "r1 F/brio read standing: F-383s-brio.jpg",
+   "r1 F/brio read standing: F-384s-brio.jpg",
+   "r1 F/brio read standing: F-385s-brio.jpg",
+   "r1 F/brio read standing: F-386s-brio.jpg",
+   "r1 F/brio read standing: F-387s-brio.jpg",
+   "r1 F/brio read standing: F-388s-brio.jpg",
+   "r1 F/brio read standing: F-389s-brio.jpg",
+   "r1 F/brio read standing: F-390s-brio.jpg",
+   "r1 F/brio read standing: F-391s-brio.jpg",
+   "r1 F/brio read standing: F-392s-brio.jpg",
+   "r1 F/brio read standing: F-393s-brio.jpg",
+   "r1 F/brio read standing: F-394s-brio.jpg",
+   "r1 F/brio read standing: F-395s-brio.jpg",
+   "r1 F/brio read standing: F-396s-brio.jpg",
+   "r1 F/brio read standing: F-397s-brio.jpg",
+   "r1 F/brio read standing: F-398s-brio.jpg",
+   "r1 F/brio read standing: F-399s-brio.jpg"
+  ]
+ },
+ "report_only_detail": {
+  "note": "computed after the verdict from the same file by a one-off script, outside the plan; nothing here changes a verdict",
+  "boxes_per_frame": {
+   "1": 512,
+   "0": 66,
+   "2": 2
+  },
+  "boxes_total": 516,
+  "frames_with_a_box": 514,
+  "boxes_by_class": {
+   "standing": 181,
+   "sitting": 3,
+   "lying": 332
+  },
+  "confidence_of_the_reading": {
+   "A/brio read lying": {
+    "frames": 34,
+    "min": 0.659,
+    "median": 0.807,
+    "max": 0.874
+   },
+   "A/brio read standing": {
+    "frames": 1,
+    "min": 0.667,
+    "median": 0.667,
+    "max": 0.667
+   },
+   "A/c920 read lying": {
+    "frames": 33,
+    "min": 0.858,
+    "median": 0.89,
+    "max": 0.931
+   },
+   "A/c920 read sitting": {
+    "frames": 1,
+    "min": 0.683,
+    "median": 0.683,
+    "max": 0.683
+   },
+   "A/c920 read standing": {
+    "frames": 1,
+    "min": 0.789,
+    "median": 0.789,
+    "max": 0.789
+   },
+   "B/brio read lying": {
+    "frames": 32,
+    "min": 0.622,
+    "median": 0.765,
+    "max": 0.852
+   },
+   "B/brio read standing": {
+    "frames": 1,
+    "min": 0.874,
+    "median": 0.874,
+    "max": 0.874
+   },
+   "B/c920 read lying": {
+    "frames": 32,
+    "min": 0.785,
+    "median": 0.884,
+    "max": 0.889
+   },
+   "B/c920 read standing": {
+    "frames": 1,
+    "min": 0.794,
+    "median": 0.794,
+    "max": 0.794
+   },
+   "C/brio read lying": {
+    "frames": 34,
+    "min": 0.817,
+    "median": 0.834,
+    "max": 0.916
+   },
+   "C/c920 read lying": {
+    "frames": 34,
+    "min": 0.845,
+    "median": 0.856,
+    "max": 0.883
+   },
+   "D/brio read lying": {
+    "frames": 14,
+    "min": 0.56,
+    "median": 0.587,
+    "max": 0.678
+   },
+   "D/brio read sitting": {
+    "frames": 1,
+    "min": 0.709,
+    "median": 0.709,
+    "max": 0.709
+   },
+   "D/c920 read lying": {
+    "frames": 34,
+    "min": 0.822,
+    "median": 0.844,
+    "max": 0.878
+   },
+   "D/c920 read sitting": {
+    "frames": 1,
+    "min": 0.784,
+    "median": 0.784,
+    "max": 0.784
+   },
+   "E/brio read lying": {
+    "frames": 22,
+    "min": 0.563,
+    "median": 0.703,
+    "max": 0.746
+   },
+   "E/c920 read lying": {
+    "frames": 33,
+    "min": 0.781,
+    "median": 0.874,
+    "max": 0.883
+   },
+   "F/brio read standing": {
+    "frames": 30,
+    "min": 0.82,
+    "median": 0.851,
+    "max": 0.874
+   },
+   "F/c920 read lying": {
+    "frames": 30,
+    "min": 0.9,
+    "median": 0.903,
+    "max": 0.924
+   },
+   "W/brio read standing": {
+    "frames": 66,
+    "min": 0.61,
+    "median": 0.817,
+    "max": 0.912
+   },
+   "W/c920 read standing": {
+    "frames": 79,
+    "min": 0.57,
+    "median": 0.822,
+    "max": 0.912
+   }
+  },
+  "seconds_with_no_reading": {
+   "D/brio": [
+    239,
+    240,
+    241,
+    242,
+    243,
+    258,
+    259,
+    260,
+    261,
+    262,
+    263,
+    264,
+    265,
+    266,
+    267,
+    268,
+    269,
+    270,
+    271,
+    272
+   ],
+   "E/brio": [
+    302,
+    305,
+    307,
+    310,
+    311,
+    312,
+    313,
+    314,
+    315,
+    333,
+    334
+   ],
+   "W/brio": [
+    438,
+    440,
+    441,
+    442,
+    443,
+    444,
+    445,
+    446,
+    447,
+    464,
+    465,
+    466,
+    467,
+    468,
+    469,
+    470,
+    471,
+    472,
+    473,
+    474,
+    475,
+    476,
+    481,
+    503
+   ],
+   "W/c920": [
+    431,
+    479,
+    482,
+    483,
+    484,
+    485,
+    487,
+    490,
+    491,
+    494,
+    498
+   ]
+  },
+  "lying_segments_read_as_an_upright_pose": {
+   "A/brio": [
+    {
+     "t_s": 28,
+     "read": "standing"
+    }
+   ],
+   "A/c920": [
+    {
+     "t_s": 28,
+     "read": "standing"
+    },
+    {
+     "t_s": 29,
+     "read": "sitting"
+    }
+   ],
+   "B/brio": [
+    {
+     "t_s": 94,
+     "read": "standing"
+    }
+   ],
+   "B/c920": [
+    {
+     "t_s": 94,
+     "read": "standing"
+    }
+   ],
+   "D/brio": [
+    {
+     "t_s": 238,
+     "read": "sitting"
+    }
+   ],
+   "D/c920": [
+    {
+     "t_s": 238,
+     "read": "sitting"
+    }
+   ],
+   "F/brio": [
+    {
+     "t_s": 370,
+     "read": "standing"
+    },
+    {
+     "t_s": 371,
+     "read": "standing"
+    },
+    {
+     "t_s": 372,
+     "read": "standing"
+    },
+    {
+     "t_s": 373,
+     "read": "standing"
+    },
+    {
+     "t_s": 374,
+     "read": "standing"
+    },
+    {
+     "t_s": 375,
+     "read": "standing"
+    },
+    {
+     "t_s": 376,
+     "read": "standing"
+    },
+    {
+     "t_s": 377,
+     "read": "standing"
+    },
+    {
+     "t_s": 378,
+     "read": "standing"
+    },
+    {
+     "t_s": 379,
+     "read": "standing"
+    },
+    {
+     "t_s": 380,
+     "read": "standing"
+    },
+    {
+     "t_s": 381,
+     "read": "standing"
+    },
+    {
+     "t_s": 382,
+     "read": "standing"
+    },
+    {
+     "t_s": 383,
+     "read": "standing"
+    },
+    {
+     "t_s": 384,
+     "read": "standing"
+    },
+    {
+     "t_s": 385,
+     "read": "standing"
+    },
+    {
+     "t_s": 386,
+     "read": "standing"
+    },
+    {
+     "t_s": 387,
+     "read": "standing"
+    },
+    {
+     "t_s": 388,
+     "read": "standing"
+    },
+    {
+     "t_s": 389,
+     "read": "standing"
+    },
+    {
+     "t_s": 390,
+     "read": "standing"
+    },
+    {
+     "t_s": 391,
+     "read": "standing"
+    },
+    {
+     "t_s": 392,
+     "read": "standing"
+    },
+    {
+     "t_s": 393,
+     "read": "standing"
+    },
+    {
+     "t_s": 394,
+     "read": "standing"
+    },
+    {
+     "t_s": 395,
+     "read": "standing"
+    },
+    {
+     "t_s": 396,
+     "read": "standing"
+    },
+    {
+     "t_s": 397,
+     "read": "standing"
+    },
+    {
+     "t_s": 398,
+     "read": "standing"
+    },
+    {
+     "t_s": 399,
+     "read": "standing"
+    }
+   ]
+  },
+  "latency_ms": {
+   "first_request": 3041.7,
+   "median": 76.4,
+   "p90": 80.4,
+   "note": "no warm-up and no memory sampling: the first request includes the model load; F5 is the cost measurement"
+  }
+ },
+ "not_in_this_extract": "per-frame predictions and boxes: the raw file stays on the Jetson and the Mac, as the other results files of this repository do"
+}

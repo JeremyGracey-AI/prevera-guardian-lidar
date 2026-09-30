@@ -51,7 +51,7 @@ flowchart TB
 | LIDAR driver + fall detector + bridges | live on the Jetson, legacy config | [`perception.launch.py`](../src/prevera_bringup/launch/perception.launch.py), [`jetson/guardian-up.sh`](../jetson/guardian-up.sh) |
 | Detector fixes (incident hold, speed gate, windowed stillness) | implemented behind default-off keys; replay and tests only | DR-06 to DR-09, section 4 below |
 | Two webcams into ROS | live when started (`guardian-cams-up.sh`), recorded in bags | [`jetson/guardian-cams-up.sh`](../jetson/guardian-cams-up.sh) |
-| RF-DETR on the Jetson | stock models evaluated offline on extracted frames (09-27); fine-tuned children served on the device for cost, co-load and egress only (09-28), no room-frame accuracy | [RF-DETR results](field-tests/2026-09-27-rfdetr-results.md), [fine-tune results](field-tests/2026-09-28-roboflow-finetune-results.md), DR-10, DR-11 |
+| RF-DETR on the Jetson | stock models evaluated offline on extracted frames (09-27); fine-tuned children served on the device for cost, co-load and egress (09-28); one of them scored offline on the recorded room frames (09-29): both bars pass from the counter camera, the floor camera fails the head-first pose | [RF-DETR results](field-tests/2026-09-27-rfdetr-results.md), [fine-tune results](field-tests/2026-09-28-roboflow-finetune-results.md), [room-frame results](field-tests/2026-09-29-room-frames-results.md), DR-10, DR-11 |
 | LIDAR + camera fusion | not built; design open | DR-14 (D0), DR-13 (D1) |
 | V-JEPA verification | proprietary, not in this repository; interface stub only | DR-15, [`vjepa_bridge.py`](../src/prevera_perception/prevera_perception/vjepa_bridge.py) |
 
