@@ -21,8 +21,8 @@ the field evidence behind its design decisions, including the results that faile
 | **Does not** | See a person lying end-on (two of six lie-downs missed); reach WARN on the device (the fixes are tested offline only). Stock RF-DETR on two webcams sees the end-on poses but its box shape does not tell lying from standing ([C3](docs/field-tests/2026-09-27-rfdetr-results.md)). |
 | **Open** | **D1**: boxes (no), keypoints ([rescore plan v2](docs/field-tests/2026-09-28-rfdetr-keypoints-plan-v2.md)) or a fine-tuned class split ([yes on public data](docs/field-tests/2026-09-28-roboflow-finetune-results.md): `lying` 1.000 / 1.000, 0 pose swaps on the test split; [room frames](docs/field-tests/2026-09-29-room-frames-results.md): both bars pass from the counter camera, the floor camera fails the head-first pose); **D0**: where fusion runs; the config flip behind plan v4's step-9 bar (its [label files](docs/field-tests/labels/README.md) for the 09-25 bags are still to write); a 3D sensor. |
 | **How** | Every evaluation is declared before it runs; failures stay in the record; 18 [decision records](docs/DECISIONS.md). |
-| **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; a one-line fix plus a unit test, verified on this device. |
-| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 193 passed, 1 skipped ([quickstart](#quickstart)). |
+| **Upstream** | [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): the Jetson 6.2.0 image returns HTTP 500 for every RF-DETR request under the documented hardened command; a one-line fix plus a unit test, verified on this device, merged by Roboflow on 2026-10-02. |
+| **Try it** | `pytest` on the ROS-free core and tools, no hardware: 281 passed, 1 skipped ([quickstart](#quickstart)). |
 
 ![Segment B: the floor LIDAR sees two small sole clusters and raises no event, while RF-DETR finds the person on both cameras](docs/field-tests/2026-09-27-rfdetr/blind-spot-B.jpg)
 
@@ -229,7 +229,7 @@ the 2026-04 snapshot without a recorded rationale. The ones that shape the syste
 │   ├── prevera_msgs/             FallEvent, PersonTrack, PersonTrackArray
 │   ├── prevera_perception/       background, clustering, tracker, DetectorCore (ROS-free),
 │   │   │                         rclpy node, synthetic scene, vjepa_bridge.py (interface stub)
-│   │   └── test/                 the test suite (193 passed, 1 skipped), goldens, legacy reference
+│   │   └── test/                 the test suite (281 passed, 1 skipped), goldens, legacy reference
 │   ├── prevera_bringup/          launch files, fall_detector.yaml (the config on the Jetson), udev, RViz
 │   └── prevera_description/      sentinel URDF
 ├── tools/bag_analysis/           replay harness, bag timelines and frames, RF-DETR scorer and figures
@@ -271,7 +271,7 @@ uv venv --python 3.10 .venv310
 uv pip install --python .venv310/bin/python -r tools/bag_analysis/requirements.txt pytest
 cd src/prevera_perception
 PYTHONPATH=. ../../.venv310/bin/python -m pytest test/ -q
-# 193 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
+# 281 passed, 1 skipped   (the skip is test_node_adapter.py, which needs rclpy)
 ```
 
 ### Replay a bag through the detector
@@ -327,7 +327,8 @@ Under the documented hardened `--read-only` container command, Roboflow's JetPac
 for every RF-DETR request, because Triton's kernel cache defaults to a read-only path.
 [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) sets `TRITON_CACHE_DIR` in that image (a
 one-line fix, matching the JetPack 7.2.0 image, plus a unit test). It was verified on this Jetson with the variable set at runtime: HTTP 500
-before, predictions from all three RF-DETR sizes after. The PR is open. See [DR-12](docs/DECISIONS.md#dr-12).
+before, predictions from all three RF-DETR sizes after. Roboflow merged the PR on 2026-10-02; the published image changes
+when a release includes it. See [DR-12](docs/DECISIONS.md#dr-12).
 
 ## Limitations
 

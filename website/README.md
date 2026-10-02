@@ -34,18 +34,9 @@ cd website && python3 -m http.server 8000   # then open http://localhost:8000/
 ## Deploying
 
 The page is static: no framework and no build step. Since 2026-09-29 it is served at https://preveraguard.com/ by
-the Vercel project `preveraguard`, with this directory as the deploy root. The project has no Git connection, on
-purpose: merging to `main` does not change the live page, and every deploy is the owner's own step.
-
-From the repository root, after the change is merged to `main`:
-
-```bash
-VERCEL_ORG_ID=team_uY864P7aoRQgO9mR9cpT99N8 VERCEL_PROJECT_ID=prj_uR8Cgv9mHxsLVjZ7EMwVknadQlUN \
-  vercel deploy --prod --cwd website --yes
-```
-
-The two IDs name the team and the project; they are not credentials. The command needs a logged-in Vercel CLI and
-writes no `.vercel/` folder into the repository.
+the Vercel project `preveraguard`. The project is connected to this repository with `website/` as its root
+directory: a merge to `main` deploys the page to production, and each pull request gets a preview deployment that
+only signed-in team members can open.
 
 - What is deployed: `index.html`, `demo.html`, `assets/` and the four favicon files. `.vercelignore` keeps
   `README.md` and `NOTES.local.md` out. On any other host, upload only those files.
@@ -53,6 +44,10 @@ writes no `.vercel/` folder into the repository.
   `https://preveraguard.com/README.md` returns 404.
 - The footer says "No analytics or trackers". That stays true only while the host injects none: Web Analytics and
   Speed Insights stay off for the project.
+- From 2026-09-30 to 2026-10-02 the Git connection had no root directory set, so production deploys built the
+  repository root: the homepage returned 404 and the repository's files were served instead. On 2026-10-02
+  production was rolled back to the 2026-09-29 deploy of this directory and the root directory was set to
+  `website`. If `https://preveraguard.com/` ever serves `/docs/DECISIONS.md`, that setting has been lost.
 - DNS stays at Hostinger, which also carries the domain's mail. `@` A `76.76.21.21` and `www` CNAME
   `cname.vercel-dns.com` point at Vercel, `www` redirects to the apex, and there is no AAAA record. Until
   2026-09-29 the domain served an earlier page from another host.
@@ -186,7 +181,7 @@ their own caveats in the last table.
 | Blind-spot figure numbers (t = 110 s; clusters 0.31 m and 0.28 m; person 0.93 and 0.92; 33/33 on each camera; 0 events); the hero schematic labels them "two ~0.3 m clusters (soles)" | docs/field-tests/2026-09-27-rfdetr-results.md:190-204; README.md:28-31 |
 | The published figure was re-encoded once for publication (JPEG quality 92, metadata stripped) | docs/field-tests/2026-09-27-rfdetr-results.md:357 |
 | 18 decision records (DR-00 to DR-17), each with its status, the options on record (or a note that none were written down) and its evidence; the open ones say what comes next | README.md:192-193; docs/DECISIONS.md:45-64 (index); docs/DECISIONS.md:420-438 (DR-14), 476-500 (DR-17); a per-record field check on 2026-09-27 found Status, options (DR-12 labels the field "Options") and Evidence in all 18 records, no Context or Consequences in DR-14, and no Context in DR-17 |
-| roboflow/inference#3072: one ENV line sets `TRITON_CACHE_DIR` in the JetPack 6.2.0 image, plus a unit test; HTTP 500 before, predictions from all three RF-DETR sizes after; verified with the variable set at runtime, image not rebuilt; **open, review required, as of 2026-09-29** | README.md:306-310; docs/DECISIONS.md:374-387; `gh pr view 3072 -R roboflow/inference` on 2026-09-29: state OPEN, reviewDecision REVIEW_REQUIRED, mergedAt null, +23/−0, 2 files, updatedAt 2026-09-28T04:47:14Z |
+| roboflow/inference#3072: one ENV line sets `TRITON_CACHE_DIR` in the JetPack 6.2.0 image, plus a unit test; HTTP 500 before, predictions from all three RF-DETR sizes after; verified with the variable set at runtime, image not rebuilt; **merged by Roboflow, 2026-10-02** | README.md:306-310 and docs/DECISIONS.md:374-387 (the fix and its verification; their status lines predate the merge); `gh pr view 3072 -R roboflow/inference` on 2026-10-02: state MERGED, reviewDecision APPROVED, mergedAt 2026-10-02T12:16:30Z, mergedBy grzegorz-roboflow, merge commit cca67a9, +23/−0, 2 files |
 | Not public: the V-JEPA stage, raw recordings, extracted frames, model predictions on room frames, and the packet captures | README.md:342; NOTICE:9-11; docs/PROCESS.md:119-120; docs/field-tests/2026-09-28-roboflow-finetune-results.md:171-174, 219-220, 291-292 |
 | Public since 2026-09-28: the on-device runners (`jetson/rf_eval.py`, `jetson/f5_device_fit.py`), the container command (`jetson/inference-server-up.sh`), the fine-tune plan and results, Roboflow's evaluation extracts and the network-capture summaries (no frames), and the time-on-floor Workflow | README.md:219-221, 343-344; docs/field-tests/2026-09-28-roboflow-finetune-results.md:136-140, 216-219; docs/DEVELOPMENT-LOG.md:123, 126 |
 | Roadmap column 1 (items 1 to 6) | README.md:348-360 |

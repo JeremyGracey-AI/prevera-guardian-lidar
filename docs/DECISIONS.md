@@ -56,7 +56,7 @@ flowchart LR
 | [DR-09](#dr-09) | Windowed stillness, shipped together with `min_range_m` 0.3 | stillness implemented, default off; `min_range_m` deferred to the flip |
 | [DR-10](#dr-10) | Add two webcams and a stock camera detector for the LIDAR's blind spots | accepted; evaluated offline, not in the alert path |
 | [DR-11](#dr-11) | Run camera inference on the device, not on a hosted API | accepted; pingback, version check and ultralytics probe off, each verified by capture 2026-09-29; usage record may leave, for now (Jeremy, 2026-09-29); model pull never captured |
-| [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR open |
+| [DR-12](#dr-12) | Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`) | PR merged 2026-10-02 |
 | [DR-13](#dr-13) | **D1**: boxes, keypoints, or a fine-tuned class split | open; class split passed F1/F2 on public data (`00ba18`, 2026-09-28) and R1/R2 on room frames from the counter camera (`e65db0`, 2026-09-29; the floor camera fails F) |
 | [DR-14](#dr-14) | **D0**: where fusion runs | open |
 | [DR-15](#dr-15) | Publish the LIDAR path; keep the V-JEPA verification stage proprietary | accepted |
@@ -373,8 +373,9 @@ flowchart LR
 <a id="dr-12"></a>
 ## DR-12 · Fix the Jetson inference image upstream (`TRITON_CACHE_DIR`)
 
-- **Status:** pull request [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): open, review
-  required, as of 2026-09-29 (a one-line `ENV` fix plus a unit test).
+- **Status:** pull request [roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072): approved and
+  merged by a Roboflow maintainer on 2026-10-02, merge commit `cca67a9` (a one-line `ENV` fix plus a unit test). The
+  published image changes when a release includes it. Open from 2026-09-27 to 2026-10-02.
 - **Context:** started with the documented hardened `--read-only` command, the JetPack 6.2.0 image returns HTTP 500 for
   every RF-DETR request: Triton compiles preprocessing kernels into `/root/.triton/cache`, which is read-only. YOLO
   models on the same server are unaffected.
