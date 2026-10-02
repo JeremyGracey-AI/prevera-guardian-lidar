@@ -34,18 +34,9 @@ cd website && python3 -m http.server 8000   # then open http://localhost:8000/
 ## Deploying
 
 The page is static: no framework and no build step. Since 2026-09-29 it is served at https://preveraguard.com/ by
-the Vercel project `preveraguard`, with this directory as the deploy root. The project has no Git connection, on
-purpose: merging to `main` does not change the live page, and every deploy is the owner's own step.
-
-From the repository root, after the change is merged to `main`:
-
-```bash
-VERCEL_ORG_ID=team_uY864P7aoRQgO9mR9cpT99N8 VERCEL_PROJECT_ID=prj_uR8Cgv9mHxsLVjZ7EMwVknadQlUN \
-  vercel deploy --prod --cwd website --yes
-```
-
-The two IDs name the team and the project; they are not credentials. The command needs a logged-in Vercel CLI and
-writes no `.vercel/` folder into the repository.
+the Vercel project `preveraguard`. The project is connected to this repository with `website/` as its root
+directory: a merge to `main` deploys the page to production, and each pull request gets a preview deployment that
+only signed-in team members can open.
 
 - What is deployed: `index.html`, `demo.html`, `assets/` and the four favicon files. `.vercelignore` keeps
   `README.md` and `NOTES.local.md` out. On any other host, upload only those files.
@@ -53,6 +44,10 @@ writes no `.vercel/` folder into the repository.
   `https://preveraguard.com/README.md` returns 404.
 - The footer says "No analytics or trackers". That stays true only while the host injects none: Web Analytics and
   Speed Insights stay off for the project.
+- From 2026-09-30 to 2026-10-02 the Git connection had no root directory set, so production deploys built the
+  repository root: the homepage returned 404 and the repository's files were served instead. On 2026-10-02
+  production was rolled back to the 2026-09-29 deploy of this directory and the root directory was set to
+  `website`. If `https://preveraguard.com/` ever serves `/docs/DECISIONS.md`, that setting has been lost.
 - DNS stays at Hostinger, which also carries the domain's mail. `@` A `76.76.21.21` and `www` CNAME
   `cname.vercel-dns.com` point at Vercel, `www` redirects to the apex, and there is no AAAA record. Until
   2026-09-29 the domain served an earlier page from another host.
