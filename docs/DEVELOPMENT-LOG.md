@@ -40,6 +40,7 @@ timeline
 | `efc8b43` PR #4, egress re-capture | 129 passed, 1 skipped | README at the merge; CI |
 | `2e6d582` version-check branch, merged as PR #5 (`6990dfe`) | **130 passed, 1 skipped** | container and Mac; CI at `6990dfe` |
 | `2f39402` room-frame plan, runner and scorer | **193 passed, 1 skipped** | Mac, Python 3.10; 63 of them are the room-frame tests |
+| `20d30d0` loopback-only inference transport, credential-file checks | **281 passed, 1 skipped** | commit body; CI on `main` |
 
 The one skip is `test_node_adapter.py`, which needs `rclpy` and runs on the Jetson or in WSL with ROS 2 Humble.
 
@@ -152,4 +153,12 @@ All times PDT. Hashes are this repository's own.
 Not done, on purpose: no room frame went to Roboflow or any hosted API; the model under test was not retrained;
 `00ba18` was not run; D1 was not decided. Not verified at the run: the container's environment (no `docker`
 access without a password) and the network (no capture).
+
+## 2026-10-02: the upstream fix is merged
+
+[roboflow/inference#3072](https://github.com/roboflow/inference/pull/3072) was approved and merged by a Roboflow
+maintainer at 05:16 PDT, merge commit `cca67a9`, five days after it was opened (the entry of 2026-09-27 above records
+it as open, which it was then). At 09:09 PDT the latest Inference release, v1.7.2 of 2026-09-25, did not yet include
+it, so the published JetPack 6.2.0 image still has the defect until a release does. The maintainer asked whether the
+same fix is planned for the other Dockerfiles; that is open.
 
