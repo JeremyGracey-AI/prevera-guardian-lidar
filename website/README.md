@@ -33,15 +33,29 @@ cd website && python3 -m http.server 8000   # then open http://localhost:8000/
 
 ## Deploying
 
-The page is static: no framework and no build step. It is meant to be served at https://preveraguard.com/ from a
-new Vercel project with this directory as its root.
+The page is static: no framework and no build step. Since 2026-09-29 it is served at https://preveraguard.com/ by
+the Vercel project `preveraguard`, with this directory as the deploy root. The project has no Git connection, on
+purpose: merging to `main` does not change the live page, and every deploy is the owner's own step.
 
-- Deploy `index.html`, `demo.html`, `assets/` and the four favicon files. `.vercelignore` keeps `README.md` and
-  `NOTES.local.md` out of the deploy. On any other host, upload only those files.
-- The footer says "No analytics or trackers". That stays true only while the host injects none: on Vercel, Web
-  Analytics and Speed Insights must be off for the project.
-- State on 2026-09-29, before the move: the domain is still served by the old site on another host (see the claims
-  table). Creating the project, deploying and changing DNS are the owner's actions.
+From the repository root, after the change is merged to `main`:
+
+```bash
+VERCEL_ORG_ID=team_uY864P7aoRQgO9mR9cpT99N8 VERCEL_PROJECT_ID=prj_uR8Cgv9mHxsLVjZ7EMwVknadQlUN \
+  vercel deploy --prod --cwd website --yes
+```
+
+The two IDs name the team and the project; they are not credentials. The command needs a logged-in Vercel CLI and
+writes no `.vercel/` folder into the repository.
+
+- What is deployed: `index.html`, `demo.html`, `assets/` and the four favicon files. `.vercelignore` keeps
+  `README.md` and `NOTES.local.md` out. On any other host, upload only those files.
+- After a deploy: the hash of `curl -s https://preveraguard.com/` equals the hash of `website/index.html`, and
+  `https://preveraguard.com/README.md` returns 404.
+- The footer says "No analytics or trackers". That stays true only while the host injects none: Web Analytics and
+  Speed Insights stay off for the project.
+- DNS stays at Hostinger, which also carries the domain's mail. `@` A `76.76.21.21` and `www` CNAME
+  `cname.vercel-dns.com` point at Vercel, `www` redirects to the apex, and there is no AAAA record. Until
+  2026-09-29 the domain served an earlier page from another host.
 
 ## Rules the page follows
 
@@ -97,7 +111,6 @@ their own caveats in the last table.
 | Contact jeremy.a.gracey@gmail.com and github.com/JeremyGracey-AI/prevera-guardian-lidar | README.md:248, 377-378 |
 | The UI concept (`demo.html`) uses fictional data apart from the author's own name on its Profile screen, and it is not connected to the detector; the features it shows are not implemented | demo.html:156-186 (the `// Mock Data` block), 718 (the Profile screen); demos/README.md:7-10 (the same statement for the public concept) |
 | The page's address is https://preveraguard.com/ (`canonical`, `og:url`) | README.md:377; the page served at that address on 2026-09-29 carries the same `canonical` and `og:url` |
-| On 2026-09-29, before the move, the domain was still served by the old site | `curl -sI https://preveraguard.com/` on 2026-09-29: `server: LiteSpeed`, `platform: hostinger`, `last-modified` 2026-05-07 |
 
 ### Hardware and pipeline
 
